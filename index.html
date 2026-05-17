@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MotoTracker v01</title>
+  <title>MotoTracker v02</title>
   
   <!-- React & ReactDOM -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
@@ -64,7 +64,7 @@
   <script type="text/babel">
     const { useState, useEffect, useRef } = React;
 
-    // --- MAPA DE ÍCONES (Substituindo Lucide por Google Material Symbols) ---
+    // --- MAPA DE ÍCONES ---
     const MIcon = ({ name, className }) => <span className={`material-symbols-rounded ${className || ''}`}>{name}</span>;
     const Home = (p) => <MIcon name="home" {...p} />;
     const MapIcon = (p) => <MIcon name="map" {...p} />;
@@ -91,6 +91,14 @@
     const MapPin = (p) => <MIcon name="location_on" {...p} />;
     const Thermometer = (p) => <MIcon name="device_thermostat" {...p} />;
     const Settings = (p) => <MIcon name="settings" {...p} />;
+    const Calendar = (p) => <MIcon name="calendar_month" {...p} />;
+    const Group = (p) => <MIcon name="group" {...p} />;
+    const TwoWheeler = (p) => <MIcon name="two_wheeler" {...p} />;
+    const ExpandMore = (p) => <MIcon name="expand_more" {...p} />;
+    const Restaurant = (p) => <MIcon name="restaurant" {...p} />;
+    const Hotel = (p) => <MIcon name="hotel" {...p} />;
+    const Category = (p) => <MIcon name="category" {...p} />;
+    const Build = (p) => <MIcon name="build" {...p} />;
 
     // --- CONFIGURAÇÕES GERAIS ---
     const ORIGIN_LAT = -3.7327; // Fortaleza
@@ -132,13 +140,13 @@
     const encodeSvg = (svg) => `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 
     const initialData = [
-      { id: '1', name: 'Canoa Quebrada', state: 'CE', status: 'visited', date: '2023-08-15', notes: 'Ótima viagem bate e volta.', lat: -4.526, lng: -37.705, distance: 160, duration: '2h 15m', fuelCost: 32, actualCost: 45 },
-      { id: '2', name: 'Jericoacoara', state: 'CE', status: 'planned', date: '', notes: 'Fazer não entra nas dunas.', lat: -2.796, lng: -40.513, distance: 300, duration: '4h 20m', fuelCost: 60 }
+      { id: '1', name: 'Fim de semana na Praia', city: 'Canoa Quebrada', state: 'CE', type: 'Bate e Volta', status: 'visited', date: '2023-08-15', notes: 'Ótima viagem bate e volta.', lat: -4.526, lng: -37.705, distance: 160, duration: '2h 15m', fuelCost: 32, actualCost: 150, costDetails: { gas: 45, food: 65, lodging: 0, maintenance: 0, others: 40 }, hasPassenger: false },
+      { id: '2', name: 'Rolezinho nas Dunas', city: 'Jericoacoara', state: 'CE', type: 'Viagem Curta', status: 'planned', plannedDate: '2026-04-10', notes: 'Fazer não entra nas dunas.', lat: -2.796, lng: -40.513, distance: 300, duration: '4h 20m', fuelCost: 60, hasPassenger: true }
     ];
 
     function App() {
       const [theme, setTheme] = useState(() => localStorage.getItem('motoTrackerTheme') || 'dark');
-      const [places, setPlaces] = useState(() => { const saved = localStorage.getItem('motoTrips_v3'); return saved ? JSON.parse(saved) : initialData; });
+      const [places, setPlaces] = useState(() => { const saved = localStorage.getItem('motoTrips_v4'); return saved ? JSON.parse(saved) : initialData; });
       const [fuelPrice, setFuelPrice] = useState(() => { const saved = localStorage.getItem('fuelPrice'); return saved ? parseFloat(saved) : 5.80; });
       
       const [myMoto, setMyMoto] = useState(() => { 
@@ -150,11 +158,14 @@
       const [toastMsg, setToastMsg] = useState('');
       
       const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-      const [finishTripModal, setFinishTripModal] = useState({ isOpen: false, placeId: null, actualCost: '' });
+      const [expenseModal, setExpenseModal] = useState(false);
+      const [finishTripModal, setFinishTripModal] = useState({ isOpen: false, placeId: null, costs: { gas: '', food: '', lodging: '', maintenance: '', others: '' } });
+      const [generalExpenses, setGeneralExpenses] = useState(() => { const saved = localStorage.getItem('motoExpenses_v1'); return saved ? JSON.parse(saved) : []; });
 
       const isDark = theme === 'dark';
 
-      useEffect(() => { localStorage.setItem('motoTrips_v3', JSON.stringify(places)); }, [places]);
+      useEffect(() => { localStorage.setItem('motoTrips_v4', JSON.stringify(places)); }, [places]);
+      useEffect(() => { localStorage.setItem('motoExpenses_v1', JSON.stringify(generalExpenses)); }, [generalExpenses]);
       useEffect(() => { localStorage.setItem('fuelPrice', fuelPrice.toString()); }, [fuelPrice]);
       useEffect(() => { localStorage.setItem('myMotoConfig', JSON.stringify(myMoto)); }, [myMoto]);
       useEffect(() => { 
@@ -195,7 +206,8 @@
       };
 
       const addPlace = async (newPlace, customFuelPrice) => {
-        const coords = await geocodeLocation(newPlace.name, newPlace.state);
+        // Usa a cidade (city) para buscar no mapa, fallback para name caso venha vazio
+        const coords = await geocodeLocation(newPlace.city || newPlace.name, newPlace.state);
         let routeInfo = { distance: 0, duration: 'N/A', fuelCost: 0 };
         if (coords) routeInfo = await calculateRouteInfo(coords.lat, coords.lng, customFuelPrice, myMoto.consumption);
         setPlaces([{ ...newPlace, id: Date.now().toString(), lat: coords?.lat || null, lng: coords?.lng || null, ...routeInfo }, ...places]);
@@ -205,15 +217,56 @@
 
       const deletePlace = (id) => { if (confirm('Excluir este destino?')) setPlaces(places.filter(p => p.id !== id)); };
 
+      const deleteGeneralExpense = (id) => { if (confirm('Excluir esta despesa?')) setGeneralExpenses(generalExpenses.filter(e => e.id !== id)); };
+
+      const handleAddExpense = (e) => {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const tripId = fd.get('tripId');
+        const category = fd.get('category');
+        const amount = parseFloat(fd.get('amount')) || 0;
+        const description = fd.get('description') || '';
+
+        if (tripId === 'general') {
+          setGeneralExpenses([{ id: Date.now().toString(), category, amount, description, date: new Date().toISOString() }, ...generalExpenses]);
+        } else {
+          setPlaces(places.map(p => {
+            if (p.id === tripId) {
+              const currentCosts = p.costDetails || { gas: 0, food: 0, lodging: 0, maintenance: 0, others: 0 };
+              const newCosts = { ...currentCosts, [category]: (currentCosts[category] || 0) + amount };
+              return { ...p, actualCost: (p.actualCost || 0) + amount, costDetails: newCosts };
+            }
+            return p;
+          }));
+        }
+        setExpenseModal(false);
+        showToast('Despesa lançada com sucesso!');
+      };
+
       const confirmFinishTrip = (e) => {
         e.preventDefault();
-        setPlaces(places.map(p => p.id === finishTripModal.placeId ? { ...p, status: 'visited', date: new Date().toISOString().split('T')[0], actualCost: parseFloat(finishTripModal.actualCost) || 0 } : p));
-        setFinishTripModal({ isOpen: false, placeId: null, actualCost: '' });
+        const { gas, food, lodging, maintenance, others } = finishTripModal.costs;
+        const total = (parseFloat(gas) || 0) + (parseFloat(food) || 0) + (parseFloat(lodging) || 0) + (parseFloat(maintenance) || 0) + (parseFloat(others) || 0);
+
+        setPlaces(places.map(p => p.id === finishTripModal.placeId ? { 
+          ...p, 
+          status: 'visited', 
+          date: new Date().toISOString().split('T')[0], 
+          actualCost: total,
+          costDetails: {
+            gas: parseFloat(gas) || 0,
+            food: parseFloat(food) || 0,
+            lodging: parseFloat(lodging) || 0,
+            maintenance: parseFloat(maintenance) || 0,
+            others: parseFloat(others) || 0
+          }
+        } : p));
+        setFinishTripModal({ isOpen: false, placeId: null, costs: { gas: '', food: '', lodging: '', maintenance: '', others: '' } });
         showToast('Viagem concluída!');
       };
 
       const shareTrip = (place) => {
-        const text = `🏍️ Partiu ${place.name}?\n🛣️ Distância: ${place.distance}km (saindo de Fortaleza)\n⏱️ Tempo: ${place.duration}\n⛽ Custo aprox. ida: R$ ${place.fuelCost?.toFixed(2)}\nBora rodar!`;
+        const text = `🏍️ Partiu ${place.name}?\n📍 Destino: ${place.city || place.name} - ${place.state}\n🛣️ Distância: ${place.distance}km (saindo de Fortaleza)\n⏱️ Tempo: ${place.duration}\n⛽ Custo aprox. ida: R$ ${place.fuelCost?.toFixed(2)}\nBora rodar!`;
         const textArea = document.createElement("textarea");
         textArea.value = text;
         document.body.appendChild(textArea);
@@ -228,7 +281,8 @@
         const visitedTrips = places.filter(p => p.status === 'visited');
         const plannedTrips = places.filter(p => p.status === 'planned');
         const totalKm = visitedTrips.reduce((acc, curr) => acc + (curr.distance || 0), 0);
-        const totalSpent = visitedTrips.reduce((acc, curr) => acc + (curr.actualCost || 0), 0);
+        const totalGeneral = generalExpenses.reduce((acc, curr) => acc + curr.amount, 0);
+        const totalSpent = visitedTrips.reduce((acc, curr) => acc + (curr.actualCost || 0), 0) + totalGeneral;
         const avgCostPerKm = totalKm > 0 ? (totalSpent / totalKm).toFixed(2) : '0.00';
         
         const nextTrip = plannedTrips.length > 0 ? plannedTrips[0] : null;
@@ -267,8 +321,9 @@
                   </div>
                   {nextTrip ? (
                     <>
-                      <h3 className="text-2xl font-bold text-slate-800 dark:text-neutral-100 mb-1">{nextTrip.name} - {nextTrip.state}</h3>
-                      <p className="text-slate-500 dark:text-neutral-400 text-sm mb-6">{nextTrip.notes || "Sem anotações de rota."}</p>
+                      <h3 className="text-2xl font-bold text-slate-800 dark:text-neutral-100 mb-1">{nextTrip.name}</h3>
+                      <p className="text-slate-500 dark:text-neutral-400 font-medium mb-1">{nextTrip.city || nextTrip.name} - {nextTrip.state}</p>
+                      <p className="text-slate-400 dark:text-neutral-500 text-sm mb-6 line-clamp-1">{nextTrip.notes || "Sem anotações de rota."}</p>
                       
                       <div className="flex gap-4 mb-4">
                         <div className="bg-slate-50 dark:bg-neutral-900/50 rounded-xl p-3 flex-1 border border-slate-100 dark:border-neutral-800">
@@ -460,6 +515,12 @@
         const [filter, setFilter] = useState('all');
         const filteredPlaces = places.filter(p => filter === 'all' || p.status === filter);
 
+        const formatDate = (dateString) => {
+          if (!dateString) return '';
+          const [y, m, d] = dateString.split('-');
+          return `${d}/${m}/${y}`;
+        };
+
         return (
           <div className="space-y-6 pb-24 md:pb-0 animate-fade-in relative min-h-full">
             <div className="flex justify-between items-center">
@@ -477,17 +538,36 @@
               {filteredPlaces.map(place => (
                 <div key={place.id} className="bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700/60 rounded-2xl p-5 flex flex-col justify-between shadow-sm dark:shadow-none transition-colors">
                   <div>
-                    <div className="flex justify-between items-start mb-4">
+                    <div className="flex justify-between items-start mb-3">
                       <div>
                         <h3 className="text-lg font-bold text-slate-800 dark:text-neutral-200 flex items-center gap-2">
                           {place.name} {place.status === 'planned' && place.lat && <WeatherWidget lat={place.lat} lng={place.lng} />}
                         </h3>
-                        <span className="text-slate-500 dark:text-neutral-500 text-sm">{place.state}</span>
+                        <span className="text-slate-500 dark:text-neutral-400 font-medium text-sm">{place.city || place.name} - {place.state}</span>
                       </div>
                       <div className="flex gap-1">
                         {place.status === 'planned' && <button onClick={() => shareTrip(place)} className="text-slate-400 hover:text-amber-500 p-2"><Share2 className="w-5 h-5" /></button>}
                         <button onClick={() => deletePlace(place.id)} className="text-slate-400 hover:text-red-500 p-2"><Trash2 className="w-5 h-5" /></button>
                       </div>
+                    </div>
+                    
+                    {/* Tags da Viagem */}
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {place.type && (
+                        <span className="flex items-center gap-1 text-xs font-bold text-slate-600 dark:text-neutral-300 bg-slate-100 dark:bg-neutral-700/50 px-2.5 py-1 rounded-md">
+                          <TwoWheeler className="w-3.5 h-3.5 text-amber-500" /> {place.type}
+                        </span>
+                      )}
+                      {place.plannedDate && place.status === 'planned' && (
+                        <span className="flex items-center gap-1 text-xs font-bold text-slate-600 dark:text-neutral-300 bg-slate-100 dark:bg-neutral-700/50 px-2.5 py-1 rounded-md">
+                          <Calendar className="w-3.5 h-3.5 text-blue-500" /> {formatDate(place.plannedDate)}
+                        </span>
+                      )}
+                      {place.hasPassenger && (
+                        <span className="flex items-center gap-1 text-xs font-bold text-slate-600 dark:text-neutral-300 bg-slate-100 dark:bg-neutral-700/50 px-2.5 py-1 rounded-md">
+                          <Group className="w-3.5 h-3.5 text-green-500" /> Garupa
+                        </span>
+                      )}
                     </div>
 
                     {place.distance > 0 && (
@@ -514,7 +594,7 @@
                   </div>
 
                   {place.status === 'planned' && (
-                    <button onClick={() => setFinishTripModal({ isOpen: true, placeId: place.id, actualCost: '' })} className="w-full mt-4 flex items-center justify-center gap-2 bg-slate-100 dark:bg-neutral-700 hover:bg-green-50 dark:hover:bg-green-600/20 text-slate-700 dark:text-white hover:text-green-600 dark:hover:text-green-400 py-2.5 rounded-xl text-sm font-bold transition-all border border-slate-200 dark:border-transparent hover:border-green-200 dark:hover:border-transparent">
+                    <button onClick={() => setFinishTripModal({ isOpen: true, placeId: place.id, costs: { gas: place.fuelCost?.toFixed(2) || '', food: '', lodging: '', maintenance: '', others: '' } })} className="w-full mt-4 flex items-center justify-center gap-2 bg-slate-100 dark:bg-neutral-700 hover:bg-green-50 dark:hover:bg-green-600/20 text-slate-700 dark:text-white hover:text-green-600 dark:hover:text-green-400 py-2.5 rounded-xl text-sm font-bold transition-all border border-slate-200 dark:border-transparent hover:border-green-200 dark:hover:border-transparent">
                       <CheckCircle2 className="w-5 h-5" /> Marcar Concluído
                     </button>
                   )}
@@ -555,7 +635,8 @@
               places.forEach(place => {
                 if (place.lat && place.lng) {
                   const marker = window.L.marker([place.lat, place.lng], { icon: place.status === 'visited' ? IconVisited : IconPlanned }).addTo(mapRef.current);
-                  marker.bindPopup(`<div style="padding:2px;"><strong style="color:#1e293b;font-family:sans-serif;">${place.name}</strong></div>`);
+                  // Atualizado o popup para mostrar Nome e Cidade
+                  marker.bindPopup(`<div style="padding:2px;"><strong style="color:#1e293b;font-family:sans-serif;">${place.name}</strong><br/><span style="font-size:12px;color:#64748b;">${place.city || place.name}</span></div>`);
                   bounds.push([place.lat, place.lng]);
                 }
               });
@@ -574,18 +655,149 @@
         );
       };
 
+      // --- COMPONENTE GRÁFICO DE ROSCA (SVG Puro) ---
+      const DonutChart = ({ data, total }) => {
+        let cumulativePercent = 0;
+        const getCoordinatesForPercent = (percent) => {
+          const x = Math.cos(2 * Math.PI * percent);
+          const y = Math.sin(2 * Math.PI * percent);
+          return [x, y];
+        };
+
+        if (total === 0) return (
+          <div className="w-full h-full rounded-full border-4 border-slate-200 dark:border-neutral-700 flex items-center justify-center">
+            <span className="text-xs text-slate-400">R$ 0</span>
+          </div>
+        );
+
+        return (
+          <div className="relative w-full h-full">
+            <svg viewBox="-1.4 -1.4 2.8 2.8" className="w-full h-full transform -rotate-90 drop-shadow-sm">
+              {data.map(slice => {
+                const percent = slice.value / total;
+                if (percent === 0) return null;
+                // Caso em que 1 item representa 100%
+                if (percent === 1) {
+                  return <circle key={slice.label} cx="0" cy="0" r="1" fill="transparent" stroke={slice.color} strokeWidth="0.45" />
+                }
+                const startCoords = getCoordinatesForPercent(cumulativePercent);
+                cumulativePercent += percent;
+                const endCoords = getCoordinatesForPercent(cumulativePercent);
+                const largeArcFlag = percent > 0.5 ? 1 : 0;
+                const pathData = [
+                  `M ${startCoords[0]} ${startCoords[1]}`,
+                  `A 1 1 0 ${largeArcFlag} 1 ${endCoords[0]} ${endCoords[1]}`
+                ].join(' ');
+                
+                return <path key={slice.label} d={pathData} fill="none" stroke={slice.color} strokeWidth="0.45" className="transition-all duration-500 ease-in-out hover:opacity-80" />;
+              })}
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <span className="text-[10px] text-slate-400 dark:text-neutral-500 font-bold uppercase tracking-widest mb-0.5">Total</span>
+              <span className="text-sm font-black text-slate-800 dark:text-neutral-200">R$ {total.toFixed(0)}</span>
+            </div>
+          </div>
+        );
+      };
+
       const FinanceView = () => {
-        const visited = places.filter(p => p.status === 'visited');
+        const visited = places.filter(p => p.status === 'visited' || (p.actualCost > 0));
         const estimated = visited.reduce((acc, curr) => acc + (curr.fuelCost || 0), 0);
-        const actual = visited.reduce((acc, curr) => acc + (curr.actualCost || 0), 0);
+        const totalGeneral = generalExpenses.reduce((acc, curr) => acc + curr.amount, 0);
+        const actual = visited.reduce((acc, curr) => acc + (curr.actualCost || 0), 0) + totalGeneral;
         const diff = actual - estimated;
+
+        const TripFinanceRow = ({ t }) => {
+          const [expanded, setExpanded] = useState(false);
+          const gas = t.costDetails?.gas || t.actualCost || 0;
+          const food = t.costDetails?.food || 0;
+          const lodging = t.costDetails?.lodging || 0;
+          const maintenance = t.costDetails?.maintenance || 0;
+          const others = t.costDetails?.others || 0;
+          const totalCost = gas + food + lodging + maintenance + others;
+
+          // Dados mapeados com as cores exatas do Tailwind CSS
+          const chartData = [
+            { id: 'gas', label: 'Gasolina', value: gas, color: '#f59e0b', icon: Fuel, iconColor: 'text-amber-500', bgIcon: 'bg-amber-100 dark:bg-amber-500/20' },
+            { id: 'food', label: 'Alimentação', value: food, color: '#f97316', icon: Restaurant, iconColor: 'text-orange-500', bgIcon: 'bg-orange-100 dark:bg-orange-500/20' },
+            { id: 'lodging', label: 'Hospedagem', value: lodging, color: '#3b82f6', icon: Hotel, iconColor: 'text-blue-500', bgIcon: 'bg-blue-100 dark:bg-blue-500/20' },
+            { id: 'maintenance', label: 'Manutenção', value: maintenance, color: '#ef4444', icon: Build, iconColor: 'text-red-500', bgIcon: 'bg-red-100 dark:bg-red-500/20' },
+            { id: 'others', label: 'Outros', value: others, color: '#a855f7', icon: Category, iconColor: 'text-purple-500', bgIcon: 'bg-purple-100 dark:bg-purple-500/20' }
+          ].filter(item => item.value > 0);
+
+          return (
+            <div className="border-b border-slate-100 dark:border-neutral-700/50 last:border-0 overflow-hidden">
+              <div onClick={() => setExpanded(!expanded)} className="p-4 flex justify-between items-center bg-white dark:bg-neutral-800 hover:bg-slate-50 dark:hover:bg-neutral-700/30 transition-colors cursor-pointer select-none">
+                <div>
+                  <div className="font-bold text-slate-800 dark:text-neutral-200 flex items-center gap-2">
+                    {t.name}
+                  </div>
+                  <div className="text-xs text-slate-500">{new Date(t.date).toLocaleDateString('pt-BR')}</div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <div className="text-green-600 dark:text-green-400 font-bold text-lg">R$ {t.actualCost?.toFixed(2) || '0.00'}</div>
+                  </div>
+                  <ExpandMore className={`w-5 h-5 text-slate-400 transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`} />
+                </div>
+              </div>
+              
+              {expanded && (
+                <div className="bg-slate-50 dark:bg-neutral-900/50 border-t border-slate-100 dark:border-neutral-800 animate-fade-in">
+                  <div className="p-6 flex flex-col md:flex-row items-center gap-8">
+                    
+                    {/* Lado Esquerdo: Gráfico */}
+                    <div className="w-40 h-40 flex-shrink-0">
+                      <DonutChart data={chartData} total={totalCost} />
+                    </div>
+
+                    {/* Lado Direito: Detalhamento com Legenda */}
+                    <div className="flex-1 w-full space-y-3">
+                      {chartData.length === 0 ? (
+                        <div className="text-sm text-slate-500 text-center md:text-left">Sem gastos registrados.</div>
+                      ) : (
+                        chartData.map(item => {
+                          const percentage = totalCost > 0 ? ((item.value / totalCost) * 100).toFixed(1) : 0;
+                          return (
+                            <div key={item.id} className="flex items-center justify-between p-3 bg-white dark:bg-neutral-800 rounded-xl border border-slate-100 dark:border-neutral-700 shadow-sm dark:shadow-none transition-colors hover:border-slate-300 dark:hover:border-neutral-600">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${item.bgIcon}`}>
+                                  <item.icon className={`w-4 h-4 ${item.iconColor}`} />
+                                </div>
+                                <div>
+                                  <div className="font-bold text-slate-700 dark:text-neutral-200 text-sm">{item.label}</div>
+                                  <div className="text-xs text-slate-400 font-medium">{percentage}% do orçamento</div>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="font-black text-slate-800 dark:text-neutral-100">R$ {item.value.toFixed(2)}</div>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                      
+                      <div className="text-right text-xs text-slate-400 dark:text-neutral-500 mt-2 pt-2 border-t border-slate-200 dark:border-neutral-700/50">
+                        *Estimativa de combustível original: R$ {t.fuelCost?.toFixed(2) || '0.00'}
+                      </div>
+                    </div>
+                    
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        };
 
         return (
           <div className="space-y-6 animate-fade-in pb-24 md:pb-0 min-h-full">
-            <header className="mb-6">
+            <header className="mb-6 flex justify-between items-center">
               <h2 className="text-2xl font-bold text-slate-800 dark:text-neutral-100 flex items-center gap-2">
                 <Wallet className="text-green-500 w-7 h-7" /> Gestão Financeira
               </h2>
+              <button onClick={() => setExpenseModal(true)} className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors">
+                <PlusCircle className="w-5 h-5" /> <span className="hidden md:inline">Despesa</span>
+              </button>
             </header>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <FinanceCard icon={Fuel} color="amber" label="Previsão (Gasolina)" value={estimated} />
@@ -597,16 +809,45 @@
               <div className="p-4 border-b border-slate-100 dark:border-neutral-700/50 bg-slate-50 dark:bg-neutral-800/50 font-bold text-slate-700 dark:text-neutral-300 flex items-center gap-2">
                 <PieChart className="w-4 h-4" /> Histórico por Viagem
               </div>
-              <div className="divide-y divide-slate-100 dark:divide-neutral-700/50">
-                {visited.length === 0 ? <div className="p-6 text-center text-slate-500 dark:text-neutral-500">Nenhuma viagem concluída.</div> : 
-                 visited.map(t => (
-                  <div key={t.id} className="p-4 flex justify-between items-center bg-white dark:bg-neutral-800 hover:bg-slate-50 dark:hover:bg-neutral-700/30 transition-colors">
-                    <div><div className="font-bold text-slate-800 dark:text-neutral-200">{t.name}</div><div className="text-xs text-slate-500">{new Date(t.date).toLocaleDateString('pt-BR')}</div></div>
-                    <div className="text-right"><div className="text-green-600 dark:text-green-400 font-bold">R$ {t.actualCost?.toFixed(2) || '0.00'}</div><div className="text-xs text-slate-500">Est: R$ {t.fuelCost?.toFixed(2) || '0.00'}</div></div>
-                  </div>
-                ))}
+              <div className="flex flex-col">
+                {visited.length === 0 ? (
+                  <div className="p-6 text-center text-slate-500 dark:text-neutral-500">Nenhuma viagem concluída.</div> 
+                ) : (
+                  visited.map(t => <TripFinanceRow key={t.id} t={t} />)
+                )}
               </div>
             </div>
+
+            {/* Nova Seção: Despesas Avulsas */}
+            <div className="bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-2xl overflow-hidden shadow-sm dark:shadow-none mt-6">
+              <div className="p-4 border-b border-slate-100 dark:border-neutral-700/50 bg-slate-50 dark:bg-neutral-800/50 font-bold text-slate-700 dark:text-neutral-300 flex items-center gap-2">
+                <Build className="w-4 h-4 text-red-500" /> Despesas Avulsas da Moto
+              </div>
+              <div className="flex flex-col divide-y divide-slate-100 dark:divide-neutral-700/50">
+                {generalExpenses.length === 0 ? (
+                  <div className="p-6 text-center text-slate-500 dark:text-neutral-500">Nenhuma despesa avulsa.</div> 
+                ) : (
+                  generalExpenses.map(e => (
+                    <div key={e.id} className="p-4 flex justify-between items-center bg-white dark:bg-neutral-800 hover:bg-slate-50 dark:hover:bg-neutral-700/30 transition-colors">
+                      <div>
+                        <div className="font-bold text-slate-800 dark:text-neutral-200">{e.description || 'Despesa Geral'}</div>
+                        <div className="text-xs text-slate-500 flex items-center gap-2 mt-0.5">
+                          <span>{new Date(e.date).toLocaleDateString('pt-BR')}</span>
+                          <span className="bg-slate-100 dark:bg-neutral-700 px-1.5 py-0.5 rounded text-[10px] uppercase font-bold">{e.category === 'maintenance' ? 'Manutenção' : e.category === 'gas' ? 'Gasolina' : e.category === 'food' ? 'Alimentação' : e.category === 'lodging' ? 'Hospedagem' : e.category}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="text-right">
+                          <div className="text-slate-800 dark:text-neutral-200 font-bold">R$ {e.amount.toFixed(2)}</div>
+                        </div>
+                        <button onClick={() => deleteGeneralExpense(e.id)} className="text-slate-400 hover:text-red-500 p-1"><Trash2 className="w-5 h-5" /></button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
           </div>
         );
       };
@@ -687,7 +928,7 @@
             <MobileBtn icon={Settings} label="Config." view="settings" current={currentView} set={setCurrentView} />
           </nav>
 
-          {/* MODAL ADICIONAR */}
+          {/* MODAL ADICIONAR DESTINO ATUALIZADO */}
           {isAddModalOpen && (
             <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
               <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl">
@@ -697,13 +938,46 @@
                 </div>
                 <form onSubmit={(e) => {
                   e.preventDefault(); const fd = new FormData(e.target);
-                  addPlace({ name: fd.get('name'), state: fd.get('state').toUpperCase(), status: 'planned', notes: fd.get('notes') }, parseFloat(fd.get('customFuel')) || fuelPrice);
+                  addPlace({ 
+                    name: fd.get('name'), 
+                    city: fd.get('city'), 
+                    state: fd.get('state').toUpperCase(), 
+                    type: fd.get('type'),
+                    plannedDate: fd.get('plannedDate'),
+                    hasPassenger: fd.get('hasPassenger') === 'on',
+                    status: 'planned', 
+                    notes: fd.get('notes') 
+                  }, parseFloat(fd.get('customFuel')) || fuelPrice);
                 }} className="p-5 space-y-4">
-                  <Input label="Cidade" name="name" placeholder="Ex: Guaramiranga" />
+                  
+                  <Input label="Nome da Viagem" name="name" placeholder="Ex: Feriado na Serra" />
+                  
                   <div className="grid grid-cols-2 gap-4">
+                    <Input label="Cidade Destino" name="city" placeholder="Ex: Guaramiranga" />
                     <Input label="Estado (UF)" name="state" placeholder="CE" maxLength="2" isUppercase />
-                    <Input label="Preço Gasolina (R$)" name="customFuel" type="number" step="0.01" defaultValue={fuelPrice} />
                   </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 dark:text-neutral-400 mb-1">Tipo de Viagem</label>
+                      <select name="type" className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-3 text-slate-800 dark:text-white focus:border-amber-500 outline-none transition-colors">
+                        <option value="Bate e Volta">Bate e Volta</option>
+                        <option value="Viagem Curta">Viagem Curta</option>
+                        <option value="Viagem Longa">Viagem Longa</option>
+                        <option value="Expedição">Expedição</option>
+                      </select>
+                    </div>
+                    <Input label="Data Prevista" name="plannedDate" type="date" />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 items-center">
+                    <Input label="Preço Gasolina (R$)" name="customFuel" type="number" step="0.01" defaultValue={fuelPrice} />
+                    <label className="flex items-center gap-2 cursor-pointer mt-5 bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-3 hover:border-amber-500 transition-colors">
+                      <input type="checkbox" name="hasPassenger" className="w-5 h-5 accent-amber-500 cursor-pointer" />
+                      <span className="text-sm font-semibold text-slate-700 dark:text-neutral-300">Leva Garupa?</span>
+                    </label>
+                  </div>
+
                   <div>
                     <label className="block text-xs font-semibold text-slate-500 dark:text-neutral-400 mb-1">Anotações (Opcional)</label>
                     <textarea name="notes" rows="2" className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-3 text-slate-800 dark:text-white focus:border-amber-500 outline-none resize-none transition-colors"></textarea>
@@ -719,16 +993,103 @@
             <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
               <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl p-6">
                 <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Finalizar Viagem</h2>
-                <p className="text-sm text-slate-500 dark:text-neutral-400 mb-5">Insira o valor total gasto na estrada.</p>
-                <form onSubmit={confirmFinishTrip}>
-                  <div className="relative mb-5">
-                    <span className="absolute left-4 top-3.5 text-slate-400 dark:text-neutral-500 font-bold">R$</span>
-                    <input autoFocus required type="number" step="0.01" value={finishTripModal.actualCost} onChange={(e) => setFinishTripModal({...finishTripModal, actualCost: e.target.value})} className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-3.5 pl-12 text-slate-800 dark:text-white focus:border-green-500 outline-none font-bold text-lg" />
+                <p className="text-sm text-slate-500 dark:text-neutral-400 mb-5">Detalhe os gastos da viagem.</p>
+                <form onSubmit={confirmFinishTrip} className="space-y-4">
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 dark:text-neutral-400 mb-1">Gasolina</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-2.5 text-slate-400 text-sm font-bold">R$</span>
+                        <input type="number" step="0.01" value={finishTripModal.costs.gas} onChange={(e) => setFinishTripModal({...finishTripModal, costs: {...finishTripModal.costs, gas: e.target.value}})} className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-2.5 pl-9 text-slate-800 dark:text-white focus:border-amber-500 outline-none font-bold" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 dark:text-neutral-400 mb-1">Alimentação</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-2.5 text-slate-400 text-sm font-bold">R$</span>
+                        <input type="number" step="0.01" value={finishTripModal.costs.food} onChange={(e) => setFinishTripModal({...finishTripModal, costs: {...finishTripModal.costs, food: e.target.value}})} className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-2.5 pl-9 text-slate-800 dark:text-white focus:border-amber-500 outline-none font-bold" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 dark:text-neutral-400 mb-1">Hospedagem</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-2.5 text-slate-400 text-sm font-bold">R$</span>
+                        <input type="number" step="0.01" value={finishTripModal.costs.lodging} onChange={(e) => setFinishTripModal({...finishTripModal, costs: {...finishTripModal.costs, lodging: e.target.value}})} className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-2.5 pl-9 text-slate-800 dark:text-white focus:border-amber-500 outline-none font-bold" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 dark:text-neutral-400 mb-1">Manutenção</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-2.5 text-slate-400 text-sm font-bold">R$</span>
+                        <input type="number" step="0.01" value={finishTripModal.costs.maintenance} onChange={(e) => setFinishTripModal({...finishTripModal, costs: {...finishTripModal.costs, maintenance: e.target.value}})} className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-2.5 pl-9 text-slate-800 dark:text-white focus:border-amber-500 outline-none font-bold" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 dark:text-neutral-400 mb-1">Outros</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-2.5 text-slate-400 text-sm font-bold">R$</span>
+                        <input type="number" step="0.01" value={finishTripModal.costs.others} onChange={(e) => setFinishTripModal({...finishTripModal, costs: {...finishTripModal.costs, others: e.target.value}})} className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-2.5 pl-9 text-slate-800 dark:text-white focus:border-amber-500 outline-none font-bold" />
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex gap-3">
-                    <button type="button" onClick={() => setFinishTripModal({isOpen: false, placeId: null, actualCost: ''})} className="flex-1 bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300 font-bold py-3 rounded-xl hover:bg-slate-200 dark:hover:bg-neutral-700 transition-colors">Cancelar</button>
+
+                  <div className="flex justify-between items-center bg-slate-50 dark:bg-neutral-800/50 p-3 rounded-xl border border-slate-100 dark:border-neutral-800 mt-2">
+                    <span className="text-sm font-bold text-slate-600 dark:text-neutral-300">Total:</span>
+                    <span className="text-lg font-black text-green-600 dark:text-green-400">
+                      R$ {((parseFloat(finishTripModal.costs.gas)||0) + (parseFloat(finishTripModal.costs.food)||0) + (parseFloat(finishTripModal.costs.lodging)||0) + (parseFloat(finishTripModal.costs.maintenance)||0) + (parseFloat(finishTripModal.costs.others)||0)).toFixed(2)}
+                    </span>
+                  </div>
+
+                  <div className="flex gap-3 mt-4">
+                    <button type="button" onClick={() => setFinishTripModal({isOpen: false, placeId: null, costs: { gas: '', food: '', lodging: '', maintenance: '', others: '' }})} className="flex-1 bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300 font-bold py-3 rounded-xl hover:bg-slate-200 dark:hover:bg-neutral-700 transition-colors">Cancelar</button>
                     <button type="submit" className="flex-1 bg-green-500 text-white font-bold py-3 rounded-xl hover:bg-green-600 transition-colors">Salvar</button>
                   </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL ADICIONAR DESPESA AVULSA */}
+          {expenseModal && (
+            <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+              <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl">
+                <div className="flex justify-between items-center p-5 border-b border-slate-100 dark:border-neutral-800">
+                  <h2 className="text-xl font-bold text-slate-800 dark:text-white">Lançar Despesa</h2>
+                  <button onClick={() => setExpenseModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white"><X className="w-6 h-6" /></button>
+                </div>
+                <form onSubmit={handleAddExpense} className="p-5 space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 dark:text-neutral-400 mb-1">Vincular a (Opcional)</label>
+                    <select required name="tripId" className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-3 text-slate-800 dark:text-white focus:border-amber-500 outline-none">
+                      <option value="general">Nenhuma (Despesa Avulsa da Moto)</option>
+                      {places.map(p => <option key={p.id} value={p.id}>Viagem: {p.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 dark:text-neutral-400 mb-1">Descrição</label>
+                    <input name="description" type="text" placeholder="Ex: Remendo no pneu, Troca de óleo" className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-3 text-slate-800 dark:text-white focus:border-amber-500 outline-none" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 dark:text-neutral-400 mb-1">Categoria</label>
+                      <select required name="category" className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-3 text-slate-800 dark:text-white focus:border-amber-500 outline-none">
+                        <option value="maintenance">Manutenção</option>
+                        <option value="gas">Gasolina</option>
+                        <option value="food">Alimentação</option>
+                        <option value="lodging">Hospedagem</option>
+                        <option value="others">Outros</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 dark:text-neutral-400 mb-1">Valor (R$)</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-2.5 text-slate-400 text-sm font-bold">R$</span>
+                        <input required name="amount" type="number" step="0.01" className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-2.5 pl-9 text-slate-800 dark:text-white focus:border-amber-500 outline-none font-bold" />
+                      </div>
+                    </div>
+                  </div>
+                  <button type="submit" className="w-full mt-2 bg-green-500 hover:bg-green-600 text-white font-bold py-3.5 rounded-xl transition-colors">Confirmar Lançamento</button>
                 </form>
               </div>
             </div>
@@ -775,7 +1136,7 @@
     const Input = ({ label, name, placeholder, type="text", step, defaultValue, maxLength, isUppercase }) => (
       <div>
         <label className="block text-xs font-semibold text-slate-500 dark:text-neutral-400 mb-1">{label}</label>
-        <input required name={name} type={type} step={step} defaultValue={defaultValue} maxLength={maxLength} placeholder={placeholder} className={`w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-3 text-slate-800 dark:text-white focus:border-amber-500 outline-none transition-colors ${isUppercase ? 'uppercase' : ''}`} />
+        <input required={type !== "date"} name={name} type={type} step={step} defaultValue={defaultValue} maxLength={maxLength} placeholder={placeholder} className={`w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-3 text-slate-800 dark:text-white focus:border-amber-500 outline-none transition-colors ${isUppercase ? 'uppercase' : ''}`} />
       </div>
     );
 
