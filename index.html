@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MotoTracker v04</title>
+  <title>MotoTracker v05</title>
 
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>tailwind.config = { darkMode: 'class' }</script>
+  <script>tailwind.config = { darkMode: 'class', theme: { extend: {} } }</script>
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
@@ -118,7 +118,10 @@
 
       const isDark = theme === 'dark';
 
-      useEffect(() => { fetchTrips(); }, []);
+      // --- SUPABASE FETCH ---
+      useEffect(() => {
+        fetchTrips();
+      }, []);
 
       const fetchTrips = async () => {
         const { data, error } = await supabase.from('trips').select('*').order('created_at', { ascending: false });
@@ -221,7 +224,9 @@
             hasPassenger: savedDbTrip.has_passenger,
             fuelCost: savedDbTrip.fuel_cost,
             actualCost: savedDbTrip.actual_cost,
-            costDetails: savedDbTrip.cost_details
+            costDetails: savedDbTrip.cost_details,
+            odometerStart: savedDbTrip.odometer_start,
+            odometerEnd: savedDbTrip.odometer_end
           };
           setPlaces([savedPlace, ...places]);
           setIsAddModalOpen(false);
@@ -313,11 +318,12 @@
         document.body.removeChild(textArea);
       };
 
+      // --- COMPONENTES DAS TELAS ---
+
       const Dashboard = () => {
         const visitedTrips = places.filter(p => p.status === 'visited');
         const plannedTrips = places.filter(p => p.status === 'planned');
         
-        // Calcula KM total. Se tiver hodômetro preenchido, usa ele. Se não, usa a estimativa.
         const totalKm = visitedTrips.reduce((acc, curr) => {
           const dist = (curr.odometerEnd && curr.odometerStart) ? (curr.odometerEnd - curr.odometerStart) : (curr.distance || 0);
           return acc + dist;
@@ -346,6 +352,7 @@
                   <span title="Conectado ao Supabase" className="hidden md:flex text-[10px] font-bold uppercase tracking-widest text-green-600 bg-green-100 dark:bg-green-500/20 dark:text-green-400 px-2.5 py-1 rounded-md items-center gap-1 shadow-sm"><CheckCircle2 className="w-3 h-3" /> Online</span>
                 )}
               </div>
+              <p className="text-slate-500 dark:text-neutral-400 mt-1">Resumo das suas atividades e planejamento.</p>
             </header>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -363,6 +370,7 @@
                     <>
                       <h3 className="text-2xl font-bold text-slate-800 dark:text-neutral-100 mb-1">{nextTrip.name}</h3>
                       <p className="text-slate-500 dark:text-neutral-400 font-medium mb-1">{nextTrip.city || nextTrip.name} - {nextTrip.state}</p>
+                      <p className="text-slate-400 dark:text-neutral-500 text-sm mb-6 line-clamp-1">{nextTrip.notes || "Sem anotações de rota."}</p>
                       <div className="flex gap-4 mb-4 mt-6">
                         <div className="bg-slate-50 dark:bg-neutral-900/50 rounded-xl p-3 flex-1 border border-slate-100 dark:border-neutral-800">
                           <div className="text-xs text-slate-400 mb-1">Distância (Ida)</div>
@@ -378,6 +386,11 @@
                     <div className="text-center py-8 text-slate-500">Nenhuma viagem planejada.</div>
                   )}
                 </div>
+                {nextTrip && (
+                  <button onClick={() => setCurrentView('list')} className="w-full bg-slate-100 dark:bg-neutral-700/50 hover:bg-slate-200 dark:hover:bg-neutral-700 text-slate-700 dark:text-white py-3 rounded-xl text-sm font-bold transition-colors">
+                    Ver todos os destinos
+                  </button>
+                )}
               </div>
 
               <div className="space-y-6">
@@ -417,6 +430,94 @@
         );
       };
 
+      const SettingsView = () => {
+        const handleBrandChange = (e) => {
+          const newBrand = e.target.value;
+          const firstModel = motoDatabase[newBrand][0];
+          setMyMoto({ brand: newBrand, model: firstModel.model, consumption: firstModel.consumption });
+        };
+        const handleModelChange = (e) => {
+          const newModelName = e.target.value;
+          const selectedModelObj = motoDatabase[myMoto.brand].find(m => m.model === newModelName);
+          if (selectedModelObj) setMyMoto({ ...myMoto, model: newModelName, consumption: selectedModelObj.consumption });
+        };
+
+        return (
+          <div className="space-y-6 animate-fade-in max-w-2xl pb-24 md:pb-0">
+            <header className="mb-6">
+              <h2 className="text-2xl font-bold text-slate-800 dark:text-neutral-100 flex items-center gap-2"><Settings className="text-slate-500 w-7 h-7" /> Configurações da Moto</h2>
+              <p className="text-sm text-slate-500 mt-1">Selecione sua moto para base de cálculo de rotas e consumo.</p>
+            </header>
+
+            <div className="bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-2xl p-6 shadow-sm space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 dark:text-neutral-300 mb-2">Fabricante</label>
+                  <select value={myMoto.brand} onChange={handleBrandChange} className="w-full bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 rounded-xl p-3.5 text-slate-800 dark:text-white focus:border-amber-500 outline-none">
+                    {Object.keys(motoDatabase).map(brand => <option key={brand} value={brand}>{brand}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 dark:text-neutral-300 mb-2">Modelo</label>
+                  <select value={myMoto.model} onChange={handleModelChange} className="w-full bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 rounded-xl p-3.5 text-slate-800 dark:text-white focus:border-amber-500 outline-none">
+                    {motoDatabase[myMoto.brand].map(m => <option key={m.model} value={m.model}>{m.model}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-slate-100 dark:border-neutral-700/50">
+                <label className="block text-sm font-bold text-slate-700 dark:text-neutral-300 mb-2">Consumo Médio Real (km/L)</label>
+                <div className="relative max-w-xs">
+                  <input type="number" step="0.1" value={myMoto.consumption} onChange={(e) => setMyMoto({...myMoto, consumption: parseFloat(e.target.value)||0})} className="w-full bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 rounded-xl p-3.5 pl-4 pr-16 text-slate-800 dark:text-white focus:border-amber-500 outline-none font-bold text-lg" />
+                  <span className="absolute right-4 top-3.5 text-slate-400 font-bold">km/L</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      const ChecklistView = () => {
+        const defaultChecklist = [
+          { id: 1, text: `Calibrar pneus da ${myMoto.model}`, done: false },
+          { id: 2, text: "Checar nível do óleo", done: false },
+          { id: 3, text: "Limpar e lubrificar a corrente", done: false },
+          { id: 4, text: "Documento da moto e CNH", done: false },
+          { id: 5, text: "Capa de chuva e kit reparo pneu", done: false },
+        ];
+        const [items, setItems] = useState(() => { const s = localStorage.getItem('motoChecklist'); return s ? JSON.parse(s) : defaultChecklist; });
+        useEffect(() => { localStorage.setItem('motoChecklist', JSON.stringify(items)); }, [items]);
+
+        return (
+          <div className="animate-fade-in max-w-xl pb-24 md:pb-0">
+            <h2 className="text-2xl font-bold text-slate-800 dark:text-neutral-100 mb-6">Checklist {myMoto.model}</h2>
+            <div className="bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-2xl overflow-hidden shadow-sm">
+              {items.map((item) => (
+                <div key={item.id} onClick={() => setItems(items.map(i => i.id === item.id ? { ...i, done: !i.done } : i))} className={`flex items-center gap-4 p-4 cursor-pointer transition-colors border-b border-slate-100 dark:border-neutral-700/50 hover:bg-slate-50 dark:hover:bg-neutral-700/30 ${item.done ? 'opacity-50' : ''}`}>
+                  <div className={`w-5 h-5 rounded flex items-center justify-center border-2 flex-shrink-0 transition-colors ${item.done ? 'bg-amber-500 border-amber-500' : 'border-slate-300 dark:border-neutral-500'}`}>{item.done && <CheckSquare className="w-4 h-4 text-white dark:text-neutral-900" />}</div>
+                  <span className={`text-sm font-medium ${item.done ? 'line-through text-slate-400' : 'text-slate-700 dark:text-neutral-200'}`}>{item.text}</span>
+                </div>
+              ))}
+            </div>
+            <button onClick={() => setItems(defaultChecklist)} className="mt-6 text-sm text-slate-500 hover:text-amber-500 font-medium underline">Resetar Checklist</button>
+          </div>
+        );
+      };
+
+      const WeatherWidget = ({ lat, lng }) => {
+        const [weather, setWeather] = useState(null);
+        useEffect(() => { if (lat && lng) fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true`).then(res => res.json()).then(data => setWeather(data.current_weather)).catch(()=>{}); }, [lat, lng]);
+        if (!weather) return null;
+        const isRainy = [51, 53, 55, 61, 63, 65, 80, 81, 82].includes(weather.weathercode);
+        const isCloudy = [1, 2, 3, 45, 48].includes(weather.weathercode);
+        return (
+          <div className="flex items-center gap-1.5 text-xs bg-slate-100 dark:bg-neutral-900 px-2 py-1 rounded-md border border-slate-200 dark:border-neutral-700 text-slate-600 dark:text-neutral-300 font-medium">
+            {isRainy ? <CloudRain className="w-3.5 h-3.5 text-blue-500" /> : isCloudy ? <CloudSun className="w-3.5 h-3.5 text-slate-400" /> : <Sun className="w-3.5 h-3.5 text-amber-500" />}
+            {weather.temperature}°C
+          </div>
+        );
+      };
+
       const PlacesList = () => {
         const [filter, setFilter] = useState('all');
         const filteredPlaces = places.filter(p => filter === 'all' || p.status === filter);
@@ -448,7 +549,7 @@
                   <div>
                     <div className="flex justify-between items-start mb-3">
                       <div>
-                        <h3 className="text-lg font-bold text-slate-800 dark:text-neutral-200 flex items-center gap-2">{place.name}</h3>
+                        <h3 className="text-lg font-bold text-slate-800 dark:text-neutral-200 flex items-center gap-2">{place.name} {place.status === 'planned' && place.lat && <WeatherWidget lat={place.lat} lng={place.lng} />}</h3>
                         <span className="text-slate-500 dark:text-neutral-400 font-medium text-sm">{place.city || place.name} - {place.state}</span>
                       </div>
                       <div className="flex gap-1">
@@ -464,7 +565,6 @@
 
                     {(place.distance > 0 || distReal) && (
                       <div className="flex flex-wrap gap-4 mb-4 bg-slate-50 dark:bg-neutral-900/50 p-3.5 rounded-xl border border-slate-100 dark:border-neutral-800/80">
-                        
                         {distReal ? (
                           <div className="flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 font-bold w-full mb-1">
                             <Speed className="w-4 h-4 text-blue-500" /> Distância Real: {distReal} km
@@ -472,9 +572,7 @@
                         ) : (
                           <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-neutral-300 font-medium"><Route className="w-4 h-4 text-slate-400" /> Est: {place.distance} km (Ida)</div>
                         )}
-                        
                         <div className="flex items-center gap-1.5 text-sm text-amber-600 dark:text-amber-400 font-semibold"><Fuel className="w-4 h-4 text-amber-500" /> Est. R$ {place.fuelCost?.toFixed(2)}</div>
-                        
                         {place.actualCost > 0 && (
                            <div className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400 font-semibold w-full mt-2 pt-2 border-t border-slate-200 dark:border-neutral-800">
                             <Wallet className="w-4 h-4 text-green-500" /> Gasto Real: R$ {place.actualCost.toFixed(2)}
@@ -501,37 +599,281 @@
         );
       };
 
-      // Demais views não precisaram de alterações estruturais (MapView, Checklist, Settings, etc)
-      const MapView = () => <div className="h-[calc(100vh-140px)] md:h-full w-full rounded-2xl overflow-hidden border border-slate-200 dark:border-neutral-800 relative z-0"><div id="map"></div></div>;
+      const MapView = () => {
+        const mapRef = useRef(null);
+        const mapContainer = useRef(null);
+        const tileLayerRef = useRef(null);
+
+        useEffect(() => {
+          const initMap = () => {
+            if (window.L && mapContainer.current) {
+              if (!mapRef.current) { mapRef.current = window.L.map(mapContainer.current).setView([ORIGIN_LAT, ORIGIN_LNG], 6); }
+              if (tileLayerRef.current) tileLayerRef.current.remove();
+              
+              const tileUrl = isDark ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png' : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+              tileLayerRef.current = window.L.tileLayer(tileUrl).addTo(mapRef.current);
+
+              mapRef.current.eachLayer((layer) => { if (layer instanceof window.L.Marker) mapRef.current.removeLayer(layer); });
+
+              const IconVisited = window.L.icon({ iconUrl: encodeSvg(svgPinVisited), iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
+              const IconPlanned = window.L.icon({ iconUrl: encodeSvg(svgPinPlanned), iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
+
+              const bounds = [];
+              places.forEach(place => {
+                if (place.lat && place.lng) {
+                  const marker = window.L.marker([place.lat, place.lng], { icon: place.status === 'visited' ? IconVisited : IconPlanned }).addTo(mapRef.current);
+                  marker.bindPopup(`<div style="padding:2px;"><strong style="color:#1e293b;font-family:sans-serif;">${place.name}</strong></div>`);
+                  bounds.push([place.lat, place.lng]);
+                }
+              });
+              if (bounds.length > 0) mapRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
+            }
+          };
+
+          const checkLeaflet = setInterval(() => { if (window.L) { clearInterval(checkLeaflet); initMap(); } }, 100);
+          return () => clearInterval(checkLeaflet);
+        }, [places, currentView, isDark]);
+
+        return (
+          <div className="h-[calc(100vh-140px)] md:h-full w-full rounded-2xl overflow-hidden border border-slate-200 dark:border-neutral-800 relative z-0 shadow-sm"><div ref={mapContainer} className="w-full h-full"></div></div>
+        );
+      };
+
+      const DonutChart = ({ data, total }) => {
+        let cumulativePercent = 0;
+        const getCoordinatesForPercent = (percent) => {
+          const x = Math.cos(2 * Math.PI * percent);
+          const y = Math.sin(2 * Math.PI * percent);
+          return [x, y];
+        };
+
+        if (total === 0) return (<div className="w-full h-full rounded-full border-4 border-slate-200 flex items-center justify-center"><span className="text-xs text-slate-400">R$ 0</span></div>);
+
+        return (
+          <div className="relative w-full h-full">
+            <svg viewBox="-1.4 -1.4 2.8 2.8" className="w-full h-full transform -rotate-90 drop-shadow-sm">
+              {data.map(slice => {
+                const percent = slice.value / total;
+                if (percent === 0) return null;
+                if (percent === 1) return <circle key={slice.label} cx="0" cy="0" r="1" fill="transparent" stroke={slice.color} strokeWidth="0.45" />
+                const startCoords = getCoordinatesForPercent(cumulativePercent);
+                cumulativePercent += percent;
+                const endCoords = getCoordinatesForPercent(cumulativePercent);
+                const largeArcFlag = percent > 0.5 ? 1 : 0;
+                const pathData = [`M ${startCoords[0]} ${startCoords[1]}`, `A 1 1 0 ${largeArcFlag} 1 ${endCoords[0]} ${endCoords[1]}`].join(' ');
+                return <path key={slice.label} d={pathData} fill="none" stroke={slice.color} strokeWidth="0.45" className="transition-all duration-500 ease-in-out hover:opacity-80" />;
+              })}
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Total</span>
+              <span className="text-sm font-black text-slate-800 dark:text-neutral-200">R$ {total.toFixed(0)}</span>
+            </div>
+          </div>
+        );
+      };
+
+      const FinanceView = () => {
+        const visited = places.filter(p => p.status === 'visited' || (p.actualCost > 0));
+        const estimated = visited.reduce((acc, curr) => acc + (curr.fuelCost || 0), 0);
+        const totalGeneral = generalExpenses.reduce((acc, curr) => acc + curr.amount, 0);
+        const actual = visited.reduce((acc, curr) => acc + (curr.actualCost || 0), 0) + totalGeneral;
+        const diff = actual - estimated;
+
+        const TripFinanceRow = ({ t }) => {
+          const [expanded, setExpanded] = useState(false);
+          const gas = t.costDetails?.gas || t.actualCost || 0;
+          const food = t.costDetails?.food || 0;
+          const lodging = t.costDetails?.lodging || 0;
+          const maintenance = t.costDetails?.maintenance || 0;
+          const others = t.costDetails?.others || 0;
+          const totalCost = gas + food + lodging + maintenance + others;
+
+          const chartData = [
+            { id: 'gas', label: 'Gasolina', value: gas, color: '#f59e0b', icon: Fuel, iconColor: 'text-amber-500', bgIcon: 'bg-amber-100 dark:bg-amber-500/20' },
+            { id: 'food', label: 'Alimentação', value: food, color: '#f97316', icon: Restaurant, iconColor: 'text-orange-500', bgIcon: 'bg-orange-100 dark:bg-orange-500/20' },
+            { id: 'lodging', label: 'Hospedagem', value: lodging, color: '#3b82f6', icon: Hotel, iconColor: 'text-blue-500', bgIcon: 'bg-blue-100 dark:bg-blue-500/20' },
+            { id: 'maintenance', label: 'Manutenção', value: maintenance, color: '#ef4444', icon: Build, iconColor: 'text-red-500', bgIcon: 'bg-red-100 dark:bg-red-500/20' },
+            { id: 'others', label: 'Outros', value: others, color: '#a855f7', icon: Category, iconColor: 'text-purple-500', bgIcon: 'bg-purple-100 dark:bg-purple-500/20' }
+          ].filter(item => item.value > 0);
+
+          return (
+            <div className="border-b border-slate-100 dark:border-neutral-700/50 last:border-0 overflow-hidden">
+              <div onClick={() => setExpanded(!expanded)} className="p-4 flex justify-between items-center bg-white dark:bg-neutral-800 hover:bg-slate-50 dark:hover:bg-neutral-700/30 transition-colors cursor-pointer select-none">
+                <div>
+                  <div className="font-bold text-slate-800 dark:text-neutral-200">{t.name}</div>
+                  <div className="text-xs text-slate-500">{new Date(t.date || t.plannedDate).toLocaleDateString('pt-BR')}</div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="text-green-600 font-bold text-lg">R$ {t.actualCost?.toFixed(2) || '0.00'}</div>
+                  <ExpandMore className={`w-5 h-5 text-slate-400 transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`} />
+                </div>
+              </div>
+              
+              {expanded && (
+                <div className="bg-slate-50 dark:bg-neutral-900/50 border-t border-slate-100 dark:border-neutral-800 animate-fade-in">
+                  <div className="p-6 flex flex-col md:flex-row items-center gap-8">
+                    <div className="w-40 h-40 flex-shrink-0"><DonutChart data={chartData} total={totalCost} /></div>
+                    <div className="flex-1 w-full space-y-3">
+                      {chartData.length === 0 ? (<div className="text-sm text-slate-500">Sem gastos registrados.</div>) : (
+                        chartData.map(item => {
+                          const percentage = totalCost > 0 ? ((item.value / totalCost) * 100).toFixed(1) : 0;
+                          return (
+                            <div key={item.id} className="flex items-center justify-between p-3 bg-white dark:bg-neutral-800 rounded-xl border border-slate-100 dark:border-neutral-700 shadow-sm transition-colors">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${item.bgIcon}`}><item.icon className={`w-4 h-4 ${item.iconColor}`} /></div>
+                                <div><div className="font-bold text-slate-700 dark:text-neutral-200 text-sm">{item.label}</div><div className="text-xs text-slate-400 font-medium">{percentage}% do orçamento</div></div>
+                              </div>
+                              <div className="font-black text-slate-800 dark:text-neutral-100">R$ {item.value.toFixed(2)}</div>
+                            </div>
+                          );
+                        })
+                      )}
+                      <div className="text-right text-xs text-slate-400 mt-2 pt-2 border-t border-slate-200 dark:border-neutral-700/50">*Estimativa de combustível original: R$ {t.fuelCost?.toFixed(2) || '0.00'}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        };
+
+        return (
+          <div className="space-y-6 animate-fade-in pb-24 md:pb-0 min-h-full">
+            <header className="mb-6 flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-slate-800 dark:text-neutral-100 flex items-center gap-2"><Wallet className="text-green-500 w-7 h-7" /> Gestão Financeira</h2>
+              <button onClick={() => setExpenseModal(true)} className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors"><PlusCircle className="w-5 h-5" /> <span className="hidden md:inline">Despesa</span></button>
+            </header>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <FinanceCard icon={Fuel} color="amber" label="Previsão (Gasolina)" value={estimated} />
+              <FinanceCard icon={Receipt} color="green" label="Gasto Real Total" value={actual} />
+              <FinanceCard icon={TrendingUp} color={diff > 0 ? "red" : "blue"} label="Diferença (Extras)" value={Math.abs(diff)} subtext={diff > 0 ? 'A mais' : 'Economia'} />
+            </div>
+            
+            <div className="bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-2xl overflow-hidden shadow-sm mt-8">
+              <div className="p-4 border-b border-slate-100 dark:border-neutral-700/50 bg-slate-50 dark:bg-neutral-800/50 font-bold text-slate-700 flex items-center gap-2"><PieChart className="w-4 h-4" /> Histórico por Viagem</div>
+              <div className="flex flex-col">
+                {visited.length === 0 ? (<div className="p-6 text-center text-slate-500">Nenhuma viagem concluída.</div>) : (visited.map(t => <TripFinanceRow key={t.id} t={t} />))}
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-2xl overflow-hidden shadow-sm mt-6">
+              <div className="p-4 border-b border-slate-100 dark:border-neutral-700/50 bg-slate-50 dark:bg-neutral-800/50 font-bold text-slate-700 flex items-center gap-2"><Build className="w-4 h-4 text-red-500" /> Despesas Avulsas da Moto</div>
+              <div className="flex flex-col divide-y divide-slate-100 dark:divide-neutral-700/50">
+                {generalExpenses.length === 0 ? (<div className="p-6 text-center text-slate-500">Nenhuma despesa avulsa.</div>) : (
+                  generalExpenses.map(e => (
+                    <div key={e.id} className="p-4 flex justify-between items-center bg-white dark:bg-neutral-800 hover:bg-slate-50 dark:hover:bg-neutral-700/30 transition-colors">
+                      <div>
+                        <div className="font-bold text-slate-800 dark:text-neutral-200">{e.description || 'Despesa Geral'}</div>
+                        <div className="text-xs text-slate-500 flex items-center gap-2 mt-0.5">
+                          <span>{new Date(e.date).toLocaleDateString('pt-BR')}</span>
+                          <span className="bg-slate-100 dark:bg-neutral-700 px-1.5 py-0.5 rounded text-[10px] uppercase font-bold">{e.category}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="text-slate-800 dark:text-neutral-200 font-bold">R$ {e.amount.toFixed(2)}</div>
+                        <button onClick={() => deleteGeneralExpense(e.id)} className="text-slate-400 hover:text-red-500 p-1"><Trash2 className="w-5 h-5" /></button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      };
 
       return (
         <div className={`h-screen w-full overflow-hidden transition-colors duration-300 ${isDark ? 'dark bg-neutral-950 text-neutral-200' : 'bg-slate-50 text-slate-800'} font-sans`}>
           <div className="w-full h-full flex">
             
+            {/* SIDEBAR COMPLETA */}
             <aside className="hidden md:flex flex-col w-64 h-full bg-white dark:bg-neutral-900 border-r border-slate-200 dark:border-neutral-800 p-6 overflow-y-auto flex-shrink-0">
               <div className="flex items-center justify-between mb-10"><div className="flex items-center gap-2 text-amber-500 font-black text-xl"><Navigation className="w-6 h-6" /> MotoTracker</div></div>
               <nav className="flex flex-col gap-1.5 flex-1">
                 <NavBtn icon={Home} label="Dashboard" view="dashboard" current={currentView} set={setCurrentView} />
+                <NavBtn icon={MapIcon} label="Mapa" view="map" current={currentView} set={setCurrentView} />
                 <NavBtn icon={List} label="Viagens" view="list" current={currentView} set={setCurrentView} />
                 <NavBtn icon={Wallet} label="Financeiro" view="finance" current={currentView} set={setCurrentView} />
+                <NavBtn icon={CheckSquare} label="Checklist" view="checklist" current={currentView} set={setCurrentView} />
+                
+                <div className="mt-6 pt-6 border-t border-slate-100 dark:border-neutral-800">
+                  <NavBtn icon={Settings} label="Configurações" view="settings" current={currentView} set={setCurrentView} />
+                </div>
               </nav>
+              <div className="mt-auto pt-6 border-t border-slate-200 dark:border-neutral-800 flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Tema</span>
+                <ThemeToggle isDark={isDark} toggle={toggleTheme} />
+              </div>
             </aside>
 
+            {/* MAIN CONTENT */}
             <main className="flex-1 h-full overflow-y-auto p-5 md:p-10 relative pb-24 md:pb-10">
               <div className="md:hidden flex justify-between items-center mb-6">
                 <div className="flex items-center gap-2 text-amber-500 font-black text-xl"><Navigation className="w-6 h-6" /> MotoTracker</div>
                 <ThemeToggle isDark={isDark} toggle={toggleTheme} />
               </div>
+
               {currentView === 'dashboard' && <Dashboard />}
+              {currentView === 'map' && <MapView />}
               {currentView === 'list' && <PlacesList />}
+              {currentView === 'finance' && <FinanceView />}
+              {currentView === 'checklist' && <ChecklistView />}
+              {currentView === 'settings' && <SettingsView />}
             </main>
           </div>
 
-          <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-neutral-900 border-t border-slate-200 flex justify-between items-center px-1 py-1 pb-safe z-40 overflow-x-auto">
+          {/* MOBILE NAV COMPLETA */}
+          <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-neutral-900 border-t border-slate-200 dark:border-neutral-800 flex justify-between items-center px-1 py-1 pb-safe z-40 overflow-x-auto">
             <MobileBtn icon={Home} label="Início" view="dashboard" current={currentView} set={setCurrentView} />
+            <MobileBtn icon={MapIcon} label="Mapa" view="map" current={currentView} set={setCurrentView} />
             <MobileBtn icon={List} label="Viagens" view="list" current={currentView} set={setCurrentView} />
             <MobileBtn icon={Wallet} label="Finanças" view="finance" current={currentView} set={setCurrentView} />
+            <MobileBtn icon={CheckSquare} label="Checklist" view="checklist" current={currentView} set={setCurrentView} />
+            <MobileBtn icon={Settings} label="Config." view="settings" current={currentView} set={setCurrentView} />
           </nav>
+
+          {/* MODALS */}
+          {isAddModalOpen && (
+            <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in overflow-y-auto">
+              <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl my-auto">
+                <div className="flex justify-between items-center p-5 border-b border-slate-100 dark:border-neutral-800">
+                  <h2 className="text-xl font-bold text-slate-800 dark:text-white">Novo Destino</h2>
+                  <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white"><X className="w-6 h-6" /></button>
+                </div>
+                <form onSubmit={(e) => {
+                  e.preventDefault(); const fd = new FormData(e.target);
+                  addPlace({ name: fd.get('name'), city: fd.get('city'), state: fd.get('state').toUpperCase(), type: fd.get('type'), plannedDate: fd.get('plannedDate'), hasPassenger: fd.get('hasPassenger') === 'on', status: 'planned', notes: fd.get('notes') }, parseFloat(fd.get('customFuel')) || fuelPrice);
+                }} className="p-5 space-y-4">
+                  <Input label="Nome da Viagem" name="name" placeholder="Ex: Feriado na Serra" />
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input label="Cidade Destino" name="city" placeholder="Ex: Guaramiranga" />
+                    <Input label="Estado (UF)" name="state" placeholder="CE" maxLength="2" isUppercase />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 mb-1">Tipo de Viagem</label>
+                      <select name="type" className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-3 outline-none">
+                        <option value="Bate e Volta">Bate e Volta</option><option value="Viagem Curta">Viagem Curta</option><option value="Viagem Longa">Viagem Longa</option><option value="Expedição">Expedição</option>
+                      </select>
+                    </div>
+                    <Input label="Data Prevista" name="plannedDate" type="date" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 items-center">
+                    <Input label="Preço Gasolina (R$)" name="customFuel" type="number" step="0.01" defaultValue={fuelPrice} />
+                    <label className="flex items-center gap-2 cursor-pointer mt-5 bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-3 hover:border-amber-500 transition-colors">
+                      <input type="checkbox" name="hasPassenger" className="w-5 h-5 accent-amber-500 cursor-pointer" />
+                      <span className="text-sm font-semibold text-slate-700 dark:text-neutral-300">Leva Garupa?</span>
+                    </label>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">Anotações</label>
+                    <textarea name="notes" rows="2" className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-3 outline-none resize-none"></textarea>
+                  </div>
+                  <button type="submit" className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3.5 rounded-xl">Salvar no DB</button>
+                </form>
+              </div>
+            </div>
+          )}
 
           {finishTripModal.isOpen && (
             <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in overflow-y-auto">
@@ -539,52 +881,110 @@
                 <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Finalizar Viagem</h2>
                 <p className="text-sm text-slate-500 dark:text-neutral-400 mb-5">Detalhe o hodômetro e os gastos.</p>
                 <form onSubmit={confirmFinishTrip} className="space-y-4">
-                  
-                  {/* HODÔMETRO */}
                   <div className="bg-slate-50 dark:bg-neutral-800/50 p-4 rounded-xl border border-slate-100 dark:border-neutral-700/50 mb-4">
                     <h3 className="text-sm font-bold text-slate-700 dark:text-neutral-300 mb-3 flex items-center gap-2"><Speed className="w-4 h-4 text-blue-500" /> Quilometragem Real</h3>
                     <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-500 mb-1">Km Inicial</label>
-                        <input type="number" step="0.1" value={finishTripModal.odoStart} onChange={(e) => setFinishTripModal({...finishTripModal, odoStart: e.target.value})} className="w-full bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-2.5 text-slate-800 dark:text-white outline-none font-bold" placeholder="Ex: 12500" />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-500 mb-1">Km Final</label>
-                        <input type="number" step="0.1" value={finishTripModal.odoEnd} onChange={(e) => setFinishTripModal({...finishTripModal, odoEnd: e.target.value})} className="w-full bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-2.5 text-slate-800 dark:text-white outline-none font-bold" placeholder="Ex: 12850" />
-                      </div>
+                      <div><label className="block text-xs font-semibold text-slate-500 mb-1">Km Inicial</label><input type="number" step="0.1" value={finishTripModal.odoStart} onChange={(e) => setFinishTripModal({...finishTripModal, odoStart: e.target.value})} className="w-full bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-2.5 outline-none font-bold" placeholder="Ex: 12500" /></div>
+                      <div><label className="block text-xs font-semibold text-slate-500 mb-1">Km Final</label><input type="number" step="0.1" value={finishTripModal.odoEnd} onChange={(e) => setFinishTripModal({...finishTripModal, odoEnd: e.target.value})} className="w-full bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-2.5 outline-none font-bold" placeholder="Ex: 12850" /></div>
                     </div>
                   </div>
-
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-500 mb-1">Gasolina</label>
-                      <div className="relative"><span className="absolute left-3 top-2.5 text-slate-400 text-sm font-bold">R$</span><input type="number" step="0.01" value={finishTripModal.costs.gas} onChange={(e) => setFinishTripModal({...finishTripModal, costs: {...finishTripModal.costs, gas: e.target.value}})} className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-2.5 pl-9 outline-none font-bold" /></div>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-500 mb-1">Alimentação</label>
-                      <div className="relative"><span className="absolute left-3 top-2.5 text-slate-400 text-sm font-bold">R$</span><input type="number" step="0.01" value={finishTripModal.costs.food} onChange={(e) => setFinishTripModal({...finishTripModal, costs: {...finishTripModal.costs, food: e.target.value}})} className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-2.5 pl-9 outline-none font-bold" /></div>
-                    </div>
-                    {/* Pode expandir para hospedagem, manutenção, etc se quiser... */}
+                    <div><label className="block text-xs font-semibold text-slate-500 mb-1">Gasolina</label><div className="relative"><span className="absolute left-3 top-2.5 text-slate-400 text-sm font-bold">R$</span><input type="number" step="0.01" value={finishTripModal.costs.gas} onChange={(e) => setFinishTripModal({...finishTripModal, costs: {...finishTripModal.costs, gas: e.target.value}})} className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-2.5 pl-9 outline-none font-bold" /></div></div>
+                    <div><label className="block text-xs font-semibold text-slate-500 mb-1">Alimentação</label><div className="relative"><span className="absolute left-3 top-2.5 text-slate-400 text-sm font-bold">R$</span><input type="number" step="0.01" value={finishTripModal.costs.food} onChange={(e) => setFinishTripModal({...finishTripModal, costs: {...finishTripModal.costs, food: e.target.value}})} className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-2.5 pl-9 outline-none font-bold" /></div></div>
+                    <div><label className="block text-xs font-semibold text-slate-500 mb-1">Hospedagem</label><div className="relative"><span className="absolute left-3 top-2.5 text-slate-400 text-sm font-bold">R$</span><input type="number" step="0.01" value={finishTripModal.costs.lodging} onChange={(e) => setFinishTripModal({...finishTripModal, costs: {...finishTripModal.costs, lodging: e.target.value}})} className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-2.5 pl-9 outline-none font-bold" /></div></div>
+                    <div><label className="block text-xs font-semibold text-slate-500 mb-1">Manutenção</label><div className="relative"><span className="absolute left-3 top-2.5 text-slate-400 text-sm font-bold">R$</span><input type="number" step="0.01" value={finishTripModal.costs.maintenance} onChange={(e) => setFinishTripModal({...finishTripModal, costs: {...finishTripModal.costs, maintenance: e.target.value}})} className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-2.5 pl-9 outline-none font-bold" /></div></div>
+                    <div><label className="block text-xs font-semibold text-slate-500 mb-1">Outros</label><div className="relative"><span className="absolute left-3 top-2.5 text-slate-400 text-sm font-bold">R$</span><input type="number" step="0.01" value={finishTripModal.costs.others} onChange={(e) => setFinishTripModal({...finishTripModal, costs: {...finishTripModal.costs, others: e.target.value}})} className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-2.5 pl-9 outline-none font-bold" /></div></div>
                   </div>
-
                   <div className="flex gap-3 mt-4">
-                    <button type="button" onClick={() => setFinishTripModal({isOpen: false, placeId: null, costs: { gas: '', food: '', lodging: '', maintenance: '', others: '' }, odoStart: '', odoEnd: ''})} className="flex-1 bg-slate-100 text-slate-600 font-bold py-3 rounded-xl">Cancelar</button>
-                    <button type="submit" className="flex-1 bg-green-500 text-white font-bold py-3 rounded-xl">Salvar no DB</button>
+                    <button type="button" onClick={() => setFinishTripModal({isOpen: false, placeId: null, costs: { gas: '', food: '', lodging: '', maintenance: '', others: '' }, odoStart: '', odoEnd: ''})} className="flex-1 bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300 font-bold py-3 rounded-xl hover:bg-slate-200 dark:hover:bg-neutral-700 transition-colors">Cancelar</button>
+                    <button type="submit" className="flex-1 bg-green-500 text-white font-bold py-3 rounded-xl hover:bg-green-600 transition-colors">Salvar no DB</button>
                   </div>
                 </form>
               </div>
             </div>
           )}
 
-          {toastMsg && <div className="fixed top-5 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full z-50 flex items-center gap-2 font-medium"><CheckCircle2 className="w-5 h-5 text-amber-500" />{toastMsg}</div>}
+          {expenseModal && (
+            <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+              <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl">
+                <div className="flex justify-between items-center p-5 border-b border-slate-100 dark:border-neutral-800">
+                  <h2 className="text-xl font-bold text-slate-800 dark:text-white">Lançar Despesa</h2>
+                  <button onClick={() => setExpenseModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white"><X className="w-6 h-6" /></button>
+                </div>
+                <form onSubmit={handleAddExpense} className="p-5 space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 dark:text-neutral-400 mb-1">Vincular a (Opcional)</label>
+                    <select required name="tripId" className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-3 outline-none">
+                      <option value="general">Nenhuma (Despesa Avulsa)</option>
+                      {places.map(p => <option key={p.id} value={p.id}>Viagem: {p.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 dark:text-neutral-400 mb-1">Descrição</label>
+                    <input name="description" type="text" placeholder="Ex: Remendo no pneu" className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-3 outline-none" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 dark:text-neutral-400 mb-1">Categoria</label>
+                      <select required name="category" className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-3 outline-none">
+                        <option value="maintenance">Manutenção</option><option value="gas">Gasolina</option><option value="food">Alimentação</option><option value="lodging">Hospedagem</option><option value="others">Outros</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 dark:text-neutral-400 mb-1">Valor (R$)</label>
+                      <div className="relative"><span className="absolute left-3 top-2.5 text-slate-400 text-sm font-bold">R$</span><input required name="amount" type="number" step="0.01" className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-2.5 pl-9 outline-none font-bold" /></div>
+                    </div>
+                  </div>
+                  <button type="submit" className="w-full mt-2 bg-green-500 hover:bg-green-600 text-white font-bold py-3.5 rounded-xl transition-colors">Confirmar DB</button>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {toastMsg && <div className="fixed top-5 left-1/2 -translate-x-1/2 bg-slate-800 dark:bg-neutral-800 text-white px-6 py-3 rounded-full shadow-lg z-50 animate-fade-in flex items-center gap-2 font-medium border border-slate-700"><CheckCircle2 className="w-5 h-5 text-amber-500" />{toastMsg}</div>}
         </div>
       );
     }
 
-    const ThemeToggle = ({ isDark, toggle }) => (<button onClick={toggle} className="w-14 h-8 bg-slate-200 rounded-full"></button>);
-    const StatCard = ({ value, label }) => (<div className="p-4 bg-white rounded-2xl shadow-sm"><div className="text-xl font-black">{value}</div><div className="text-xs">{label}</div></div>);
-    const NavBtn = ({ icon: Icon, label, view, current, set }) => (<button onClick={() => set(view)} className="flex items-center gap-3 px-4 py-3"><Icon className="w-6 h-6"/>{label}</button>);
-    const MobileBtn = ({ icon: Icon, label, view, current, set }) => (<button onClick={() => set(view)} className="flex flex-col items-center"><Icon className="w-6 h-6"/>{label}</button>);
+    const ThemeToggle = ({ isDark, toggle }) => (
+      <button onClick={toggle} className={`relative flex items-center w-14 h-8 rounded-full p-1 transition-colors duration-300 ${isDark ? 'bg-neutral-800 border border-neutral-700' : 'bg-slate-200 border border-slate-300'}`}>
+        <div className={`absolute w-6 h-6 rounded-full shadow-sm transform transition-transform duration-300 flex items-center justify-center ${isDark ? 'translate-x-6 bg-neutral-900' : 'translate-x-0 bg-white'}`}>
+          {isDark ? <Moon className="w-4 h-4 text-amber-400" /> : <Sun className="w-4 h-4 text-amber-500" />}
+        </div>
+      </button>
+    );
+
+    const StatCard = ({ value, label, icon: Icon, color }) => (
+      <div className="bg-white dark:bg-neutral-800/50 border border-slate-200 dark:border-neutral-700/60 p-4 rounded-2xl flex flex-col justify-between shadow-sm dark:shadow-none min-h-[100px]">
+        <div className="flex justify-between items-start mb-2"><div className={`p-2 rounded-lg bg-slate-50 dark:bg-neutral-900/50 ${color}`}><Icon className="w-6 h-6" /></div></div>
+        <div><div className="text-xl md:text-2xl font-black text-slate-800 dark:text-neutral-100">{value}</div><div className="text-[10px] md:text-xs text-slate-500 dark:text-neutral-400 font-bold">{label}</div></div>
+      </div>
+    );
+
+    const FinanceCard = ({ icon: Icon, color, label, value, subtext }) => {
+      const colors = { amber: 'text-amber-500', green: 'text-green-500', blue: 'text-blue-500', red: 'text-red-500' };
+      return (
+        <div className="bg-white dark:bg-neutral-800/50 border border-slate-200 dark:border-neutral-700 p-5 rounded-2xl shadow-sm dark:shadow-none">
+          <div className="flex items-center gap-2 text-slate-500 dark:text-neutral-400 mb-2 font-medium text-sm"><Icon className={`w-5 h-5 ${colors[color]}`} /> {label}</div>
+          <div className={`text-2xl font-black ${color==='green'?'text-green-600 dark:text-green-400':color==='red'?'text-red-500':color==='blue'?'text-blue-500':'text-slate-800 dark:text-neutral-200'}`}>R$ {value.toFixed(2)} <span className="text-sm font-medium opacity-80">{subtext}</span></div>
+        </div>
+      );
+    };
+
+    const Input = ({ label, name, placeholder, type="text", step, defaultValue, maxLength, isUppercase }) => (
+      <div>
+        <label className="block text-xs font-semibold text-slate-500 dark:text-neutral-400 mb-1">{label}</label>
+        <input required={type !== "date"} name={name} type={type} step={step} defaultValue={defaultValue} maxLength={maxLength} placeholder={placeholder} className={`w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-3 text-slate-800 dark:text-white focus:border-amber-500 outline-none transition-colors ${isUppercase ? 'uppercase' : ''}`} />
+      </div>
+    );
+
+    const NavBtn = ({ icon: Icon, label, view, current, set }) => (
+      <button onClick={() => set(view)} className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all text-left w-full ${current === view ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-500' : 'text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-neutral-800/50 hover:text-slate-800 dark:hover:text-neutral-200'}`}><Icon className="w-6 h-6" />{label}</button>
+    );
+
+    const MobileBtn = ({ icon: Icon, label, view, current, set }) => (
+      <button onClick={() => set(view)} className={`flex flex-col items-center gap-1 p-2 min-w-[64px] transition-colors ${current === view ? 'text-amber-500' : 'text-slate-400 dark:text-neutral-500'}`}><Icon className={`w-6 h-6 ${current === view ? 'text-amber-500' : ''}`} /><span className="text-[10px] font-bold">{label}</span></button>
+    );
 
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<App />);
