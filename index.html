@@ -3,36 +3,29 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MotoTracker v02</title>
+  <title>MotoTracker v03</title>
   
-  <!-- React & ReactDOM -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   
-  <!-- Babel para converter JSX no navegador -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       darkMode: 'class',
-      theme: {
-        extend: {}
-      }
+      theme: { extend: {} }
     }
   </script>
 
-  <!-- Leaflet Maps CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
-  <!-- Leaflet Maps JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
-  <!-- Google Material Symbols (Ícones) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
 
   <style>
-    /* Ajustes globais para os ícones Material Symbols mapearem com as classes do Tailwind (w-5, w-6, etc) */
     .material-symbols-rounded {
       font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
       display: inline-flex;
@@ -48,7 +41,6 @@
     .material-symbols-rounded.w-8 { font-size: 2rem; }
     .material-symbols-rounded.w-10 { font-size: 2.5rem; }
 
-    /* Utilitários */
     .pb-safe { padding-bottom: env(safe-area-inset-bottom, 1rem); }
     .animate-fade-in { animation: fadeIn 0.2s ease-out; }
     @keyframes fadeIn {
@@ -63,6 +55,11 @@
 
   <script type="text/babel">
     const { useState, useEffect, useRef } = React;
+
+    // --- CONFIGURAÇÃO DO SUPABASE ---
+    const supabaseUrl = 'https://ofgafzebcyjmtxdkgqyy.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mZ2FmemViY3lqbXR4ZGtncXl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMjQwODksImV4cCI6MjA5NDcwMDA4OX0.Xt4XfB3NJ2HKqbjaLsbjOY_WyTND-SubwBHkaPZq3eM';
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
     // --- MAPA DE ÍCONES ---
     const MIcon = ({ name, className }) => <span className={`material-symbols-rounded ${className || ''}`}>{name}</span>;
@@ -100,55 +97,26 @@
     const Category = (p) => <MIcon name="category" {...p} />;
     const Build = (p) => <MIcon name="build" {...p} />;
 
-    // --- CONFIGURAÇÕES GERAIS ---
     const ORIGIN_LAT = -3.7327; // Fortaleza
     const ORIGIN_LNG = -38.5270;
-    const SAFE_RANGE = 350; // Autonomia em KM
+    const SAFE_RANGE = 350;
 
-    // --- BANCO DE DADOS DE MOTOS ---
     const motoDatabase = {
-      "Yamaha": [
-        { model: "Fazer 250", consumption: 29 },
-        { model: "MT-03", consumption: 22 },
-        { model: "Tenere 250", consumption: 30 },
-        { model: "Crosser 150", consumption: 38 }
-      ],
-      "Honda": [
-        { model: "CB 300F Twister", consumption: 35 },
-        { model: "XRE 300", consumption: 26 },
-        { model: "CG 160 Titan", consumption: 40 },
-        { model: "Sahara 300", consumption: 30 }
-      ],
-      "BMW": [
-        { model: "G 310 GS", consumption: 25 },
-        { model: "F 850 GS", consumption: 20 },
-        { model: "R 1250 GS", consumption: 18 }
-      ],
-      "Kawasaki": [
-        { model: "Ninja 400", consumption: 25 },
-        { model: "Versys 300", consumption: 24 },
-        { model: "Z400", consumption: 26 }
-      ],
-      "Outra": [
-        { model: "Modelo Personalizado", consumption: 25 }
-      ]
+      "Yamaha": [ { model: "Fazer 250", consumption: 29 }, { model: "MT-03", consumption: 22 }, { model: "Tenere 250", consumption: 30 }, { model: "Crosser 150", consumption: 38 } ],
+      "Honda": [ { model: "CB 300F Twister", consumption: 35 }, { model: "XRE 300", consumption: 26 }, { model: "CG 160 Titan", consumption: 40 }, { model: "Sahara 300", consumption: 30 } ],
+      "BMW": [ { model: "G 310 GS", consumption: 25 }, { model: "F 850 GS", consumption: 20 }, { model: "R 1250 GS", consumption: 18 } ],
+      "Kawasaki": [ { model: "Ninja 400", consumption: 25 }, { model: "Versys 300", consumption: 24 }, { model: "Z400", consumption: 26 } ],
+      "Outra": [ { model: "Modelo Personalizado", consumption: 25 } ]
     };
 
-    // --- ÍCONES SVG MAPA ---
     const svgPinVisited = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#22c55e" stroke="#14532d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3" fill="white"/></svg>`;
     const svgPinPlanned = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#f59e0b" stroke="#78350f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3" fill="white"/></svg>`;
     const encodeSvg = (svg) => `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 
-    const initialData = [
-      { id: '1', name: 'Fim de semana na Praia', city: 'Canoa Quebrada', state: 'CE', type: 'Bate e Volta', status: 'visited', date: '2023-08-15', notes: 'Ótima viagem bate e volta.', lat: -4.526, lng: -37.705, distance: 160, duration: '2h 15m', fuelCost: 32, actualCost: 150, costDetails: { gas: 45, food: 65, lodging: 0, maintenance: 0, others: 40 }, hasPassenger: false },
-      { id: '2', name: 'Rolezinho nas Dunas', city: 'Jericoacoara', state: 'CE', type: 'Viagem Curta', status: 'planned', plannedDate: '2026-04-10', notes: 'Fazer não entra nas dunas.', lat: -2.796, lng: -40.513, distance: 300, duration: '4h 20m', fuelCost: 60, hasPassenger: true }
-    ];
-
     function App() {
       const [theme, setTheme] = useState(() => localStorage.getItem('motoTrackerTheme') || 'dark');
-      const [places, setPlaces] = useState(() => { const saved = localStorage.getItem('motoTrips_v4'); return saved ? JSON.parse(saved) : initialData; });
+      const [places, setPlaces] = useState([]);
       const [fuelPrice, setFuelPrice] = useState(() => { const saved = localStorage.getItem('fuelPrice'); return saved ? parseFloat(saved) : 5.80; });
-      
       const [myMoto, setMyMoto] = useState(() => { 
         const saved = localStorage.getItem('myMotoConfig'); 
         return saved ? JSON.parse(saved) : { brand: 'Yamaha', model: 'Fazer 250', consumption: 29 }; 
@@ -156,6 +124,7 @@
 
       const [currentView, setCurrentView] = useState('dashboard');
       const [toastMsg, setToastMsg] = useState('');
+      const [isDbConnected, setIsDbConnected] = useState(false);
       
       const [isAddModalOpen, setIsAddModalOpen] = useState(false);
       const [expenseModal, setExpenseModal] = useState(false);
@@ -164,7 +133,41 @@
 
       const isDark = theme === 'dark';
 
-      useEffect(() => { localStorage.setItem('motoTrips_v4', JSON.stringify(places)); }, [places]);
+      // --- SUPABASE FETCH ---
+      useEffect(() => {
+        fetchTrips();
+      }, []);
+
+      const fetchTrips = async () => {
+        const { data, error } = await supabase.from('trips').select('*').order('created_at', { ascending: false });
+        if (error) {
+          console.error("Erro DB:", error);
+          showToast("Falha ao sincronizar com o banco de dados.");
+        } else {
+          const mappedData = data.map(db => ({
+            id: db.id,
+            name: db.name,
+            city: db.city,
+            state: db.state,
+            type: db.type,
+            status: db.status,
+            plannedDate: db.planned_date,
+            date: db.date,
+            notes: db.notes,
+            lat: db.lat,
+            lng: db.lng,
+            distance: db.distance,
+            duration: db.duration,
+            fuelCost: db.fuel_cost,
+            actualCost: db.actual_cost,
+            costDetails: db.cost_details || { gas: 0, food: 0, lodging: 0, maintenance: 0, others: 0 },
+            hasPassenger: db.has_passenger
+          }));
+          setPlaces(mappedData);
+          setIsDbConnected(true);
+        }
+      };
+
       useEffect(() => { localStorage.setItem('motoExpenses_v1', JSON.stringify(generalExpenses)); }, [generalExpenses]);
       useEffect(() => { localStorage.setItem('fuelPrice', fuelPrice.toString()); }, [fuelPrice]);
       useEffect(() => { localStorage.setItem('myMotoConfig', JSON.stringify(myMoto)); }, [myMoto]);
@@ -206,20 +209,75 @@
       };
 
       const addPlace = async (newPlace, customFuelPrice) => {
-        // Usa a cidade (city) para buscar no mapa, fallback para name caso venha vazio
         const coords = await geocodeLocation(newPlace.city || newPlace.name, newPlace.state);
         let routeInfo = { distance: 0, duration: 'N/A', fuelCost: 0 };
         if (coords) routeInfo = await calculateRouteInfo(coords.lat, coords.lng, customFuelPrice, myMoto.consumption);
-        setPlaces([{ ...newPlace, id: Date.now().toString(), lat: coords?.lat || null, lng: coords?.lng || null, ...routeInfo }, ...places]);
-        setIsAddModalOpen(false);
-        showToast('Destino adicionado com sucesso!');
+
+        const dbRecord = {
+          name: newPlace.name,
+          city: newPlace.city,
+          state: newPlace.state,
+          type: newPlace.type,
+          status: 'planned',
+          planned_date: newPlace.plannedDate,
+          has_passenger: newPlace.hasPassenger,
+          notes: newPlace.notes,
+          lat: coords?.lat || null,
+          lng: coords?.lng || null,
+          distance: routeInfo.distance,
+          duration: routeInfo.duration,
+          fuel_cost: routeInfo.fuelCost,
+          actual_cost: 0,
+          cost_details: { gas: 0, food: 0, lodging: 0, maintenance: 0, others: 0 }
+        };
+
+        const { data, error } = await supabase.from('trips').insert([dbRecord]).select();
+
+        if (error) {
+          console.error(error);
+          showToast("Erro ao salvar no Supabase!");
+        } else {
+          const savedDbTrip = data[0];
+          const savedPlace = {
+            id: savedDbTrip.id,
+            name: savedDbTrip.name,
+            city: savedDbTrip.city,
+            state: savedDbTrip.state,
+            type: savedDbTrip.type,
+            status: savedDbTrip.status,
+            plannedDate: savedDbTrip.planned_date,
+            hasPassenger: savedDbTrip.has_passenger,
+            notes: savedDbTrip.notes,
+            lat: savedDbTrip.lat,
+            lng: savedDbTrip.lng,
+            distance: savedDbTrip.distance,
+            duration: savedDbTrip.duration,
+            fuelCost: savedDbTrip.fuel_cost,
+            actualCost: savedDbTrip.actual_cost,
+            costDetails: savedDbTrip.cost_details
+          };
+          setPlaces([savedPlace, ...places]);
+          setIsAddModalOpen(false);
+          showToast('Salvo com sucesso na nuvem!');
+        }
       };
 
-      const deletePlace = (id) => { if (confirm('Excluir este destino?')) setPlaces(places.filter(p => p.id !== id)); };
+      const deletePlace = async (id) => { 
+        if (confirm('Excluir este destino permanentemente do banco?')) {
+          const { error } = await supabase.from('trips').delete().eq('id', id);
+          if (error) {
+            console.error(error);
+            showToast("Erro ao excluir do Supabase!");
+          } else {
+            setPlaces(places.filter(p => p.id !== id)); 
+            showToast("Destino apagado.");
+          }
+        }
+      };
 
       const deleteGeneralExpense = (id) => { if (confirm('Excluir esta despesa?')) setGeneralExpenses(generalExpenses.filter(e => e.id !== id)); };
 
-      const handleAddExpense = (e) => {
+      const handleAddExpense = async (e) => {
         e.preventDefault();
         const fd = new FormData(e.target);
         const tripId = fd.get('tripId');
@@ -229,40 +287,64 @@
 
         if (tripId === 'general') {
           setGeneralExpenses([{ id: Date.now().toString(), category, amount, description, date: new Date().toISOString() }, ...generalExpenses]);
+          setExpenseModal(false);
+          showToast('Despesa geral salva localmente.');
         } else {
-          setPlaces(places.map(p => {
-            if (p.id === tripId) {
-              const currentCosts = p.costDetails || { gas: 0, food: 0, lodging: 0, maintenance: 0, others: 0 };
-              const newCosts = { ...currentCosts, [category]: (currentCosts[category] || 0) + amount };
-              return { ...p, actualCost: (p.actualCost || 0) + amount, costDetails: newCosts };
-            }
-            return p;
-          }));
+          const p = places.find(x => x.id === tripId);
+          const currentCosts = p.costDetails || { gas: 0, food: 0, lodging: 0, maintenance: 0, others: 0 };
+          const newCosts = { ...currentCosts, [category]: (currentCosts[category] || 0) + amount };
+          const newActualCost = (p.actualCost || 0) + amount;
+
+          const { error } = await supabase.from('trips').update({
+              actual_cost: newActualCost,
+              cost_details: newCosts
+          }).eq('id', tripId);
+
+          if (error) {
+            console.error(error);
+            showToast("Erro ao atualizar despesas na nuvem!");
+          } else {
+            setPlaces(places.map(p => p.id === tripId ? { ...p, actualCost: newActualCost, costDetails: newCosts } : p));
+            setExpenseModal(false);
+            showToast('Despesa vinculada no Supabase!');
+          }
         }
-        setExpenseModal(false);
-        showToast('Despesa lançada com sucesso!');
       };
 
-      const confirmFinishTrip = (e) => {
+      const confirmFinishTrip = async (e) => {
         e.preventDefault();
         const { gas, food, lodging, maintenance, others } = finishTripModal.costs;
-        const total = (parseFloat(gas) || 0) + (parseFloat(food) || 0) + (parseFloat(lodging) || 0) + (parseFloat(maintenance) || 0) + (parseFloat(others) || 0);
-
-        setPlaces(places.map(p => p.id === finishTripModal.placeId ? { 
-          ...p, 
-          status: 'visited', 
-          date: new Date().toISOString().split('T')[0], 
-          actualCost: total,
-          costDetails: {
+        const costDetailsObj = {
             gas: parseFloat(gas) || 0,
             food: parseFloat(food) || 0,
             lodging: parseFloat(lodging) || 0,
             maintenance: parseFloat(maintenance) || 0,
             others: parseFloat(others) || 0
-          }
-        } : p));
-        setFinishTripModal({ isOpen: false, placeId: null, costs: { gas: '', food: '', lodging: '', maintenance: '', others: '' } });
-        showToast('Viagem concluída!');
+        };
+        const total = costDetailsObj.gas + costDetailsObj.food + costDetailsObj.lodging + costDetailsObj.maintenance + costDetailsObj.others;
+        const currentDate = new Date().toISOString().split('T')[0];
+
+        const { error } = await supabase.from('trips').update({
+            status: 'visited',
+            date: currentDate,
+            actual_cost: total,
+            cost_details: costDetailsObj
+        }).eq('id', finishTripModal.placeId);
+
+        if (error) {
+            console.error(error);
+            showToast("Erro ao concluir viagem na nuvem.");
+        } else {
+            setPlaces(places.map(p => p.id === finishTripModal.placeId ? { 
+                ...p, 
+                status: 'visited', 
+                date: currentDate, 
+                actualCost: total,
+                costDetails: costDetailsObj
+            } : p));
+            setFinishTripModal({ isOpen: false, placeId: null, costs: { gas: '', food: '', lodging: '', maintenance: '', others: '' } });
+            showToast('Viagem concluída e salva no DB!');
+        }
       };
 
       const shareTrip = (place) => {
@@ -299,10 +381,15 @@
         return (
           <div className="space-y-6 animate-fade-in pb-24 md:pb-0">
             <header className="mb-2">
-              <h1 className="text-3xl font-bold text-slate-800 dark:text-neutral-100 flex items-center gap-3">
-                <Navigation className="text-amber-500 w-8 h-8" />
-                Painel da {myMoto.model}
-              </h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-bold text-slate-800 dark:text-neutral-100 flex items-center gap-3">
+                  <Navigation className="text-amber-500 w-8 h-8" />
+                  Painel da {myMoto.model}
+                </h1>
+                {isDbConnected && (
+                  <span title="Conectado ao Supabase" className="hidden md:flex text-[10px] font-bold uppercase tracking-widest text-green-600 bg-green-100 dark:bg-green-500/20 dark:text-green-400 px-2.5 py-1 rounded-md items-center gap-1 shadow-sm"><CheckCircle2 className="w-3 h-3" /> Online</span>
+                )}
+              </div>
               <p className="text-slate-500 dark:text-neutral-400 mt-1">Resumo das suas atividades e planejamento.</p>
             </header>
 
@@ -635,7 +722,6 @@
               places.forEach(place => {
                 if (place.lat && place.lng) {
                   const marker = window.L.marker([place.lat, place.lng], { icon: place.status === 'visited' ? IconVisited : IconPlanned }).addTo(mapRef.current);
-                  // Atualizado o popup para mostrar Nome e Cidade
                   marker.bindPopup(`<div style="padding:2px;"><strong style="color:#1e293b;font-family:sans-serif;">${place.name}</strong><br/><span style="font-size:12px;color:#64748b;">${place.city || place.name}</span></div>`);
                   bounds.push([place.lat, place.lng]);
                 }
@@ -655,7 +741,6 @@
         );
       };
 
-      // --- COMPONENTE GRÁFICO DE ROSCA (SVG Puro) ---
       const DonutChart = ({ data, total }) => {
         let cumulativePercent = 0;
         const getCoordinatesForPercent = (percent) => {
@@ -676,7 +761,6 @@
               {data.map(slice => {
                 const percent = slice.value / total;
                 if (percent === 0) return null;
-                // Caso em que 1 item representa 100%
                 if (percent === 1) {
                   return <circle key={slice.label} cx="0" cy="0" r="1" fill="transparent" stroke={slice.color} strokeWidth="0.45" />
                 }
@@ -716,7 +800,6 @@
           const others = t.costDetails?.others || 0;
           const totalCost = gas + food + lodging + maintenance + others;
 
-          // Dados mapeados com as cores exatas do Tailwind CSS
           const chartData = [
             { id: 'gas', label: 'Gasolina', value: gas, color: '#f59e0b', icon: Fuel, iconColor: 'text-amber-500', bgIcon: 'bg-amber-100 dark:bg-amber-500/20' },
             { id: 'food', label: 'Alimentação', value: food, color: '#f97316', icon: Restaurant, iconColor: 'text-orange-500', bgIcon: 'bg-orange-100 dark:bg-orange-500/20' },
@@ -732,7 +815,7 @@
                   <div className="font-bold text-slate-800 dark:text-neutral-200 flex items-center gap-2">
                     {t.name}
                   </div>
-                  <div className="text-xs text-slate-500">{new Date(t.date).toLocaleDateString('pt-BR')}</div>
+                  <div className="text-xs text-slate-500">{new Date(t.date || t.plannedDate).toLocaleDateString('pt-BR')}</div>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="text-right">
@@ -746,12 +829,10 @@
                 <div className="bg-slate-50 dark:bg-neutral-900/50 border-t border-slate-100 dark:border-neutral-800 animate-fade-in">
                   <div className="p-6 flex flex-col md:flex-row items-center gap-8">
                     
-                    {/* Lado Esquerdo: Gráfico */}
                     <div className="w-40 h-40 flex-shrink-0">
                       <DonutChart data={chartData} total={totalCost} />
                     </div>
 
-                    {/* Lado Direito: Detalhamento com Legenda */}
                     <div className="flex-1 w-full space-y-3">
                       {chartData.length === 0 ? (
                         <div className="text-sm text-slate-500 text-center md:text-left">Sem gastos registrados.</div>
@@ -818,7 +899,6 @@
               </div>
             </div>
 
-            {/* Nova Seção: Despesas Avulsas */}
             <div className="bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-2xl overflow-hidden shadow-sm dark:shadow-none mt-6">
               <div className="p-4 border-b border-slate-100 dark:border-neutral-700/50 bg-slate-50 dark:bg-neutral-800/50 font-bold text-slate-700 dark:text-neutral-300 flex items-center gap-2">
                 <Build className="w-4 h-4 text-red-500" /> Despesas Avulsas da Moto
@@ -928,7 +1008,6 @@
             <MobileBtn icon={Settings} label="Config." view="settings" current={currentView} set={setCurrentView} />
           </nav>
 
-          {/* MODAL ADICIONAR DESTINO ATUALIZADO */}
           {isAddModalOpen && (
             <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
               <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl">
@@ -982,13 +1061,12 @@
                     <label className="block text-xs font-semibold text-slate-500 dark:text-neutral-400 mb-1">Anotações (Opcional)</label>
                     <textarea name="notes" rows="2" className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-3 text-slate-800 dark:text-white focus:border-amber-500 outline-none resize-none transition-colors"></textarea>
                   </div>
-                  <button type="submit" className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3.5 rounded-xl transition-colors">Salvar Destino</button>
+                  <button type="submit" className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3.5 rounded-xl transition-colors">Salvar no DB</button>
                 </form>
               </div>
             </div>
           )}
 
-          {/* MODAL FINALIZAR VIAGEM */}
           {finishTripModal.isOpen && (
             <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
               <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl p-6">
@@ -1043,14 +1121,13 @@
 
                   <div className="flex gap-3 mt-4">
                     <button type="button" onClick={() => setFinishTripModal({isOpen: false, placeId: null, costs: { gas: '', food: '', lodging: '', maintenance: '', others: '' }})} className="flex-1 bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300 font-bold py-3 rounded-xl hover:bg-slate-200 dark:hover:bg-neutral-700 transition-colors">Cancelar</button>
-                    <button type="submit" className="flex-1 bg-green-500 text-white font-bold py-3 rounded-xl hover:bg-green-600 transition-colors">Salvar</button>
+                    <button type="submit" className="flex-1 bg-green-500 text-white font-bold py-3 rounded-xl hover:bg-green-600 transition-colors">Salvar no DB</button>
                   </div>
                 </form>
               </div>
             </div>
           )}
 
-          {/* MODAL ADICIONAR DESPESA AVULSA */}
           {expenseModal && (
             <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
               <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl">
@@ -1089,7 +1166,7 @@
                       </div>
                     </div>
                   </div>
-                  <button type="submit" className="w-full mt-2 bg-green-500 hover:bg-green-600 text-white font-bold py-3.5 rounded-xl transition-colors">Confirmar Lançamento</button>
+                  <button type="submit" className="w-full mt-2 bg-green-500 hover:bg-green-600 text-white font-bold py-3.5 rounded-xl transition-colors">Confirmar Lançamento DB</button>
                 </form>
               </div>
             </div>
@@ -1100,7 +1177,6 @@
       );
     }
 
-    // --- SUBCOMPONENTES UI ---
     const ThemeToggle = ({ isDark, toggle }) => (
       <button onClick={toggle} className={`relative flex items-center w-14 h-8 rounded-full p-1 transition-colors duration-300 ${isDark ? 'bg-neutral-800 border border-neutral-700' : 'bg-slate-200 border border-slate-300'}`}>
         <div className={`absolute w-6 h-6 rounded-full shadow-sm transform transition-transform duration-300 flex items-center justify-center ${isDark ? 'translate-x-6 bg-neutral-900' : 'translate-x-0 bg-white'}`}>
@@ -1153,7 +1229,6 @@
       </button>
     );
 
-    // Renderizando a aplicação
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<App />);
   </script>
