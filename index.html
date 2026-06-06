@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>MotoTracker v09</title>
+  <title>MotoTracker v10</title>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -55,22 +54,17 @@
     .mat.xl { font-size: 2.25rem; }
     .mat.sm { font-size: 1rem; }
     .mat.xs { font-size: 0.85rem; }
-    /* Scrollbars */
     ::-webkit-scrollbar { width: 3px; height: 3px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 2px; }
-    /* Animations */
     @keyframes fadeUp { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform: translateY(0); } }
     @keyframes slideIn { from { opacity:0; transform: translateX(-8px); } to { opacity:1; transform: translateX(0); } }
     @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
     .fade-up { animation: fadeUp 0.25s ease-out both; }
     .slide-in { animation: slideIn 0.2s ease-out both; }
-    /* Amber rule — decorative horizontal line */
     .amber-rule { display: block; width: 32px; height: 2px; background: var(--amber); border-radius: 1px; }
-    /* Cards */
     .card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; }
     .card-inner { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; }
-    /* Buttons */
     .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border-radius: 8px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 1rem; letter-spacing: 0.03em; cursor: pointer; border: none; transition: all 0.15s ease; text-transform: uppercase; }
     .btn:active { transform: scale(0.97); }
     .btn-amber { background: var(--amber); color: #000; padding: 14px 20px; }
@@ -81,68 +75,49 @@
     .btn-danger:hover { background: rgba(239,68,68,0.2); }
     .btn-green { background: var(--green); color: #000; padding: 14px 20px; }
     .btn-green:hover { filter: brightness(1.1); }
-    /* Icon buttons — big enough for gloves */
     .iconbtn { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 8px; cursor: pointer; border: 1px solid var(--border); background: var(--bg3); color: var(--text2); transition: all 0.15s; }
     .iconbtn:hover { background: var(--bg4); color: var(--text); border-color: var(--border-strong); }
     .iconbtn:active { transform: scale(0.95); }
-    /* Badge */
     .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; font-family: 'Barlow Condensed', sans-serif; }
     .badge-amber { background: var(--amber-glow); color: var(--amber); border: 1px solid rgba(245,158,11,0.25); }
     .badge-green { background: rgba(34,197,94,0.12); color: var(--green); border: 1px solid rgba(34,197,94,0.2); }
     .badge-blue { background: rgba(59,130,246,0.12); color: var(--blue); border: 1px solid rgba(59,130,246,0.2); }
     .badge-gray { background: var(--bg3); color: var(--text2); border: 1px solid var(--border-strong); }
-    /* Stat block */
     .stat-block { display: flex; flex-direction: column; gap: 2px; }
     .stat-value { font-family: 'Barlow Condensed', sans-serif; font-size: 1.75rem; font-weight: 800; line-height: 1; color: var(--text); }
     .stat-label { font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); }
-    /* Input styles */
     .inp { width: 100%; background: var(--bg3); border: 1px solid var(--border-strong); border-radius: 8px; padding: 12px 14px; color: var(--text); font-family: 'Barlow', sans-serif; font-size: 0.95rem; outline: none; transition: border-color 0.15s; -webkit-appearance: none; }
     .inp:focus { border-color: var(--amber); }
     .inp::placeholder { color: var(--text3); }
     select.inp { cursor: pointer; }
     label.lbl { display: block; font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text3); margin-bottom: 6px; }
-    /* Sidebar nav */
     .nav-item { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 8px; cursor: pointer; font-family: 'Barlow Condensed', sans-serif; font-size: 1.05rem; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; color: var(--text2); transition: all 0.15s; border: 1px solid transparent; }
     .nav-item:hover { background: var(--bg3); color: var(--text); border-color: var(--border); }
     .nav-item.active { background: var(--amber-glow); color: var(--amber); border-color: rgba(245,158,11,0.25); }
-    /* Mobile bottom nav */
     .mob-nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 4px; flex: 1; cursor: pointer; border-radius: 8px; transition: all 0.15s; }
     .mob-nav-item span.label { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text3); transition: color 0.15s; font-family: 'Barlow Condensed', sans-serif; }
     .mob-nav-item .mat { color: var(--text3); transition: color 0.15s; font-size: 1.4rem; }
     .mob-nav-item.active .mat { color: var(--amber); }
     .mob-nav-item.active .label { color: var(--amber); }
-    /* Modal overlay */
     .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); z-index: 100; display: flex; align-items: flex-end; justify-content: center; }
     .sheet { background: var(--bg2); border: 1px solid var(--border-strong); border-radius: 20px 20px 0 0; width: 100%; max-width: 480px; max-height: 92vh; overflow-y: auto; animation: fadeUp 0.25s ease-out; }
     .sheet-handle { width: 36px; height: 4px; background: var(--border-strong); border-radius: 2px; margin: 12px auto 20px; }
-    /* Divider */
     .divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
-    /* Checklist item */
     .check-item { display: flex; align-items: center; gap: 14px; padding: 16px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.12s; }
     .check-item:last-child { border-bottom: none; }
     .check-item:hover { background: var(--bg3); }
     .check-box { width: 22px; height: 22px; border-radius: 5px; border: 2px solid var(--border-strong); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
     .check-box.checked { background: var(--amber); border-color: var(--amber); }
-    /* Toast */
     .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--bg2); border: 1px solid var(--border-strong); color: var(--text); padding: 12px 20px; border-radius: 40px; font-size: 0.875rem; font-weight: 600; z-index: 999; display: flex; align-items: center; gap: 8px; animation: fadeUp 0.2s ease-out; white-space: nowrap; box-shadow: 0 4px 24px rgba(0,0,0,0.4); }
-    /* Delete confirm */
-    .del-confirm { background: var(--bg2); border: 1px solid rgba(239,68,68,0.3); border-radius: 12px; padding: 16px; margin-top: 8px; display: flex; flex-direction: column; gap: 10px; }
-    /* Map */
     .leaflet-container { background: #111 !important; }
-    /* Progress bar */
     .prog-bar { height: 4px; background: var(--bg4); border-radius: 2px; overflow: hidden; }
     .prog-fill { height: 100%; background: var(--amber); border-radius: 2px; transition: width 0.5s ease; }
-    /* Connection dot */
     .conn-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); display: inline-block; animation: pulse 2s infinite; }
-    /* Range input */
     input[type=range] { -webkit-appearance: none; appearance: none; height: 4px; background: var(--bg4); border-radius: 2px; outline: none; }
     input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--amber); cursor: pointer; }
-    /* Scrollable area */
     .scroll-area { overflow-y: auto; -webkit-overflow-scrolling: touch; }
-    /* Safe area */
     .pb-safe { padding-bottom: max(env(safe-area-inset-bottom), 16px); }
 
-    /* Light mode overrides */
     .light-mode .card { background: #FFF; }
     .light-mode .card-inner { background: var(--bg3); }
     .light-mode body { background: var(--bg); color: var(--text); }
@@ -158,7 +133,6 @@
   <script type="text/babel">
     const { useState, useEffect, useRef, useCallback } = React;
 
-    // --- CONFIG ---
     const supabaseUrl = 'https://ofgafzebcyjmtxdkgqyy.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mZ2FmemViY3lqbXR4ZGtncXl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMjQwODksImV4cCI6MjA5NDcwMDA4OX0.Xt4XfB3NJ2HKqbjaLsbjOY_WyTND-SubwBHkaPZq3eM';
     const db = window.supabase.createClient(supabaseUrl, supabaseKey);
@@ -187,22 +161,17 @@
     const svgPin = (color, stroke) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 36"><path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 24 12 24s12-15 12-24C24 5.373 18.627 0 12 0z" fill="${color}" stroke="${stroke}" stroke-width="1.5"/><circle cx="12" cy="12" r="5" fill="white" opacity="0.9"/></svg>`;
     const enc = (s) => `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(s)}`;
 
-    // --- ICONS ---
     const I = ({ n, className='', lg=false, xl=false, sm=false, xs=false, fill=false }) => {
       let sz = lg ? 'lg' : xl ? 'xl' : sm ? 'sm' : xs ? 'xs' : '';
       let f = fill ? 'fill' : '';
       return <span className={`mat ${sz} ${f} ${className}`}>{n}</span>;
     };
 
-    // --- UTILS ---
     const fmtCurrency = (v) => `R$ ${(v||0).toFixed(2).replace('.', ',')}`;
     const fmtDate = (s) => { if(!s) return ''; const [y,m,d]=s.split('-'); return `${d}/${m}/${y}`; };
     const fmtDuration = (min) => { const h=Math.floor(min/60); const m=min%60; return h===0?`${m}min`:`${h}h${m>0?` ${m}min`:''}`; };
     const copyText = (t) => { try { navigator.clipboard.writeText(t); } catch(e) { const el=document.createElement('textarea'); el.value=t; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); } };
 
-    // ================================================================
-    // MAIN APP
-    // ================================================================
     function App() {
       const [theme, setTheme] = useState(() => localStorage.getItem('mt_theme') || 'dark');
       const [view, setView] = useState('dashboard');
@@ -215,7 +184,6 @@
       const [toast, setToast] = useState('');
       const [loading, setLoading] = useState(true);
 
-      // Modals
       const [addModal, setAddModal] = useState(false);
       const [expenseModal, setExpenseModal] = useState(false);
       const [finishModal, setFinishModal] = useState({ open:false, placeId:null, costs:{gas:'',food:'',lodging:'',maintenance:'',others:''}, odoStart:'', odoEnd:'' });
@@ -292,8 +260,15 @@
           actual_cost: 0, cost_details: { gas:0, food:0, lodging:0, maintenance:0, others:0 }
         };
 
+        console.log("Tentando inserir no banco:", rec);
+
         const { data, error } = await db.from('trips').insert([rec]).select();
-        if (error) { showToast('Erro ao salvar', true); return; }
+        
+        if (error) { 
+            console.error("ERRO DO SUPABASE:", error); 
+            alert("Erro ao salvar: " + error.message);
+            return; 
+        }
 
         const saved = data[0];
         setPlaces(prev => [{
@@ -363,9 +338,6 @@
         showToast('Copiado pro WhatsApp!');
       };
 
-      // ================================================================
-      // VIEWS
-      // ================================================================
       const Dashboard = () => {
         const visited = places.filter(p => p.status === 'visited');
         const planned = places.filter(p => p.status === 'planned');
@@ -388,7 +360,6 @@
 
         return (
           <div className="fade-up space-y-5">
-            {/* Header */}
             <div className="flex items-start justify-between">
               <div>
                 <div className="flex items-center gap-2 mb-1">
@@ -408,7 +379,6 @@
               </div>
             </div>
 
-            {/* Stats row */}
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
               <div className="card" style={{padding:'16px'}}>
                 <div className="stat-label">KM Rodados</div>
@@ -422,7 +392,6 @@
               </div>
             </div>
 
-            {/* Next trip */}
             {next ? (
               <div className="card" style={{padding:'16px'}}>
                 <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
@@ -467,7 +436,6 @@
               </div>
             )}
 
-            {/* Tempo + Gasolina */}
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
               <div className="card" style={{padding:'14px'}}>
                 <div style={{fontSize:'0.65rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'var(--text3)',marginBottom:8}}>Base · Fortaleza</div>
@@ -491,7 +459,6 @@
               </div>
             </div>
 
-            {/* Checklist progress */}
             <div className="card" style={{padding:'16px'}}>
               <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
                 <div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'var(--text3)'}}>Checklist Pré-Viagem</div>
@@ -506,7 +473,6 @@
         );
       };
 
-      // --- MAP ---
       const MapView = () => {
         const mapRef = useRef(null);
         const containerRef = useRef(null);
@@ -552,7 +518,6 @@
         );
       };
 
-      // --- PLACES LIST ---
       const PlacesList = () => {
         const [filter, setFilter] = useState('all');
         const filtered = places.filter(p => filter==='all'||p.status===filter);
@@ -566,7 +531,6 @@
               </button>
             </div>
 
-            {/* Filter tabs */}
             <div style={{display:'flex',gap:6,background:'var(--bg3)',padding:4,borderRadius:8,border:'1px solid var(--border)'}}>
               {[['all','Todas'],['planned','Planejadas'],['visited','Concluídas']].map(([f,l])=>(
                 <button key={f} onClick={()=>setFilter(f)} style={{flex:1,padding:'8px 0',borderRadius:6,border:'none',background:filter===f?'var(--bg2)':'transparent',color:filter===f?'var(--text)':'var(--text3)',fontFamily:"'Barlow Condensed',sans-serif",fontSize:'0.85rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.04em',cursor:'pointer',transition:'all 0.15s',boxShadow:filter===f?'0 1px 4px rgba(0,0,0,0.2)':'none'}}>
@@ -575,7 +539,6 @@
               ))}
             </div>
 
-            {/* Cards */}
             {filtered.length === 0 && (
               <div className="card" style={{padding:32,textAlign:'center',color:'var(--text2)'}}>
                 <I n="road" lg style={{color:'var(--text3)',marginBottom:8}}/><br/>
@@ -588,7 +551,6 @@
               const isDeleting = deleteConfirm === place.id;
               return (
                 <div key={place.id} className="card fade-up" style={{animationDelay:`${i*0.04}s`,overflow:'hidden'}}>
-                  {/* Card header */}
                   <div style={{padding:'16px 16px 12px',borderBottom:'1px solid var(--border)'}}>
                     <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:8}}>
                       <div style={{flex:1,minWidth:0}}>
@@ -615,7 +577,6 @@
                     </div>
                   </div>
 
-                  {/* Route info */}
                   {(place.distance > 0 || realKm) && (
                     <div style={{padding:'10px 16px',display:'flex',gap:16,flexWrap:'wrap',borderBottom:'1px solid var(--border)'}}>
                       {realKm ? (
@@ -646,14 +607,12 @@
                     </div>
                   )}
 
-                  {/* Notes */}
                   {place.notes && (
                     <div style={{padding:'8px 16px',borderBottom:'1px solid var(--border)'}}>
                       <p style={{fontSize:'0.8rem',color:'var(--text2)',lineHeight:1.5}}>{place.notes}</p>
                     </div>
                   )}
 
-                  {/* Delete confirm */}
                   {isDeleting && (
                     <div style={{padding:'12px 16px',background:'rgba(239,68,68,0.06)',borderTop:'1px solid rgba(239,68,68,0.15)'}}>
                       <p style={{fontSize:'0.82rem',color:'var(--red)',marginBottom:10}}>Confirmar exclusão permanente?</p>
@@ -666,7 +625,6 @@
                     </div>
                   )}
 
-                  {/* Action */}
                   {place.status==='planned' && !isDeleting && (
                     <div style={{padding:'10px 16px'}}>
                       <button className="btn btn-green" style={{width:'100%',fontSize:'0.88rem'}}
@@ -682,12 +640,11 @@
         );
       };
 
-      // --- DONUT CHART (SVG puro, sem lib) ---
       const DonutChart = ({ items, total, size=120 }) => {
         if (!total || items.length === 0) return null;
         const r = 42; const cx = 60; const cy = 60;
         const circumference = 2 * Math.PI * r;
-        const gap = 2; // graus de espaço entre fatias
+        const gap = 2;
         let currentAngle = -90;
         const slices = items.map(item => {
           const pct = item.value / total;
@@ -715,7 +672,6 @@
         );
       };
 
-      // --- FINANCE ---
       const FinanceView = () => {
         const visited = places.filter(p => p.status==='visited'||p.actualCost>0);
         const totalGen = generalExpenses.reduce((a,e)=>a+e.amount, 0);
@@ -726,13 +682,12 @@
 
         const cats = [
           { key:'gas',         label:'Gasolina',     icon:'local_gas_station', color:'var(--amber)',  rawColor:'#F59E0B' },
-          { key:'food',        label:'Alimentação',  icon:'restaurant',         color:'#F97316',       rawColor:'#F97316' },
-          { key:'lodging',     label:'Hospedagem',   icon:'hotel',              color:'var(--blue)',   rawColor:'#3B82F6' },
-          { key:'maintenance', label:'Manutenção',   icon:'build',              color:'var(--red)',    rawColor:'#EF4444' },
-          { key:'others',      label:'Outros',       icon:'category',           color:'#A855F7',       rawColor:'#A855F7' },
+          { key:'food',        label:'Alimentação',  icon:'restaurant',        color:'#F97316',      rawColor:'#F97316' },
+          { key:'lodging',     label:'Hospedagem',   icon:'hotel',             color:'var(--blue)',  rawColor:'#3B82F6' },
+          { key:'maintenance', label:'Manutenção',   icon:'build',             color:'var(--red)',   rawColor:'#EF4444' },
+          { key:'others',      label:'Outros',       icon:'category',          color:'#A855F7',      rawColor:'#A855F7' },
         ];
 
-        // Agregado geral por categoria (todas as viagens somadas)
         const allCatTotals = cats.map(c => ({
           ...c,
           value: visited.reduce((a,t) => a + ((t.costDetails||{})[c.key]||0), 0)
@@ -748,7 +703,6 @@
               </button>
             </div>
 
-            {/* Summary cards */}
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
               <div className="card" style={{padding:'14px'}}>
                 <div style={{fontSize:'0.63rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.07em',color:'var(--text3)',marginBottom:6}}>Est. Combustível</div>
@@ -766,7 +720,6 @@
               </div>
             </div>
 
-            {/* GRÁFICO GERAL — só aparece se houver >= 2 viagens com dados */}
             {visited.length >= 1 && allCatTotals.length > 0 && (
               <div className="card" style={{padding:'16px'}}>
                 <div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'var(--text3)',marginBottom:14,display:'flex',alignItems:'center',gap:6}}>
@@ -797,7 +750,6 @@
               </div>
             )}
 
-            {/* Trip history */}
             {visited.length > 0 && (
               <div>
                 <div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'var(--text3)',marginBottom:8}}>Por Viagem</div>
@@ -809,7 +761,6 @@
                     const tripTotal = items.reduce((a,c)=>a+c.value,0);
                     return (
                       <div key={t.id} style={{borderBottom:i<visited.length-1?'1px solid var(--border)':'none'}}>
-                        {/* Row header */}
                         <div onClick={()=>setExpanded(isExp?null:t.id)} style={{padding:'14px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',cursor:'pointer',userSelect:'none'}}>
                           <div style={{flex:1,minWidth:0}}>
                             <div style={{fontWeight:600,fontSize:'0.95rem',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{t.name}</div>
@@ -817,7 +768,6 @@
                               {fmtDate(t.date||t.plannedDate)}
                               {(t.odometerStart&&t.odometerEnd) && ` · ${t.odometerEnd-t.odometerStart} km rodados`}
                             </div>
-                            {/* Mini barra horizontal de categorias */}
                             {items.length > 0 && (
                               <div style={{display:'flex',height:4,borderRadius:2,overflow:'hidden',marginTop:7,gap:1}}>
                                 {items.map(c=>(
@@ -833,14 +783,12 @@
                           </div>
                         </div>
 
-                        {/* Expanded detail com gráfico */}
                         {isExp && (
                           <div style={{padding:'0 16px 18px',borderTop:'1px solid var(--border)',paddingTop:14}}>
                             {items.length === 0
                               ? <div style={{fontSize:'0.8rem',color:'var(--text3)'}}>Sem detalhamento de categorias.</div>
                               : (
                                 <>
-                                  {/* Donut + legenda lado a lado */}
                                   <div style={{display:'flex',alignItems:'center',gap:16,marginBottom:14}}>
                                     <DonutChart items={items} total={tripTotal} size={100}/>
                                     <div style={{flex:1,display:'flex',flexDirection:'column',gap:6}}>
@@ -864,7 +812,6 @@
                                     </div>
                                   </div>
 
-                                  {/* Tabela de valores */}
                                   <div style={{display:'flex',flexDirection:'column',gap:5}}>
                                     {items.map(c=>(
                                       <div key={c.key} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 10px',background:'var(--bg3)',borderRadius:7}}>
@@ -875,7 +822,6 @@
                                     ))}
                                   </div>
 
-                                  {/* Comparativo est vs real */}
                                   {t.fuelCost > 0 && (
                                     <div style={{marginTop:10,padding:'10px 12px',background:'var(--amber-glow)',borderRadius:7,border:'1px solid rgba(245,158,11,0.15)',fontSize:'0.75rem',color:'var(--amber)',display:'flex',justifyContent:'space-between'}}>
                                       <span>Combustível estimado</span>
@@ -894,7 +840,6 @@
               </div>
             )}
 
-            {/* General expenses */}
             {generalExpenses.length > 0 && (
               <div>
                 <div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'var(--text3)',marginBottom:8}}>Despesas Avulsas</div>
@@ -922,7 +867,6 @@
         );
       };
 
-      // --- CHECKLIST ---
       const ChecklistView = () => {
         const [newItem, setNewItem] = useState('');
         const done = checklist.filter(c=>c.done).length;
@@ -943,7 +887,6 @@
               </button>
             </div>
 
-            {/* Progress */}
             <div className="card" style={{padding:'14px'}}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
                 <span style={{fontSize:'0.78rem',color:'var(--text2)'}}>{done} de {checklist.length} itens</span>
@@ -954,7 +897,6 @@
               <div className="prog-bar"><div className="prog-fill" style={{width:`${checklist.length>0?(done/checklist.length)*100:0}%`,background:done===checklist.length?'var(--green)':'var(--amber)'}}></div></div>
             </div>
 
-            {/* Items */}
             <div className="card" style={{overflow:'hidden'}}>
               {checklist.map(item => (
                 <div key={item.id} className="check-item">
@@ -971,7 +913,6 @@
               ))}
             </div>
 
-            {/* Add new */}
             <div style={{display:'flex',gap:8}}>
               <input className="inp" value={newItem} onChange={e=>setNewItem(e.target.value)} placeholder="Adicionar item..." onKeyDown={e=>e.key==='Enter'&&addItem()} style={{flex:1}}/>
               <button className="btn btn-amber" onClick={addItem} style={{padding:'12px 16px'}}><I n="add" sm/></button>
@@ -980,7 +921,6 @@
         );
       };
 
-      // --- SETTINGS ---
       const SettingsView = () => {
         const handleBrand = (e) => {
           const b = e.target.value;
@@ -1043,9 +983,6 @@
         );
       };
 
-      // ================================================================
-      // MODALS
-      // ================================================================
       const AddModal = () => {
         const [localFuel, setLocalFuel] = useState(fuelPrice);
         const onSubmit = (e) => {
@@ -1213,9 +1150,6 @@
         </div>
       );
 
-      // ================================================================
-      // LAYOUT
-      // ================================================================
       const NAV = [
         { v:'dashboard', label:'Início', icon:'home' },
         { v:'map', label:'Mapa', icon:'map' },
@@ -1227,7 +1161,6 @@
       return (
         <div style={{height:'100%',width:'100%',display:'flex',background:'var(--bg)',overflow:'hidden'}}>
 
-          {/* Sidebar — desktop only */}
           <aside style={{width:220,flexShrink:0,borderRight:'1px solid var(--border)',display:'none',flexDirection:'column',padding:'24px 16px',overflow:'hidden'}} className="sidebar-desktop">
             <style>{`.sidebar-desktop{display:none}@media(min-width:768px){.sidebar-desktop{display:flex!important}}.mobile-nav{display:flex}@media(min-width:768px){.mobile-nav{display:none!important}}`}</style>
             <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:32}}>
@@ -1254,11 +1187,9 @@
             </div>
           </aside>
 
-          {/* Main content */}
           <main style={{flex:1,height:'100%',overflowY:'auto',overflowX:'hidden',padding:'20px 16px',paddingBottom:'88px'}} className="scroll-area">
             <style>{`@media(min-width:768px){main{padding:28px 32px;padding-bottom:28px!important}}`}</style>
 
-            {/* Mobile header */}
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20}} className="mob-header">
               <style>{`.mob-header{display:flex}@media(min-width:768px){.mob-header{display:none}}`}</style>
               <div style={{display:'flex',alignItems:'center',gap:8}}>
@@ -1273,7 +1204,6 @@
               </div>
             </div>
 
-            {/* Views */}
             {loading ? (
               <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'40vh',gap:12,color:'var(--text3)'}}>
                 <I n="near_me" xl fill style={{color:'var(--amber)',animation:'pulse 1.5s infinite'}}/>
@@ -1291,7 +1221,6 @@
             )}
           </main>
 
-          {/* Mobile bottom nav */}
           <nav className="mobile-nav" style={{position:'fixed',bottom:0,left:0,right:0,background:'var(--bg2)',borderTop:'1px solid var(--border)',padding:'6px 4px',paddingBottom:'max(6px, env(safe-area-inset-bottom))',display:'flex',alignItems:'center',zIndex:50,gap:2}}>
             {NAV.map(n=>(
               <div key={n.v} className={`mob-nav-item ${view===n.v?'active':''}`} onClick={()=>setView(n.v)}>
@@ -1305,7 +1234,6 @@
             </div>
           </nav>
 
-          {/* FAB — only on list view mobile */}
           {view==='list' && (
             <button className="mob-fab" onClick={()=>setAddModal(true)} style={{position:'fixed',bottom:80,right:16,background:'var(--amber)',color:'#000',border:'none',borderRadius:'50%',width:54,height:54,display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 20px rgba(245,158,11,0.35)',cursor:'pointer',zIndex:49}}>
               <style>{`.mob-fab{display:flex}@media(min-width:768px){.mob-fab{display:none}}`}</style>
@@ -1313,12 +1241,10 @@
             </button>
           )}
 
-          {/* Modals */}
           {addModal && <AddModal/>}
           {finishModal.open && <FinishModal/>}
           {expenseModal && <ExpenseModal/>}
 
-          {/* Toast */}
           {toast && (
             <div className="toast" style={{borderColor:toast.isError?'rgba(239,68,68,0.3)':'var(--border-strong)'}}>
               <I n={toast.isError?'error':'check_circle'} sm style={{color:toast.isError?'var(--red)':'var(--green)'}}/>
