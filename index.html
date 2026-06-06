@@ -1,1009 +1,1336 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MotoTracker v07.02</title>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>MotoTracker v09</title>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>tailwind.config = { darkMode: 'class', theme: { extend: {} } }</script>
-
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
-
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
   <style>
-    .material-symbols-rounded { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
-    .material-symbols-rounded.w-3\.5 { font-size: 0.875rem; }
-    .material-symbols-rounded.w-4 { font-size: 1rem; }
-    .material-symbols-rounded.w-5 { font-size: 1.25rem; }
-    .material-symbols-rounded.w-6 { font-size: 1.5rem; }
-    .material-symbols-rounded.w-7 { font-size: 1.75rem; }
-    .material-symbols-rounded.w-8 { font-size: 2rem; }
-    .material-symbols-rounded.w-10 { font-size: 2.5rem; }
-    .pb-safe { padding-bottom: env(safe-area-inset-bottom, 1rem); }
-    .animate-fade-in { animation: fadeIn 0.2s ease-out; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    :root {
+      --amber: #F59E0B;
+      --amber-dark: #B45309;
+      --amber-glow: rgba(245,158,11,0.15);
+      --bg: #0A0A0A;
+      --bg2: #111111;
+      --bg3: #1A1A1A;
+      --bg4: #222222;
+      --border: rgba(255,255,255,0.07);
+      --border-strong: rgba(255,255,255,0.12);
+      --text: #F0F0F0;
+      --text2: #888;
+      --text3: #555;
+      --green: #22C55E;
+      --red: #EF4444;
+      --blue: #3B82F6;
+    }
+    .light-mode {
+      --bg: #F5F4F0;
+      --bg2: #FFFFFF;
+      --bg3: #ECECEC;
+      --bg4: #E0E0E0;
+      --border: rgba(0,0,0,0.07);
+      --border-strong: rgba(0,0,0,0.14);
+      --text: #0A0A0A;
+      --text2: #666;
+      --text3: #999;
+      --amber-glow: rgba(245,158,11,0.1);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body, #root { height: 100%; width: 100%; overflow: hidden; }
+    body { background: var(--bg); color: var(--text); font-family: 'Barlow', sans-serif; }
+    .font-display { font-family: 'Barlow Condensed', sans-serif; }
+    .mat { font-family: 'Material Symbols Rounded'; font-size: 1.25rem; display: inline-flex; align-items: center; justify-content: center; line-height: 1; font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; user-select: none; }
+    .mat.fill { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .mat.lg { font-size: 1.75rem; }
+    .mat.xl { font-size: 2.25rem; }
+    .mat.sm { font-size: 1rem; }
+    .mat.xs { font-size: 0.85rem; }
+    /* Scrollbars */
+    ::-webkit-scrollbar { width: 3px; height: 3px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 2px; }
+    /* Animations */
+    @keyframes fadeUp { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform: translateY(0); } }
+    @keyframes slideIn { from { opacity:0; transform: translateX(-8px); } to { opacity:1; transform: translateX(0); } }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+    .fade-up { animation: fadeUp 0.25s ease-out both; }
+    .slide-in { animation: slideIn 0.2s ease-out both; }
+    /* Amber rule — decorative horizontal line */
+    .amber-rule { display: block; width: 32px; height: 2px; background: var(--amber); border-radius: 1px; }
+    /* Cards */
+    .card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; }
+    .card-inner { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; }
+    /* Buttons */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border-radius: 8px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 1rem; letter-spacing: 0.03em; cursor: pointer; border: none; transition: all 0.15s ease; text-transform: uppercase; }
+    .btn:active { transform: scale(0.97); }
+    .btn-amber { background: var(--amber); color: #000; padding: 14px 20px; }
+    .btn-amber:hover { background: #FBBF24; }
+    .btn-ghost { background: var(--bg3); color: var(--text); border: 1px solid var(--border-strong); padding: 12px 18px; }
+    .btn-ghost:hover { background: var(--bg4); }
+    .btn-danger { background: rgba(239,68,68,0.12); color: var(--red); border: 1px solid rgba(239,68,68,0.2); padding: 10px 14px; }
+    .btn-danger:hover { background: rgba(239,68,68,0.2); }
+    .btn-green { background: var(--green); color: #000; padding: 14px 20px; }
+    .btn-green:hover { filter: brightness(1.1); }
+    /* Icon buttons — big enough for gloves */
+    .iconbtn { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 8px; cursor: pointer; border: 1px solid var(--border); background: var(--bg3); color: var(--text2); transition: all 0.15s; }
+    .iconbtn:hover { background: var(--bg4); color: var(--text); border-color: var(--border-strong); }
+    .iconbtn:active { transform: scale(0.95); }
+    /* Badge */
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; font-family: 'Barlow Condensed', sans-serif; }
+    .badge-amber { background: var(--amber-glow); color: var(--amber); border: 1px solid rgba(245,158,11,0.25); }
+    .badge-green { background: rgba(34,197,94,0.12); color: var(--green); border: 1px solid rgba(34,197,94,0.2); }
+    .badge-blue { background: rgba(59,130,246,0.12); color: var(--blue); border: 1px solid rgba(59,130,246,0.2); }
+    .badge-gray { background: var(--bg3); color: var(--text2); border: 1px solid var(--border-strong); }
+    /* Stat block */
+    .stat-block { display: flex; flex-direction: column; gap: 2px; }
+    .stat-value { font-family: 'Barlow Condensed', sans-serif; font-size: 1.75rem; font-weight: 800; line-height: 1; color: var(--text); }
+    .stat-label { font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); }
+    /* Input styles */
+    .inp { width: 100%; background: var(--bg3); border: 1px solid var(--border-strong); border-radius: 8px; padding: 12px 14px; color: var(--text); font-family: 'Barlow', sans-serif; font-size: 0.95rem; outline: none; transition: border-color 0.15s; -webkit-appearance: none; }
+    .inp:focus { border-color: var(--amber); }
+    .inp::placeholder { color: var(--text3); }
+    select.inp { cursor: pointer; }
+    label.lbl { display: block; font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text3); margin-bottom: 6px; }
+    /* Sidebar nav */
+    .nav-item { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 8px; cursor: pointer; font-family: 'Barlow Condensed', sans-serif; font-size: 1.05rem; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; color: var(--text2); transition: all 0.15s; border: 1px solid transparent; }
+    .nav-item:hover { background: var(--bg3); color: var(--text); border-color: var(--border); }
+    .nav-item.active { background: var(--amber-glow); color: var(--amber); border-color: rgba(245,158,11,0.25); }
+    /* Mobile bottom nav */
+    .mob-nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 4px; flex: 1; cursor: pointer; border-radius: 8px; transition: all 0.15s; }
+    .mob-nav-item span.label { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text3); transition: color 0.15s; font-family: 'Barlow Condensed', sans-serif; }
+    .mob-nav-item .mat { color: var(--text3); transition: color 0.15s; font-size: 1.4rem; }
+    .mob-nav-item.active .mat { color: var(--amber); }
+    .mob-nav-item.active .label { color: var(--amber); }
+    /* Modal overlay */
+    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); z-index: 100; display: flex; align-items: flex-end; justify-content: center; }
+    .sheet { background: var(--bg2); border: 1px solid var(--border-strong); border-radius: 20px 20px 0 0; width: 100%; max-width: 480px; max-height: 92vh; overflow-y: auto; animation: fadeUp 0.25s ease-out; }
+    .sheet-handle { width: 36px; height: 4px; background: var(--border-strong); border-radius: 2px; margin: 12px auto 20px; }
+    /* Divider */
+    .divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+    /* Checklist item */
+    .check-item { display: flex; align-items: center; gap: 14px; padding: 16px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.12s; }
+    .check-item:last-child { border-bottom: none; }
+    .check-item:hover { background: var(--bg3); }
+    .check-box { width: 22px; height: 22px; border-radius: 5px; border: 2px solid var(--border-strong); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+    .check-box.checked { background: var(--amber); border-color: var(--amber); }
+    /* Toast */
+    .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--bg2); border: 1px solid var(--border-strong); color: var(--text); padding: 12px 20px; border-radius: 40px; font-size: 0.875rem; font-weight: 600; z-index: 999; display: flex; align-items: center; gap: 8px; animation: fadeUp 0.2s ease-out; white-space: nowrap; box-shadow: 0 4px 24px rgba(0,0,0,0.4); }
+    /* Delete confirm */
+    .del-confirm { background: var(--bg2); border: 1px solid rgba(239,68,68,0.3); border-radius: 12px; padding: 16px; margin-top: 8px; display: flex; flex-direction: column; gap: 10px; }
+    /* Map */
+    .leaflet-container { background: #111 !important; }
+    /* Progress bar */
+    .prog-bar { height: 4px; background: var(--bg4); border-radius: 2px; overflow: hidden; }
+    .prog-fill { height: 100%; background: var(--amber); border-radius: 2px; transition: width 0.5s ease; }
+    /* Connection dot */
+    .conn-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); display: inline-block; animation: pulse 2s infinite; }
+    /* Range input */
+    input[type=range] { -webkit-appearance: none; appearance: none; height: 4px; background: var(--bg4); border-radius: 2px; outline: none; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--amber); cursor: pointer; }
+    /* Scrollable area */
+    .scroll-area { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    /* Safe area */
+    .pb-safe { padding-bottom: max(env(safe-area-inset-bottom), 16px); }
+
+    /* Light mode overrides */
+    .light-mode .card { background: #FFF; }
+    .light-mode .card-inner { background: var(--bg3); }
+    .light-mode body { background: var(--bg); color: var(--text); }
+    .light-mode .inp { background: var(--bg3); }
+    .light-mode .nav-item:hover { background: var(--bg3); }
+    .light-mode .toast { background: #FFF; }
+    .light-mode .sheet { background: #FFF; }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-800 dark:bg-neutral-950 dark:text-neutral-200">
-  
+<body>
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect, useRef } = React;
+    const { useState, useEffect, useRef, useCallback } = React;
 
-    // --- CONFIGURAÇÃO DO SUPABASE ---
+    // --- CONFIG ---
     const supabaseUrl = 'https://ofgafzebcyjmtxdkgqyy.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mZ2FmemViY3lqbXR4ZGtncXl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMjQwODksImV4cCI6MjA5NDcwMDA4OX0.Xt4XfB3NJ2HKqbjaLsbjOY_WyTND-SubwBHkaPZq3eM';
-    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-
-    // --- MAPA DE ÍCONES ---
-    const MIcon = ({ name, className }) => <span className={`material-symbols-rounded ${className || ''}`}>{name}</span>;
-    const Home = (p) => <MIcon name="home" {...p} />;
-    const MapIcon = (p) => <MIcon name="map" {...p} />;
-    const List = (p) => <MIcon name="list" {...p} />;
-    const PlusCircle = (p) => <MIcon name="add_circle" {...p} />;
-    const CheckCircle2 = (p) => <MIcon name="check_circle" {...p} />;
-    const Trash2 = (p) => <MIcon name="delete" {...p} />;
-    const Navigation = (p) => <MIcon name="near_me" {...p} />;
-    const Fuel = (p) => <MIcon name="local_gas_station" {...p} />;
-    const Clock = (p) => <MIcon name="schedule" {...p} />;
-    const Route = (p) => <MIcon name="route" {...p} />;
-    const Share2 = (p) => <MIcon name="share" {...p} />;
-    const CheckSquare = (p) => <MIcon name="check_box" {...p} />;
-    const CloudSun = (p) => <MIcon name="partly_cloudy_day" {...p} />;
-    const CloudRain = (p) => <MIcon name="rainy" {...p} />;
-    const Sun = (p) => <MIcon name="light_mode" {...p} />;
-    const Moon = (p) => <MIcon name="dark_mode" {...p} />;
-    const AlertCircle = (p) => <MIcon name="error" {...p} />;
-    const X = (p) => <MIcon name="close" {...p} />;
-    const Wallet = (p) => <MIcon name="account_balance_wallet" {...p} />;
-    const TrendingUp = (p) => <MIcon name="trending_up" {...p} />;
-    const PieChart = (p) => <MIcon name="pie_chart" {...p} />;
-    const Receipt = (p) => <MIcon name="receipt_long" {...p} />;
-    const MapPin = (p) => <MIcon name="location_on" {...p} />;
-    const Thermometer = (p) => <MIcon name="device_thermostat" {...p} />;
-    const Settings = (p) => <MIcon name="settings" {...p} />;
-    const Calendar = (p) => <MIcon name="calendar_month" {...p} />;
-    const Group = (p) => <MIcon name="group" {...p} />;
-    const TwoWheeler = (p) => <MIcon name="two_wheeler" {...p} />;
-    const ExpandMore = (p) => <MIcon name="expand_more" {...p} />;
-    const Restaurant = (p) => <MIcon name="restaurant" {...p} />;
-    const Hotel = (p) => <MIcon name="hotel" {...p} />;
-    const Category = (p) => <MIcon name="category" {...p} />;
-    const Build = (p) => <MIcon name="build" {...p} />;
-    const Speed = (p) => <MIcon name="speed" {...p} />;
-
-    const ORIGIN_LAT = -3.7327; // Fortaleza
-    const ORIGIN_LNG = -38.5270;
-    const SAFE_RANGE = 350;
+    const db = window.supabase.createClient(supabaseUrl, supabaseKey);
+    const ORIGIN = { lat: -3.7327, lng: -38.5270, label: 'Fortaleza, CE' };
 
     const motoDatabase = {
-      "Yamaha": [ { model: "Fazer 250", consumption: 29 }, { model: "MT-03", consumption: 22 }, { model: "Tenere 250", consumption: 30 }, { model: "Crosser 150", consumption: 38 } ],
-      "Honda": [ { model: "CB 300F Twister", consumption: 35 }, { model: "XRE 300", consumption: 26 }, { model: "CG 160 Titan", consumption: 40 }, { model: "Sahara 300", consumption: 30 } ],
-      "BMW": [ { model: "G 310 GS", consumption: 25 }, { model: "F 850 GS", consumption: 20 }, { model: "R 1250 GS", consumption: 18 } ],
-      "Kawasaki": [ { model: "Ninja 400", consumption: 25 }, { model: "Versys 300", consumption: 24 }, { model: "Z400", consumption: 26 } ],
-      "Outra": [ { model: "Modelo Personalizado", consumption: 25 } ]
+      "Yamaha": [{ model:"Fazer 250",consumption:29},{ model:"MT-03",consumption:22},{ model:"Ténéré 250",consumption:30},{ model:"Crosser 150",consumption:38}],
+      "Honda": [{ model:"CB 300F Twister",consumption:35},{ model:"XRE 300",consumption:26},{ model:"CG 160 Titan",consumption:40},{ model:"Sahara 300",consumption:30}],
+      "BMW": [{ model:"G 310 GS",consumption:25},{ model:"F 850 GS",consumption:20},{ model:"R 1250 GS",consumption:18}],
+      "Kawasaki": [{ model:"Ninja 400",consumption:25},{ model:"Versys 300",consumption:24},{ model:"Z400",consumption:26}],
+      "Royal Enfield": [{ model:"Meteor 350",consumption:28},{ model:"Himalayan 411",consumption:26}],
+      "Outra": [{ model:"Modelo Personalizado",consumption:25}]
     };
 
-    const svgPinVisited = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#22c55e" stroke="#14532d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3" fill="white"/></svg>`;
-    const svgPinPlanned = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#f59e0b" stroke="#78350f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3" fill="white"/></svg>`;
-    const encodeSvg = (svg) => `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+    const DEFAULT_CHECKLIST = [
+      { id:1, text:"Calibrar pneus", done:false },
+      { id:2, text:"Nível do óleo", done:false },
+      { id:3, text:"Corrente limpa e lubrificada", done:false },
+      { id:4, text:"Documentos (CNH + CRLV)", done:false },
+      { id:5, text:"Capa de chuva", done:false },
+      { id:6, text:"Kit reparo de pneu", done:false },
+      { id:7, text:"Carregador de celular/GPS", done:false },
+      { id:8, text:"Ferramenta básica", done:false },
+    ];
 
+    const svgPin = (color, stroke) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 36"><path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 24 12 24s12-15 12-24C24 5.373 18.627 0 12 0z" fill="${color}" stroke="${stroke}" stroke-width="1.5"/><circle cx="12" cy="12" r="5" fill="white" opacity="0.9"/></svg>`;
+    const enc = (s) => `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(s)}`;
+
+    // --- ICONS ---
+    const I = ({ n, className='', lg=false, xl=false, sm=false, xs=false, fill=false }) => {
+      let sz = lg ? 'lg' : xl ? 'xl' : sm ? 'sm' : xs ? 'xs' : '';
+      let f = fill ? 'fill' : '';
+      return <span className={`mat ${sz} ${f} ${className}`}>{n}</span>;
+    };
+
+    // --- UTILS ---
+    const fmtCurrency = (v) => `R$ ${(v||0).toFixed(2).replace('.', ',')}`;
+    const fmtDate = (s) => { if(!s) return ''; const [y,m,d]=s.split('-'); return `${d}/${m}/${y}`; };
+    const fmtDuration = (min) => { const h=Math.floor(min/60); const m=min%60; return h===0?`${m}min`:`${h}h${m>0?` ${m}min`:''}`; };
+    const copyText = (t) => { try { navigator.clipboard.writeText(t); } catch(e) { const el=document.createElement('textarea'); el.value=t; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); } };
+
+    // ================================================================
+    // MAIN APP
+    // ================================================================
     function App() {
-      const [theme, setTheme] = useState(() => localStorage.getItem('motoTrackerTheme') || 'dark');
+      const [theme, setTheme] = useState(() => localStorage.getItem('mt_theme') || 'dark');
+      const [view, setView] = useState('dashboard');
       const [places, setPlaces] = useState([]);
-      const [fuelPrice, setFuelPrice] = useState(() => { const saved = localStorage.getItem('fuelPrice'); return saved ? parseFloat(saved) : 5.80; });
-      const [myMoto, setMyMoto] = useState(() => { 
-        const saved = localStorage.getItem('myMotoConfig'); 
-        return saved ? JSON.parse(saved) : { brand: 'Yamaha', model: 'Fazer 250', consumption: 29 }; 
-      });
+      const [generalExpenses, setGeneralExpenses] = useState(() => { try { return JSON.parse(localStorage.getItem('mt_expenses_v2')||'[]'); } catch(e){return[];} });
+      const [fuelPrice, setFuelPrice] = useState(() => parseFloat(localStorage.getItem('mt_fuel')||'5.80'));
+      const [myMoto, setMyMoto] = useState(() => { try { return JSON.parse(localStorage.getItem('mt_moto')||'null') || {brand:'Yamaha',model:'Fazer 250',consumption:29}; } catch(e){return{brand:'Yamaha',model:'Fazer 250',consumption:29};} });
+      const [checklist, setChecklist] = useState(() => { try { return JSON.parse(localStorage.getItem('mt_checklist')||'null') || DEFAULT_CHECKLIST; } catch(e){return DEFAULT_CHECKLIST;} });
+      const [isConnected, setIsConnected] = useState(false);
+      const [toast, setToast] = useState('');
+      const [loading, setLoading] = useState(true);
 
-      const [currentView, setCurrentView] = useState('dashboard');
-      const [toastMsg, setToastMsg] = useState('');
-      const [isDbConnected, setIsDbConnected] = useState(false);
-      
-      const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+      // Modals
+      const [addModal, setAddModal] = useState(false);
       const [expenseModal, setExpenseModal] = useState(false);
-      const [finishTripModal, setFinishTripModal] = useState({ isOpen: false, placeId: null, costs: { gas: '', food: '', lodging: '', maintenance: '', others: '' }, odoStart: '', odoEnd: '' });
-      const [generalExpenses, setGeneralExpenses] = useState(() => { const saved = localStorage.getItem('motoExpenses_v1'); return saved ? JSON.parse(saved) : []; });
+      const [finishModal, setFinishModal] = useState({ open:false, placeId:null, costs:{gas:'',food:'',lodging:'',maintenance:'',others:''}, odoStart:'', odoEnd:'' });
+      const [deleteConfirm, setDeleteConfirm] = useState(null);
 
       const isDark = theme === 'dark';
 
-      // --- SUPABASE FETCH ---
       useEffect(() => {
-        fetchTrips();
-      }, []);
+        document.body.classList.toggle('light-mode', !isDark);
+        localStorage.setItem('mt_theme', theme);
+      }, [theme]);
 
-      const fetchTrips = async () => {
-        const { data, error } = await supabase.from('trips').select('*').order('created_at', { ascending: false });
-        if (error) {
-          console.error("Erro DB:", error);
-          showToast("Falha ao sincronizar com o banco de dados.");
-        } else {
-          const mappedData = data.map(db => ({
-            id: db.id,
-            name: db.name,
-            city: db.city,
-            state: db.state,
-            type: db.type,
-            status: db.status,
-            plannedDate: db.planned_date,
-            date: db.date,
-            notes: db.notes,
-            lat: db.lat,
-            lng: db.lng,
-            distance: db.distance,
-            duration: db.duration,
-            fuelCost: db.fuel_cost,
-            actualCost: db.actual_cost,
-            costDetails: db.cost_details || { gas: 0, food: 0, lodging: 0, maintenance: 0, others: 0 },
-            hasPassenger: db.has_passenger,
-            odometerStart: db.odometer_start,
-            odometerEnd: db.odometer_end
-          }));
-          setPlaces(mappedData);
-          setIsDbConnected(true);
-        }
+      useEffect(() => { localStorage.setItem('mt_expenses_v2', JSON.stringify(generalExpenses)); }, [generalExpenses]);
+      useEffect(() => { localStorage.setItem('mt_fuel', fuelPrice.toString()); }, [fuelPrice]);
+      useEffect(() => { localStorage.setItem('mt_moto', JSON.stringify(myMoto)); }, [myMoto]);
+      useEffect(() => { localStorage.setItem('mt_checklist', JSON.stringify(checklist)); }, [checklist]);
+
+      useEffect(() => { fetchPlaces(); }, []);
+
+      const showToast = (msg, isError=false) => {
+        setToast({ msg, isError });
+        setTimeout(() => setToast(''), 3000);
       };
 
-      useEffect(() => { localStorage.setItem('motoExpenses_v1', JSON.stringify(generalExpenses)); }, [generalExpenses]);
-      useEffect(() => { localStorage.setItem('fuelPrice', fuelPrice.toString()); }, [fuelPrice]);
-      useEffect(() => { localStorage.setItem('myMotoConfig', JSON.stringify(myMoto)); }, [myMoto]);
-      useEffect(() => { 
-        localStorage.setItem('motoTrackerTheme', theme);
-        if (isDark) document.documentElement.classList.add('dark');
-        else document.documentElement.classList.remove('dark');
-      }, [theme, isDark]);
+      const fetchPlaces = async () => {
+        setLoading(true);
+        const { data, error } = await db.from('trips').select('*').order('created_at', { ascending: false });
+        setLoading(false);
+        if (error) { showToast('Falha ao conectar ao banco', true); return; }
+        setIsConnected(true);
+        setPlaces(data.map(r => ({
+          id: r.id, name: r.name, city: r.city, state: r.state, type: r.type,
+          status: r.status, plannedDate: r.planned_date, date: r.date, notes: r.notes,
+          lat: r.lat, lng: r.lng, distance: r.distance, duration: r.duration,
+          fuelCost: r.fuel_cost, actualCost: r.actual_cost,
+          costDetails: r.cost_details || { gas:0, food:0, lodging:0, maintenance:0, others:0 },
+          hasPassenger: r.has_passenger, odometerStart: r.odometer_start, odometerEnd: r.odometer_end
+        })));
+      };
 
-      const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
-      const showToast = (msg) => { setToastMsg(msg); setTimeout(() => setToastMsg(''), 3000); };
-      const formatDuration = (minutes) => { const h = Math.floor(minutes / 60); const m = minutes % 60; return h === 0 ? `${m}m` : `${h}h ${m > 0 ? m + 'm' : ''}`; };
-
-      const geocodeLocation = async (city, state) => {
+      const geocode = async (city, state) => {
         try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/search?city=${city}&state=${state}&country=Brazil&format=json`);
+          const res = await fetch(`https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(city)}&state=${encodeURIComponent(state)}&country=Brazil&format=json`);
           const data = await res.json();
-          if (data && data.length > 0) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-        } catch (error) { console.error(error); }
+          if (data?.length > 0) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+        } catch(e){}
         return null;
       };
 
-      const calculateRouteInfo = async (destLat, destLng, customFuelPrice, vehicleConsumption) => {
+      const calcRoute = async (lat, lng, price, consumption) => {
         try {
-          const url = `https://router.project-osrm.org/route/v1/driving/${ORIGIN_LNG},${ORIGIN_LAT};${destLng},${destLat}?overview=false`;
-          const res = await fetch(url);
+          const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${ORIGIN.lng},${ORIGIN.lat};${lng},${lat}?overview=false`);
           const data = await res.json();
-          if (data.routes && data.routes.length > 0) {
-            const distanceKm = Math.round(data.routes[0].distance / 1000);
-            return { distance: distanceKm, duration: formatDuration(Math.round(data.routes[0].duration / 60)), fuelCost: (distanceKm / vehicleConsumption) * customFuelPrice };
+          if (data.routes?.length > 0) {
+            const km = Math.round(data.routes[0].distance / 1000);
+            return { distance: km, duration: fmtDuration(Math.round(data.routes[0].duration / 60)), fuelCost: (km / consumption) * price };
           }
-        } catch (error) { console.error(error); }
+        } catch(e){}
         return { distance: 0, duration: 'N/A', fuelCost: 0 };
       };
 
-      const addPlace = async (newPlace, customFuelPrice) => {
-        const coords = await geocodeLocation(newPlace.city || newPlace.name, newPlace.state);
-        let routeInfo = { distance: 0, duration: 'N/A', fuelCost: 0 };
-        if (coords) routeInfo = await calculateRouteInfo(coords.lat, coords.lng, customFuelPrice, myMoto.consumption);
+      const addPlace = async (form, price) => {
+        showToast('Calculando rota...');
+        const coords = await geocode(form.city, form.state);
+        let route = { distance: 0, duration: 'N/A', fuelCost: 0 };
+        if (coords) route = await calcRoute(coords.lat, coords.lng, price, myMoto.consumption);
 
-        const dbRecord = {
-          name: newPlace.name,
-          city: newPlace.city,
-          state: newPlace.state,
-          type: newPlace.type,
-          status: 'planned',
-          planned_date: newPlace.plannedDate,
-          has_passenger: newPlace.hasPassenger,
-          notes: newPlace.notes,
-          lat: coords?.lat || null,
-          lng: coords?.lng || null,
-          distance: routeInfo.distance,
-          duration: routeInfo.duration,
-          fuel_cost: routeInfo.fuelCost,
-          actual_cost: 0,
-          cost_details: { gas: 0, food: 0, lodging: 0, maintenance: 0, others: 0 }
+        const rec = {
+          name: form.name, city: form.city, state: form.state.toUpperCase(),
+          type: form.type, status: 'planned', planned_date: form.plannedDate || null,
+          has_passenger: form.hasPassenger, notes: form.notes || '',
+          lat: coords?.lat || null, lng: coords?.lng || null,
+          distance: route.distance, duration: route.duration, fuel_cost: route.fuelCost,
+          actual_cost: 0, cost_details: { gas:0, food:0, lodging:0, maintenance:0, others:0 }
         };
 
-        const { data, error } = await supabase.from('trips').insert([dbRecord]).select();
+        const { data, error } = await db.from('trips').insert([rec]).select();
+        if (error) { showToast('Erro ao salvar', true); return; }
 
-        if (error) { console.error(error); showToast("Erro ao salvar no Supabase!"); } 
-        else {
-          const savedDbTrip = data[0];
-          const savedPlace = {
-            ...savedDbTrip,
-            plannedDate: savedDbTrip.planned_date,
-            hasPassenger: savedDbTrip.has_passenger,
-            fuelCost: savedDbTrip.fuel_cost,
-            actualCost: savedDbTrip.actual_cost,
-            costDetails: savedDbTrip.cost_details,
-            odometerStart: savedDbTrip.odometer_start,
-            odometerEnd: savedDbTrip.odometer_end
-          };
-          setPlaces([savedPlace, ...places]);
-          setIsAddModalOpen(false);
-          showToast('Salvo com sucesso na nuvem!');
-        }
+        const saved = data[0];
+        setPlaces(prev => [{
+          id: saved.id, name: saved.name, city: saved.city, state: saved.state,
+          type: saved.type, status: 'planned', plannedDate: saved.planned_date,
+          date: null, notes: saved.notes, lat: saved.lat, lng: saved.lng,
+          distance: saved.distance, duration: saved.duration, fuelCost: saved.fuel_cost,
+          actualCost: 0, costDetails: { gas:0, food:0, lodging:0, maintenance:0, others:0 },
+          hasPassenger: saved.has_passenger, odometerStart: null, odometerEnd: null
+        }, ...prev]);
+        setAddModal(false);
+        showToast('Destino salvo!');
       };
 
-      const deletePlace = async (id) => { 
-        if (confirm('Excluir este destino permanentemente do banco?')) {
-          const { error } = await supabase.from('trips').delete().eq('id', id);
-          if (error) { console.error(error); showToast("Erro ao excluir!"); } 
-          else { setPlaces(places.filter(p => p.id !== id)); showToast("Destino apagado."); }
-        }
+      const deletePlace = async (id) => {
+        const { error } = await db.from('trips').delete().eq('id', id);
+        if (error) { showToast('Erro ao excluir', true); return; }
+        setPlaces(prev => prev.filter(p => p.id !== id));
+        setDeleteConfirm(null);
+        showToast('Destino removido.');
       };
 
-      const deleteGeneralExpense = (id) => { if (confirm('Excluir esta despesa?')) setGeneralExpenses(generalExpenses.filter(e => e.id !== id)); };
+      const finishTrip = async (e) => {
+        e.preventDefault();
+        const { placeId, costs, odoStart, odoEnd } = finishModal;
+        const cd = { gas:parseFloat(costs.gas)||0, food:parseFloat(costs.food)||0, lodging:parseFloat(costs.lodging)||0, maintenance:parseFloat(costs.maintenance)||0, others:parseFloat(costs.others)||0 };
+        const total = Object.values(cd).reduce((a,b)=>a+b,0);
+        const today = new Date().toISOString().split('T')[0];
+        const { error } = await db.from('trips').update({ status:'visited', date:today, actual_cost:total, cost_details:cd, odometer_start:parseFloat(odoStart)||null, odometer_end:parseFloat(odoEnd)||null }).eq('id', placeId);
+        if (error) { showToast('Erro ao concluir', true); return; }
+        setPlaces(prev => prev.map(p => p.id===placeId ? {...p, status:'visited', date:today, actualCost:total, costDetails:cd, odometerStart:parseFloat(odoStart)||null, odometerEnd:parseFloat(odoEnd)||null} : p));
+        setFinishModal({ open:false, placeId:null, costs:{gas:'',food:'',lodging:'',maintenance:'',others:''}, odoStart:'', odoEnd:'' });
+        showToast('Viagem concluída! 🏁');
+      };
 
-      const handleAddExpense = async (e) => {
+      const addExpense = async (e) => {
         e.preventDefault();
         const fd = new FormData(e.target);
         const tripId = fd.get('tripId');
         const category = fd.get('category');
-        const amount = parseFloat(fd.get('amount')) || 0;
-        const description = fd.get('description') || '';
-        const currentKm = fd.get('currentKm'); // NOVO CAMPO DE HODÔMETRO
-
-        // Anexa o KM na descrição se houver
-        let finalDescription = description;
-        if (currentKm) {
-            finalDescription = description ? `${description} (Km: ${currentKm})` : `Registro de km: ${currentKm}`;
-        }
-        if (!finalDescription) finalDescription = 'Despesa Avulsa';
+        const amount = parseFloat(fd.get('amount'))||0;
+        const desc = fd.get('description') || 'Despesa';
+        const km = fd.get('km');
+        const finalDesc = km ? `${desc} • Km ${km}` : desc;
 
         if (tripId === 'general') {
-          setGeneralExpenses([{ id: Date.now().toString(), category, amount, description: finalDescription, date: new Date().toISOString() }, ...generalExpenses]);
+          setGeneralExpenses(prev => [{ id: Date.now().toString(), category, amount, description: finalDesc, date: new Date().toISOString() }, ...prev]);
           setExpenseModal(false);
-          showToast('Despesa geral salva localmente.');
+          showToast('Despesa registrada.');
         } else {
           const p = places.find(x => x.id === tripId);
-          const currentCosts = p.costDetails || { gas: 0, food: 0, lodging: 0, maintenance: 0, others: 0 };
-          const newCosts = { ...currentCosts, [category]: (currentCosts[category] || 0) + amount };
-          const newActualCost = (p.actualCost || 0) + amount;
-
-          const { error } = await supabase.from('trips').update({ actual_cost: newActualCost, cost_details: newCosts }).eq('id', tripId);
-          if (error) { console.error(error); showToast("Erro ao atualizar!"); } 
-          else {
-            setPlaces(places.map(p => p.id === tripId ? { ...p, actualCost: newActualCost, costDetails: newCosts } : p));
-            setExpenseModal(false);
-            showToast('Despesa vinculada no Supabase!');
-          }
-        }
-      };
-
-      const confirmFinishTrip = async (e) => {
-        e.preventDefault();
-        const { gas, food, lodging, maintenance, others } = finishTripModal.costs;
-        const odoS = parseFloat(finishTripModal.odoStart) || null;
-        const odoE = parseFloat(finishTripModal.odoEnd) || null;
-
-        const costDetailsObj = {
-            gas: parseFloat(gas) || 0,
-            food: parseFloat(food) || 0,
-            lodging: parseFloat(lodging) || 0,
-            maintenance: parseFloat(maintenance) || 0,
-            others: parseFloat(others) || 0
-        };
-        const total = costDetailsObj.gas + costDetailsObj.food + costDetailsObj.lodging + costDetailsObj.maintenance + costDetailsObj.others;
-        const currentDate = new Date().toISOString().split('T')[0];
-
-        const { error } = await supabase.from('trips').update({
-            status: 'visited',
-            date: currentDate,
-            actual_cost: total,
-            cost_details: costDetailsObj,
-            odometer_start: odoS,
-            odometer_end: odoE
-        }).eq('id', finishTripModal.placeId);
-
-        if (error) { console.error(error); showToast("Erro ao concluir viagem na nuvem."); } 
-        else {
-            setPlaces(places.map(p => p.id === finishTripModal.placeId ? { 
-                ...p, status: 'visited', date: currentDate, actualCost: total, costDetails: costDetailsObj, odometerStart: odoS, odometerEnd: odoE
-            } : p));
-            setFinishTripModal({ isOpen: false, placeId: null, costs: { gas: '', food: '', lodging: '', maintenance: '', others: '' }, odoStart: '', odoEnd: '' });
-            showToast('Viagem concluída com sucesso!');
+          const cur = p.costDetails || {};
+          const newCosts = { ...cur, [category]: (cur[category]||0) + amount };
+          const newTotal = (p.actualCost||0) + amount;
+          const { error } = await db.from('trips').update({ actual_cost: newTotal, cost_details: newCosts }).eq('id', tripId);
+          if (error) { showToast('Erro ao salvar', true); return; }
+          setPlaces(prev => prev.map(x => x.id===tripId ? {...x, actualCost:newTotal, costDetails:newCosts} : x));
+          setExpenseModal(false);
+          showToast('Despesa vinculada!');
         }
       };
 
       const shareTrip = (place) => {
-        const distReal = (place.odometerEnd && place.odometerStart) ? (place.odometerEnd - place.odometerStart) : place.distance;
-        const text = `🏍️ Partiu ${place.name}?\n📍 Destino: ${place.city || place.name} - ${place.state}\n🛣️ Distância: ${distReal}km\nBora rodar!`;
-        const textArea = document.createElement("textarea");
-        textArea.value = text;
-        document.body.appendChild(textArea);
-        textArea.select();
-        try { document.execCommand('copy'); showToast('Copiado para o WhatsApp!'); } catch (err) {}
-        document.body.removeChild(textArea);
+        const km = (place.odometerEnd && place.odometerStart) ? (place.odometerEnd - place.odometerStart) : place.distance;
+        const text = `🏍️ Bora pra ${place.name}!\n📍 ${place.city} - ${place.state}\n🛣️ ~${km}km de Fortaleza\n⛽ Combustível est.: ${fmtCurrency(place.fuelCost)}\n📅 ${fmtDate(place.plannedDate)||'Data a definir'}\n\nMotoTracker 🤙`;
+        copyText(text);
+        showToast('Copiado pro WhatsApp!');
       };
 
-      // --- COMPONENTES DAS TELAS ---
-
+      // ================================================================
+      // VIEWS
+      // ================================================================
       const Dashboard = () => {
-        const visitedTrips = places.filter(p => p.status === 'visited');
-        const plannedTrips = places.filter(p => p.status === 'planned');
-        
-        const totalKm = visitedTrips.reduce((acc, curr) => {
-          const dist = (curr.odometerEnd && curr.odometerStart) ? (curr.odometerEnd - curr.odometerStart) : (curr.distance || 0);
-          return acc + dist;
+        const visited = places.filter(p => p.status === 'visited');
+        const planned = places.filter(p => p.status === 'planned');
+        const totalKm = visited.reduce((acc, p) => {
+          const km = (p.odometerEnd && p.odometerStart) ? (p.odometerEnd - p.odometerStart) : (p.distance||0);
+          return acc + km;
         }, 0);
-        
-        const totalGeneral = generalExpenses.reduce((acc, curr) => acc + curr.amount, 0);
-        const totalSpent = visitedTrips.reduce((acc, curr) => acc + (curr.actualCost || 0), 0) + totalGeneral;
-        const avgCostPerKm = totalKm > 0 ? (totalSpent / totalKm).toFixed(2) : '0.00';
-        
-        const nextTrip = plannedTrips.length > 0 ? plannedTrips[0] : null;
-        const [homeWeather, setHomeWeather] = useState(null);
+        const totalGen = generalExpenses.reduce((a, e) => a + e.amount, 0);
+        const totalSpent = visited.reduce((a, p) => a + (p.actualCost||0), 0) + totalGen;
+        const next = planned[0];
 
+        const [weather, setWeather] = useState(null);
         useEffect(() => {
-          fetch(`https://api.open-meteo.com/v1/forecast?latitude=${ORIGIN_LAT}&longitude=${ORIGIN_LNG}&current_weather=true`)
-            .then(res => res.json()).then(data => setHomeWeather(data)).catch(() => {});
+          fetch(`https://api.open-meteo.com/v1/forecast?latitude=${ORIGIN.lat}&longitude=${ORIGIN.lng}&current_weather=true`)
+            .then(r=>r.json()).then(d=>setWeather(d.current_weather)).catch(()=>{});
         }, []);
 
-        return (
-          <div className="space-y-6 animate-fade-in pb-24 md:pb-0">
-            <header className="mb-2">
-              <div className="flex items-center gap-3">
-                <h1 className="text-3xl font-bold text-slate-800 dark:text-neutral-100 flex items-center gap-3">
-                  <Navigation className="text-amber-500 w-8 h-8" /> Painel da {myMoto.model}
-                </h1>
-                {isDbConnected && (
-                  <span title="Conectado ao Supabase" className="hidden md:flex text-[10px] font-bold uppercase tracking-widest text-green-600 bg-green-100 dark:bg-green-500/20 dark:text-green-400 px-2.5 py-1 rounded-md items-center gap-1 shadow-sm"><CheckCircle2 className="w-3 h-3" /> Online</span>
-                )}
-              </div>
-            </header>
+        const done = checklist.filter(c=>c.done).length;
+        const checkPct = checklist.length > 0 ? Math.round((done/checklist.length)*100) : 0;
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <StatCard value={`${totalKm} km`} label="Rodados (Total)" icon={Route} color="text-blue-500" />
-              <StatCard value={visitedTrips.length} label="Concluídas" icon={CheckCircle2} color="text-green-500" />
-              <StatCard value={plannedTrips.length} label="Na Fila" icon={MapPin} color="text-amber-500" />
-              <StatCard value={`R$ ${totalSpent.toFixed(0)}`} label="Gasto Total" icon={Wallet} color="text-slate-700 dark:text-neutral-300" />
+        return (
+          <div className="fade-up space-y-5">
+            {/* Header */}
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="conn-dot"></span>
+                  <span style={{fontSize:'0.65rem',textTransform:'uppercase',letterSpacing:'0.1em',color:'var(--text3)',fontWeight:600}}>{isConnected ? 'Online · Supabase' : 'Offline'}</span>
+                </div>
+                <h1 className="font-display" style={{fontSize:'2rem',fontWeight:800,lineHeight:1,color:'var(--text)'}}>
+                  {myMoto.model}
+                </h1>
+                <p style={{fontSize:'0.8rem',color:'var(--text2)',marginTop:2}}>{myMoto.brand} · {myMoto.consumption} km/L</p>
+              </div>
+              <div className="flex gap-2">
+                <button className="iconbtn" onClick={() => setView('settings')} title="Configurações"><I n="settings" sm/></button>
+                <button className="iconbtn" onClick={() => setTheme(t=>t==='dark'?'light':'dark')} title="Tema">
+                  <I n={isDark ? 'light_mode' : 'dark_mode'} sm/>
+                </button>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="md:col-span-2 bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-500 mb-4"><Clock className="w-4 h-4" /> Próximo Destino</div>
-                  {nextTrip ? (
-                    <>
-                      <h3 className="text-2xl font-bold text-slate-800 dark:text-neutral-100 mb-1">{nextTrip.name}</h3>
-                      <p className="text-slate-500 dark:text-neutral-400 font-medium mb-1">{nextTrip.city || nextTrip.name} - {nextTrip.state}</p>
-                      <div className="flex gap-4 mb-4 mt-6">
-                        <div className="bg-slate-50 dark:bg-neutral-900/50 rounded-xl p-3 flex-1 border border-slate-100 dark:border-neutral-800">
-                          <div className="text-xs text-slate-400 mb-1">Distância (Ida)</div>
-                          <div className="font-bold text-slate-700 dark:text-neutral-200">{nextTrip.distance} km</div>
+            {/* Stats row */}
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+              <div className="card" style={{padding:'16px'}}>
+                <div className="stat-label">KM Rodados</div>
+                <div className="stat-value" style={{color:'var(--amber)'}}>{totalKm.toLocaleString('pt-BR')}</div>
+                <div style={{fontSize:'0.7rem',color:'var(--text3)',marginTop:2}}>{visited.length} viagem{visited.length!==1?'s':''} concluída{visited.length!==1?'s':''}</div>
+              </div>
+              <div className="card" style={{padding:'16px'}}>
+                <div className="stat-label">Gasto Total</div>
+                <div className="stat-value" style={{color:'var(--green)',fontSize:'1.4rem'}}>{fmtCurrency(totalSpent)}</div>
+                <div style={{fontSize:'0.7rem',color:'var(--text3)',marginTop:2}}>{planned.length} na fila</div>
+              </div>
+            </div>
+
+            {/* Next trip */}
+            {next ? (
+              <div className="card" style={{padding:'16px'}}>
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
+                  <div style={{display:'flex',alignItems:'center',gap:6}}>
+                    <I n="near_me" sm style={{color:'var(--amber)'}}/> 
+                    <span style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'var(--amber)'}}>Próxima Parada</span>
+                  </div>
+                  {next.plannedDate && <span className="badge badge-amber"><I n="calendar_month" xs/>{fmtDate(next.plannedDate)}</span>}
+                </div>
+                <div className="font-display" style={{fontSize:'1.5rem',fontWeight:800,lineHeight:1.1,marginBottom:4}}>{next.name}</div>
+                <div style={{fontSize:'0.85rem',color:'var(--text2)',marginBottom:14}}>{next.city} · {next.state}</div>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8,marginBottom:14}}>
+                  <div className="card-inner" style={{padding:'10px',textAlign:'center'}}>
+                    <div style={{fontSize:'0.62rem',color:'var(--text3)',fontWeight:600,textTransform:'uppercase',marginBottom:3}}>Distância</div>
+                    <div style={{fontWeight:700,fontSize:'0.9rem'}}>{next.distance} km</div>
+                  </div>
+                  <div className="card-inner" style={{padding:'10px',textAlign:'center'}}>
+                    <div style={{fontSize:'0.62rem',color:'var(--text3)',fontWeight:600,textTransform:'uppercase',marginBottom:3}}>Tempo Est.</div>
+                    <div style={{fontWeight:700,fontSize:'0.9rem'}}>{next.duration}</div>
+                  </div>
+                  <div className="card-inner" style={{padding:'10px',textAlign:'center'}}>
+                    <div style={{fontSize:'0.62rem',color:'var(--text3)',fontWeight:600,textTransform:'uppercase',marginBottom:3}}>Combustível</div>
+                    <div style={{fontWeight:700,fontSize:'0.9rem',color:'var(--amber)'}}>{fmtCurrency(next.fuelCost)}</div>
+                  </div>
+                </div>
+                <div style={{display:'flex',gap:8}}>
+                  <button className="btn btn-ghost" style={{flex:1,fontSize:'0.85rem'}} onClick={()=>shareTrip(next)}>
+                    <I n="share" sm/> Compartilhar
+                  </button>
+                  <button className="btn btn-amber" style={{flex:1,fontSize:'0.85rem'}} onClick={()=>setFinishModal({open:true,placeId:next.id,costs:{gas:next.fuelCost?.toFixed(2)||'',food:'',lodging:'',maintenance:'',others:''},odoStart:'',odoEnd:''})}>
+                    <I n="check_circle" sm/> Concluir
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="card" style={{padding:'24px',textAlign:'center'}}>
+                <I n="add_road" lg style={{color:'var(--text3)',marginBottom:8}}/>
+                <div style={{color:'var(--text2)',fontSize:'0.9rem',marginBottom:12}}>Nenhuma viagem planejada</div>
+                <button className="btn btn-amber" onClick={()=>setAddModal(true)}>
+                  <I n="add_circle" sm/> Planejar Viagem
+                </button>
+              </div>
+            )}
+
+            {/* Tempo + Gasolina */}
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+              <div className="card" style={{padding:'14px'}}>
+                <div style={{fontSize:'0.65rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'var(--text3)',marginBottom:8}}>Base · Fortaleza</div>
+                {weather ? (
+                  <div style={{display:'flex',alignItems:'center',gap:8}}>
+                    <I n="partly_cloudy_day" lg style={{color:'var(--amber)'}}/>
+                    <div>
+                      <div className="font-display" style={{fontSize:'1.6rem',fontWeight:800,lineHeight:1}}>{weather.temperature}°C</div>
+                      <div style={{fontSize:'0.7rem',color:'var(--text3)'}}>Agora</div>
+                    </div>
+                  </div>
+                ) : <div style={{color:'var(--text3)',fontSize:'0.8rem'}}>Carregando...</div>}
+              </div>
+              <div className="card" style={{padding:'14px'}}>
+                <div style={{fontSize:'0.65rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'var(--text3)',marginBottom:6}}>Gasolina (R$/L)</div>
+                <input
+                  type="number" step="0.01" value={fuelPrice}
+                  onChange={e=>setFuelPrice(parseFloat(e.target.value)||0)}
+                  className="inp" style={{padding:'8px 10px',fontSize:'1.1rem',fontWeight:700}}
+                />
+              </div>
+            </div>
+
+            {/* Checklist progress */}
+            <div className="card" style={{padding:'16px'}}>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
+                <div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'var(--text3)'}}>Checklist Pré-Viagem</div>
+                <span style={{fontSize:'0.85rem',fontWeight:700,color: checkPct===100?'var(--green)':'var(--text2)'}}>{done}/{checklist.length}</span>
+              </div>
+              <div className="prog-bar"><div className="prog-fill" style={{width:`${checkPct}%`}}></div></div>
+              <button className="btn btn-ghost" style={{width:'100%',marginTop:12,fontSize:'0.85rem'}} onClick={()=>setView('checklist')}>
+                {checkPct===100 ? <><I n="check_circle" sm style={{color:'var(--green)'}}/> Tudo pronto!</> : <><I n="checklist" sm/> Ver checklist</>}
+              </button>
+            </div>
+          </div>
+        );
+      };
+
+      // --- MAP ---
+      const MapView = () => {
+        const mapRef = useRef(null);
+        const containerRef = useRef(null);
+        const tileRef = useRef(null);
+
+        useEffect(() => {
+          const init = () => {
+            if (!window.L || !containerRef.current) return;
+            if (!mapRef.current) {
+              mapRef.current = window.L.map(containerRef.current).setView([ORIGIN.lat, ORIGIN.lng], 6);
+            }
+            if (tileRef.current) tileRef.current.remove();
+            const url = isDark ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png' : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+            tileRef.current = window.L.tileLayer(url).addTo(mapRef.current);
+            mapRef.current.eachLayer(l => { if (l instanceof window.L.Marker) mapRef.current.removeLayer(l); });
+            const iconV = window.L.icon({ iconUrl: enc(svgPin('#22C55E','#14532d')), iconSize:[28,42], iconAnchor:[14,42], popupAnchor:[0,-42] });
+            const iconP = window.L.icon({ iconUrl: enc(svgPin('#F59E0B','#78350f')), iconSize:[28,42], iconAnchor:[14,42], popupAnchor:[0,-42] });
+            const bounds = [];
+            places.forEach(p => {
+              if (!p.lat || !p.lng) return;
+              const m = window.L.marker([p.lat,p.lng], { icon: p.status==='visited'?iconV:iconP }).addTo(mapRef.current);
+              const km = (p.odometerEnd&&p.odometerStart) ? (p.odometerEnd-p.odometerStart) : p.distance;
+              m.bindPopup(`<div style="font-family:sans-serif;min-width:160px"><strong style="font-size:13px">${p.name}</strong><br/><span style="color:#888;font-size:11px">${p.city||''} · ${p.state||''}</span><br/><span style="color:${p.status==='visited'?'#22C55E':'#F59E0B'};font-size:11px;font-weight:bold">${p.status==='visited'?'✓ Visitado':'Planejado'}</span>${km?`<br/><span style="font-size:11px">~${km} km</span>`:''}</div>`);
+              bounds.push([p.lat,p.lng]);
+            });
+            if (bounds.length > 0) mapRef.current.fitBounds(bounds, { padding:[40,40], maxZoom:13 });
+          };
+          const t = setInterval(()=>{ if(window.L){clearInterval(t);init();} }, 100);
+          return ()=>clearInterval(t);
+        }, [places, view, isDark]);
+
+        return (
+          <div className="fade-up" style={{display:'flex',flexDirection:'column',height:'100%',gap:10}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+              <h2 className="font-display" style={{fontSize:'1.5rem',fontWeight:800}}>Mapa de Destinos</h2>
+              <div style={{display:'flex',gap:8}}>
+                <span className="badge badge-green"><span style={{width:6,height:6,borderRadius:'50%',background:'var(--green)',display:'inline-block'}}></span> Visitado</span>
+                <span className="badge badge-amber"><span style={{width:6,height:6,borderRadius:'50%',background:'var(--amber)',display:'inline-block'}}></span> Planejado</span>
+              </div>
+            </div>
+            <div ref={containerRef} style={{flex:1,borderRadius:12,overflow:'hidden',border:'1px solid var(--border)',minHeight:300}}></div>
+          </div>
+        );
+      };
+
+      // --- PLACES LIST ---
+      const PlacesList = () => {
+        const [filter, setFilter] = useState('all');
+        const filtered = places.filter(p => filter==='all'||p.status===filter);
+
+        return (
+          <div className="fade-up" style={{display:'flex',flexDirection:'column',gap:16}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+              <h2 className="font-display" style={{fontSize:'1.5rem',fontWeight:800}}>Viagens</h2>
+              <button className="btn btn-amber" style={{fontSize:'0.82rem',padding:'10px 14px'}} onClick={()=>setAddModal(true)}>
+                <I n="add" sm/> Nova
+              </button>
+            </div>
+
+            {/* Filter tabs */}
+            <div style={{display:'flex',gap:6,background:'var(--bg3)',padding:4,borderRadius:8,border:'1px solid var(--border)'}}>
+              {[['all','Todas'],['planned','Planejadas'],['visited','Concluídas']].map(([f,l])=>(
+                <button key={f} onClick={()=>setFilter(f)} style={{flex:1,padding:'8px 0',borderRadius:6,border:'none',background:filter===f?'var(--bg2)':'transparent',color:filter===f?'var(--text)':'var(--text3)',fontFamily:"'Barlow Condensed',sans-serif",fontSize:'0.85rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.04em',cursor:'pointer',transition:'all 0.15s',boxShadow:filter===f?'0 1px 4px rgba(0,0,0,0.2)':'none'}}>
+                  {l}
+                </button>
+              ))}
+            </div>
+
+            {/* Cards */}
+            {filtered.length === 0 && (
+              <div className="card" style={{padding:32,textAlign:'center',color:'var(--text2)'}}>
+                <I n="road" lg style={{color:'var(--text3)',marginBottom:8}}/><br/>
+                Nenhuma viagem aqui ainda.
+              </div>
+            )}
+
+            {filtered.map((place, i) => {
+              const realKm = (place.odometerEnd&&place.odometerStart) ? (place.odometerEnd-place.odometerStart) : null;
+              const isDeleting = deleteConfirm === place.id;
+              return (
+                <div key={place.id} className="card fade-up" style={{animationDelay:`${i*0.04}s`,overflow:'hidden'}}>
+                  {/* Card header */}
+                  <div style={{padding:'16px 16px 12px',borderBottom:'1px solid var(--border)'}}>
+                    <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:8}}>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{display:'flex',alignItems:'center',gap:6,flexWrap:'wrap',marginBottom:4}}>
+                          {place.type && <span className="badge badge-gray">{place.type}</span>}
+                          {place.status==='visited'
+                            ? <span className="badge badge-green"><I n="check_circle" xs/> Concluída</span>
+                            : <span className="badge badge-amber"><I n="schedule" xs/> Planejada</span>}
+                          {place.plannedDate && place.status==='planned' && <span className="badge badge-gray"><I n="calendar_month" xs/> {fmtDate(place.plannedDate)}</span>}
                         </div>
-                        <div className="bg-slate-50 dark:bg-neutral-900/50 rounded-xl p-3 flex-1 border border-slate-100 dark:border-neutral-800">
-                          <div className="text-xs text-slate-400 mb-1">Tempo Est.</div>
-                          <div className="font-bold text-slate-700 dark:text-neutral-200">{nextTrip.duration}</div>
-                        </div>
+                        <div className="font-display" style={{fontSize:'1.25rem',fontWeight:800,lineHeight:1.1,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{place.name}</div>
+                        <div style={{fontSize:'0.82rem',color:'var(--text2)',marginTop:2}}>{place.city} · {place.state}</div>
                       </div>
-                    </>
-                  ) : (
-                    <div className="text-center py-8 text-slate-500">Nenhuma viagem planejada.</div>
+                      <div style={{display:'flex',gap:4,flexShrink:0}}>
+                        {place.status==='planned' && (
+                          <button className="iconbtn" onClick={()=>shareTrip(place)} title="Compartilhar" style={{width:38,height:38}}>
+                            <I n="share" xs/>
+                          </button>
+                        )}
+                        <button className="iconbtn" onClick={()=>setDeleteConfirm(isDeleting?null:place.id)} title="Excluir" style={{width:38,height:38,color:isDeleting?'var(--red)':'var(--text2)',borderColor:isDeleting?'rgba(239,68,68,0.3)':'var(--border)'}}>
+                          <I n={isDeleting?'close':'delete'} xs/>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Route info */}
+                  {(place.distance > 0 || realKm) && (
+                    <div style={{padding:'10px 16px',display:'flex',gap:16,flexWrap:'wrap',borderBottom:'1px solid var(--border)'}}>
+                      {realKm ? (
+                        <div style={{display:'flex',alignItems:'center',gap:6}}>
+                          <I n="speed" xs style={{color:'var(--blue)'}}/> 
+                          <span style={{fontSize:'0.82rem',fontWeight:700,color:'var(--blue)'}}>{realKm} km real</span>
+                        </div>
+                      ) : (
+                        <div style={{display:'flex',alignItems:'center',gap:6}}>
+                          <I n="route" xs style={{color:'var(--text3)'}}/>
+                          <span style={{fontSize:'0.82rem',color:'var(--text2)'}}>~{place.distance} km</span>
+                        </div>
+                      )}
+                      <div style={{display:'flex',alignItems:'center',gap:6}}>
+                        <I n="schedule" xs style={{color:'var(--text3)'}}/>
+                        <span style={{fontSize:'0.82rem',color:'var(--text2)'}}>{place.duration}</span>
+                      </div>
+                      <div style={{display:'flex',alignItems:'center',gap:6}}>
+                        <I n="local_gas_station" xs style={{color:'var(--amber)'}}/>
+                        <span style={{fontSize:'0.82rem',fontWeight:600,color:'var(--amber)'}}>{fmtCurrency(place.fuelCost)}</span>
+                      </div>
+                      {place.actualCost > 0 && (
+                        <div style={{display:'flex',alignItems:'center',gap:6}}>
+                          <I n="account_balance_wallet" xs style={{color:'var(--green)'}}/>
+                          <span style={{fontSize:'0.82rem',fontWeight:700,color:'var(--green)'}}>Gasto: {fmtCurrency(place.actualCost)}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Notes */}
+                  {place.notes && (
+                    <div style={{padding:'8px 16px',borderBottom:'1px solid var(--border)'}}>
+                      <p style={{fontSize:'0.8rem',color:'var(--text2)',lineHeight:1.5}}>{place.notes}</p>
+                    </div>
+                  )}
+
+                  {/* Delete confirm */}
+                  {isDeleting && (
+                    <div style={{padding:'12px 16px',background:'rgba(239,68,68,0.06)',borderTop:'1px solid rgba(239,68,68,0.15)'}}>
+                      <p style={{fontSize:'0.82rem',color:'var(--red)',marginBottom:10}}>Confirmar exclusão permanente?</p>
+                      <div style={{display:'flex',gap:8}}>
+                        <button className="btn btn-ghost" style={{flex:1,fontSize:'0.82rem',padding:'10px'}} onClick={()=>setDeleteConfirm(null)}>Cancelar</button>
+                        <button className="btn btn-danger" style={{flex:1,fontSize:'0.82rem',padding:'10px'}} onClick={()=>deletePlace(place.id)}>
+                          <I n="delete" xs/> Excluir
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Action */}
+                  {place.status==='planned' && !isDeleting && (
+                    <div style={{padding:'10px 16px'}}>
+                      <button className="btn btn-green" style={{width:'100%',fontSize:'0.88rem'}}
+                        onClick={()=>setFinishModal({open:true,placeId:place.id,costs:{gas:place.fuelCost?.toFixed(2)||'',food:'',lodging:'',maintenance:'',others:''},odoStart:'',odoEnd:''})}>
+                        <I n="check_circle" sm/> Marcar como Concluída
+                      </button>
+                    </div>
                   )}
                 </div>
-                {nextTrip && (
-                  <button onClick={() => setCurrentView('list')} className="w-full bg-slate-100 dark:bg-neutral-700/50 hover:bg-slate-200 dark:hover:bg-neutral-700 text-slate-700 dark:text-white py-3 rounded-xl text-sm font-bold transition-colors">
-                    Ver todos os destinos
-                  </button>
-                )}
-              </div>
-
-              <div className="space-y-6">
-                <div className="bg-gradient-to-br from-blue-500 to-blue-600 border border-blue-400 rounded-2xl p-6 text-white shadow-sm">
-                  <div className="text-xs font-bold uppercase tracking-wider text-blue-100 mb-4 flex items-center gap-2"><MapPin className="w-4 h-4" /> Base: Fortaleza, CE</div>
-                  {homeWeather ? (
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-4xl font-black mb-1">{homeWeather.current_weather.temperature}°C</div>
-                        <div className="text-sm text-blue-100">Tempo Atual</div>
-                      </div>
-                      <Thermometer className="w-10 h-10 opacity-80" />
-                    </div>
-                  ) : (<div className="text-sm opacity-80">Carregando clima...</div>)}
-                </div>
-
-                <div className="bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 p-6 rounded-2xl shadow-sm">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="font-bold text-slate-800 dark:text-neutral-200 flex items-center gap-2 text-sm"><Fuel className="w-4 h-4 text-amber-500" /> Custo Combustível</h3>
-                    <button onClick={() => setCurrentView('settings')} className="text-xs text-amber-500 hover:underline">Alterar Moto</button>
-                  </div>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center bg-slate-50 dark:bg-neutral-900 p-3 rounded-xl border border-slate-100 dark:border-neutral-800">
-                      <span className="text-sm text-slate-500">Consumo</span>
-                      <span className="font-bold text-slate-700 dark:text-neutral-200">{myMoto.consumption} km/L</span>
-                    </div>
-                    <div className="flex justify-between items-center bg-slate-50 dark:bg-neutral-900 p-2 rounded-xl pl-3 border border-slate-100 dark:border-neutral-800">
-                      <span className="text-sm text-slate-500">Gasolina (R$)</span>
-                      <input type="number" step="0.01" value={fuelPrice} onChange={(e) => setFuelPrice(parseFloat(e.target.value) || 0)} className="w-20 bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-lg px-2 py-1 text-slate-800 dark:text-white focus:border-amber-500 outline-none font-bold text-right" />
-                    </div>
-                    <div className="text-[10px] text-slate-400 text-center">Custo atual: <strong className="text-amber-500">R$ {avgCostPerKm}/km</strong> rodado (Total Histórico).</div>
-                  </div>
-                </div>
-              </div>
-            </div>
+              );
+            })}
           </div>
         );
       };
 
-      const SettingsView = () => {
-        const handleBrandChange = (e) => {
-          const newBrand = e.target.value;
-          const firstModel = motoDatabase[newBrand][0];
-          setMyMoto({ brand: newBrand, model: firstModel.model, consumption: firstModel.consumption });
-        };
-        const handleModelChange = (e) => {
-          const newModelName = e.target.value;
-          const selectedModelObj = motoDatabase[myMoto.brand].find(m => m.model === newModelName);
-          if (selectedModelObj) setMyMoto({ ...myMoto, model: newModelName, consumption: selectedModelObj.consumption });
-        };
-
+      // --- DONUT CHART (SVG puro, sem lib) ---
+      const DonutChart = ({ items, total, size=120 }) => {
+        if (!total || items.length === 0) return null;
+        const r = 42; const cx = 60; const cy = 60;
+        const circumference = 2 * Math.PI * r;
+        const gap = 2; // graus de espaço entre fatias
+        let currentAngle = -90;
+        const slices = items.map(item => {
+          const pct = item.value / total;
+          const degrees = pct * 360 - gap;
+          const startAngle = currentAngle;
+          currentAngle += pct * 360;
+          const startRad = (startAngle * Math.PI) / 180;
+          const endRad = ((startAngle + degrees) * Math.PI) / 180;
+          const x1 = cx + r * Math.cos(startRad);
+          const y1 = cy + r * Math.sin(startRad);
+          const x2 = cx + r * Math.cos(endRad);
+          const y2 = cy + r * Math.sin(endRad);
+          const large = degrees > 180 ? 1 : 0;
+          return { ...item, pct, d: `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z`, degrees };
+        });
         return (
-          <div className="space-y-6 animate-fade-in max-w-2xl pb-24 md:pb-0">
-            <header className="mb-6">
-              <h2 className="text-2xl font-bold text-slate-800 dark:text-neutral-100 flex items-center gap-2"><Settings className="text-slate-500 w-7 h-7" /> Configurações da Moto</h2>
-              <p className="text-sm text-slate-500 mt-1">Selecione sua moto para base de cálculo de rotas e consumo.</p>
-            </header>
-
-            <div className="bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-2xl p-6 shadow-sm space-y-5">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 dark:text-neutral-300 mb-2">Fabricante</label>
-                  <select value={myMoto.brand} onChange={handleBrandChange} className="w-full bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 rounded-xl p-3.5 text-slate-800 dark:text-white focus:border-amber-500 outline-none">
-                    {Object.keys(motoDatabase).map(brand => <option key={brand} value={brand}>{brand}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 dark:text-neutral-300 mb-2">Modelo</label>
-                  <select value={myMoto.model} onChange={handleModelChange} className="w-full bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 rounded-xl p-3.5 text-slate-800 dark:text-white focus:border-amber-500 outline-none">
-                    {motoDatabase[myMoto.brand].map(m => <option key={m.model} value={m.model}>{m.model}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-slate-100 dark:border-neutral-700/50">
-                <label className="block text-sm font-bold text-slate-700 dark:text-neutral-300 mb-2">Consumo Médio Real (km/L)</label>
-                <div className="relative max-w-xs">
-                  <input type="number" step="0.1" value={myMoto.consumption} onChange={(e) => setMyMoto({...myMoto, consumption: parseFloat(e.target.value)||0})} className="w-full bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 rounded-xl p-3.5 pl-4 pr-16 text-slate-800 dark:text-white focus:border-amber-500 outline-none font-bold text-lg" />
-                  <span className="absolute right-4 top-3.5 text-slate-400 font-bold">km/L</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          <svg viewBox="0 0 120 120" width={size} height={size} style={{flexShrink:0}}>
+            {slices.map(s => (
+              <path key={s.key} d={s.d} fill={s.rawColor} opacity="0.92"/>
+            ))}
+            <circle cx={cx} cy={cy} r={26} fill="var(--bg2)"/>
+            <text x={cx} y={cy-5} textAnchor="middle" fontSize="9" fontWeight="700" fill="var(--text3)" fontFamily="'Barlow Condensed',sans-serif" style={{textTransform:'uppercase',letterSpacing:'0.05em'}}>TOTAL</text>
+            <text x={cx} y={cy+9} textAnchor="middle" fontSize="11" fontWeight="800" fill="var(--text)" fontFamily="'Barlow Condensed',sans-serif">{fmtCurrency(total).replace('R$ ','R$')}</text>
+          </svg>
         );
       };
 
-      const ChecklistView = () => {
-        const defaultChecklist = [
-          { id: 1, text: `Calibrar pneus da ${myMoto.model}`, done: false },
-          { id: 2, text: "Checar nível do óleo", done: false },
-          { id: 3, text: "Limpar e lubrificar a corrente", done: false },
-          { id: 4, text: "Documento da moto e CNH", done: false },
-          { id: 5, text: "Capa de chuva e kit reparo pneu", done: false },
+      // --- FINANCE ---
+      const FinanceView = () => {
+        const visited = places.filter(p => p.status==='visited'||p.actualCost>0);
+        const totalGen = generalExpenses.reduce((a,e)=>a+e.amount, 0);
+        const totalEst = visited.reduce((a,p)=>a+(p.fuelCost||0), 0);
+        const totalReal = visited.reduce((a,p)=>a+(p.actualCost||0), 0) + totalGen;
+        const diff = totalReal - totalEst;
+        const [expanded, setExpanded] = useState(null);
+
+        const cats = [
+          { key:'gas',         label:'Gasolina',     icon:'local_gas_station', color:'var(--amber)',  rawColor:'#F59E0B' },
+          { key:'food',        label:'Alimentação',  icon:'restaurant',         color:'#F97316',       rawColor:'#F97316' },
+          { key:'lodging',     label:'Hospedagem',   icon:'hotel',              color:'var(--blue)',   rawColor:'#3B82F6' },
+          { key:'maintenance', label:'Manutenção',   icon:'build',              color:'var(--red)',    rawColor:'#EF4444' },
+          { key:'others',      label:'Outros',       icon:'category',           color:'#A855F7',       rawColor:'#A855F7' },
         ];
-        const [items, setItems] = useState(() => { const s = localStorage.getItem('motoChecklist'); return s ? JSON.parse(s) : defaultChecklist; });
-        useEffect(() => { localStorage.setItem('motoChecklist', JSON.stringify(items)); }, [items]);
+
+        // Agregado geral por categoria (todas as viagens somadas)
+        const allCatTotals = cats.map(c => ({
+          ...c,
+          value: visited.reduce((a,t) => a + ((t.costDetails||{})[c.key]||0), 0)
+        })).filter(c => c.value > 0);
+        const allTotal = allCatTotals.reduce((a,c)=>a+c.value,0);
 
         return (
-          <div className="animate-fade-in max-w-xl pb-24 md:pb-0">
-            <h2 className="text-2xl font-bold text-slate-800 dark:text-neutral-100 mb-6">Checklist {myMoto.model}</h2>
-            <div className="bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-2xl overflow-hidden shadow-sm">
-              {items.map((item) => (
-                <div key={item.id} onClick={() => setItems(items.map(i => i.id === item.id ? { ...i, done: !i.done } : i))} className={`flex items-center gap-4 p-4 cursor-pointer transition-colors border-b border-slate-100 dark:border-neutral-700/50 hover:bg-slate-50 dark:hover:bg-neutral-700/30 ${item.done ? 'opacity-50' : ''}`}>
-                  <div className={`w-5 h-5 rounded flex items-center justify-center border-2 flex-shrink-0 transition-colors ${item.done ? 'bg-amber-500 border-amber-500' : 'border-slate-300 dark:border-neutral-500'}`}>{item.done && <CheckSquare className="w-4 h-4 text-white dark:text-neutral-900" />}</div>
-                  <span className={`text-sm font-medium ${item.done ? 'line-through text-slate-400' : 'text-slate-700 dark:text-neutral-200'}`}>{item.text}</span>
+          <div className="fade-up" style={{display:'flex',flexDirection:'column',gap:16}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+              <h2 className="font-display" style={{fontSize:'1.5rem',fontWeight:800}}>Financeiro</h2>
+              <button className="btn btn-amber" style={{fontSize:'0.82rem',padding:'10px 14px'}} onClick={()=>setExpenseModal(true)}>
+                <I n="add" sm/> Despesa
+              </button>
+            </div>
+
+            {/* Summary cards */}
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+              <div className="card" style={{padding:'14px'}}>
+                <div style={{fontSize:'0.63rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.07em',color:'var(--text3)',marginBottom:6}}>Est. Combustível</div>
+                <div className="font-display" style={{fontSize:'1.3rem',fontWeight:800,color:'var(--amber)'}}>{fmtCurrency(totalEst)}</div>
+              </div>
+              <div className="card" style={{padding:'14px'}}>
+                <div style={{fontSize:'0.63rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.07em',color:'var(--text3)',marginBottom:6}}>Gasto Real</div>
+                <div className="font-display" style={{fontSize:'1.3rem',fontWeight:800,color:'var(--green)'}}>{fmtCurrency(totalReal)}</div>
+              </div>
+            </div>
+            <div className="card" style={{padding:'14px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+              <span style={{fontSize:'0.8rem',color:'var(--text2)'}}>Diferença (Est. → Real)</span>
+              <div className="font-display" style={{fontSize:'1.25rem',fontWeight:800,color:diff>0?'var(--red)':'var(--green)'}}>
+                {diff>0?'+':''}{fmtCurrency(Math.abs(diff))} {diff>0?'a mais':'economizado'}
+              </div>
+            </div>
+
+            {/* GRÁFICO GERAL — só aparece se houver >= 2 viagens com dados */}
+            {visited.length >= 1 && allCatTotals.length > 0 && (
+              <div className="card" style={{padding:'16px'}}>
+                <div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'var(--text3)',marginBottom:14,display:'flex',alignItems:'center',gap:6}}>
+                  <I n="pie_chart" xs style={{color:'var(--amber)'}}/> Distribuição Geral · Todas as Viagens
+                </div>
+                <div style={{display:'flex',alignItems:'center',gap:16}}>
+                  <DonutChart items={allCatTotals} total={allTotal} size={110}/>
+                  <div style={{flex:1,display:'flex',flexDirection:'column',gap:8}}>
+                    {allCatTotals.map(c => {
+                      const pct = allTotal > 0 ? Math.round((c.value/allTotal)*100) : 0;
+                      return (
+                        <div key={c.key}>
+                          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:3}}>
+                            <div style={{display:'flex',alignItems:'center',gap:5}}>
+                              <span style={{width:8,height:8,borderRadius:'50%',background:c.rawColor,display:'inline-block',flexShrink:0}}></span>
+                              <span style={{fontSize:'0.75rem',color:'var(--text2)'}}>{c.label}</span>
+                            </div>
+                            <span style={{fontSize:'0.75rem',fontWeight:700,color:'var(--text)'}}>{pct}%</span>
+                          </div>
+                          <div style={{height:3,background:'var(--bg4)',borderRadius:2,overflow:'hidden'}}>
+                            <div style={{height:'100%',width:`${pct}%`,background:c.rawColor,borderRadius:2,transition:'width 0.6s ease'}}></div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Trip history */}
+            {visited.length > 0 && (
+              <div>
+                <div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'var(--text3)',marginBottom:8}}>Por Viagem</div>
+                <div className="card" style={{overflow:'hidden'}}>
+                  {visited.map((t,i) => {
+                    const isExp = expanded === t.id;
+                    const cd = t.costDetails || {};
+                    const items = cats.map(c=>({...c, value:(cd[c.key]||0)})).filter(c=>c.value>0);
+                    const tripTotal = items.reduce((a,c)=>a+c.value,0);
+                    return (
+                      <div key={t.id} style={{borderBottom:i<visited.length-1?'1px solid var(--border)':'none'}}>
+                        {/* Row header */}
+                        <div onClick={()=>setExpanded(isExp?null:t.id)} style={{padding:'14px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',cursor:'pointer',userSelect:'none'}}>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontWeight:600,fontSize:'0.95rem',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{t.name}</div>
+                            <div style={{fontSize:'0.72rem',color:'var(--text2)',marginTop:2}}>
+                              {fmtDate(t.date||t.plannedDate)}
+                              {(t.odometerStart&&t.odometerEnd) && ` · ${t.odometerEnd-t.odometerStart} km rodados`}
+                            </div>
+                            {/* Mini barra horizontal de categorias */}
+                            {items.length > 0 && (
+                              <div style={{display:'flex',height:4,borderRadius:2,overflow:'hidden',marginTop:7,gap:1}}>
+                                {items.map(c=>(
+                                  <div key={c.key} title={`${c.label}: ${fmtCurrency(c.value)}`}
+                                    style={{flex:c.value,background:c.rawColor,minWidth:2,transition:'flex 0.4s ease'}}/>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          <div style={{display:'flex',alignItems:'center',gap:8,marginLeft:12,flexShrink:0}}>
+                            <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:'1.05rem',color:'var(--green)'}}>{fmtCurrency(t.actualCost)}</span>
+                            <I n={isExp?'expand_less':'expand_more'} sm style={{color:'var(--text3)'}}/>
+                          </div>
+                        </div>
+
+                        {/* Expanded detail com gráfico */}
+                        {isExp && (
+                          <div style={{padding:'0 16px 18px',borderTop:'1px solid var(--border)',paddingTop:14}}>
+                            {items.length === 0
+                              ? <div style={{fontSize:'0.8rem',color:'var(--text3)'}}>Sem detalhamento de categorias.</div>
+                              : (
+                                <>
+                                  {/* Donut + legenda lado a lado */}
+                                  <div style={{display:'flex',alignItems:'center',gap:16,marginBottom:14}}>
+                                    <DonutChart items={items} total={tripTotal} size={100}/>
+                                    <div style={{flex:1,display:'flex',flexDirection:'column',gap:6}}>
+                                      {items.map(c=>{
+                                        const pct = tripTotal>0 ? Math.round((c.value/tripTotal)*100) : 0;
+                                        return (
+                                          <div key={c.key}>
+                                            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:3}}>
+                                              <div style={{display:'flex',alignItems:'center',gap:5}}>
+                                                <span style={{width:7,height:7,borderRadius:'50%',background:c.rawColor,display:'inline-block'}}></span>
+                                                <span style={{fontSize:'0.73rem',color:'var(--text2)'}}>{c.label}</span>
+                                              </div>
+                                              <span style={{fontSize:'0.73rem',fontWeight:700}}>{pct}%</span>
+                                            </div>
+                                            <div style={{height:3,background:'var(--bg4)',borderRadius:2,overflow:'hidden'}}>
+                                              <div style={{height:'100%',width:`${pct}%`,background:c.rawColor,borderRadius:2}}></div>
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+
+                                  {/* Tabela de valores */}
+                                  <div style={{display:'flex',flexDirection:'column',gap:5}}>
+                                    {items.map(c=>(
+                                      <div key={c.key} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 10px',background:'var(--bg3)',borderRadius:7}}>
+                                        <I n={c.icon} sm style={{color:c.color,flexShrink:0}}/>
+                                        <span style={{flex:1,fontSize:'0.82rem',color:'var(--text2)'}}>{c.label}</span>
+                                        <span style={{fontWeight:700,fontSize:'0.88rem'}}>{fmtCurrency(c.value)}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+
+                                  {/* Comparativo est vs real */}
+                                  {t.fuelCost > 0 && (
+                                    <div style={{marginTop:10,padding:'10px 12px',background:'var(--amber-glow)',borderRadius:7,border:'1px solid rgba(245,158,11,0.15)',fontSize:'0.75rem',color:'var(--amber)',display:'flex',justifyContent:'space-between'}}>
+                                      <span>Combustível estimado</span>
+                                      <span style={{fontWeight:700}}>{fmtCurrency(t.fuelCost)}</span>
+                                    </div>
+                                  )}
+                                </>
+                              )
+                            }
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* General expenses */}
+            {generalExpenses.length > 0 && (
+              <div>
+                <div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'var(--text3)',marginBottom:8}}>Despesas Avulsas</div>
+                <div className="card" style={{overflow:'hidden'}}>
+                  {generalExpenses.map((e,i) => (
+                    <div key={e.id} style={{padding:'12px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',borderBottom:i<generalExpenses.length-1?'1px solid var(--border)':'none'}}>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:'0.88rem',fontWeight:600,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{e.description}</div>
+                        <div style={{fontSize:'0.72rem',color:'var(--text3)',marginTop:2}}>
+                          {new Date(e.date).toLocaleDateString('pt-BR')} · <span style={{textTransform:'uppercase',letterSpacing:'0.05em'}}>{e.category}</span>
+                        </div>
+                      </div>
+                      <div style={{display:'flex',alignItems:'center',gap:8,flexShrink:0,marginLeft:8}}>
+                        <span style={{fontWeight:700,fontFamily:"'Barlow Condensed',sans-serif",fontSize:'1rem'}}>{fmtCurrency(e.amount)}</span>
+                        <button className="iconbtn" onClick={()=>{if(window.confirm('Excluir despesa?'))setGeneralExpenses(prev=>prev.filter(x=>x.id!==e.id));}} style={{width:34,height:34}}>
+                          <I n="delete" xs/>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      };
+
+      // --- CHECKLIST ---
+      const ChecklistView = () => {
+        const [newItem, setNewItem] = useState('');
+        const done = checklist.filter(c=>c.done).length;
+        const toggle = (id) => setChecklist(prev=>prev.map(c=>c.id===id?{...c,done:!c.done}:c));
+        const addItem = () => {
+          if(!newItem.trim()) return;
+          setChecklist(prev=>[...prev,{id:Date.now(),text:newItem.trim(),done:false}]);
+          setNewItem('');
+        };
+        const removeItem = (id) => setChecklist(prev=>prev.filter(c=>c.id!==id));
+
+        return (
+          <div className="fade-up" style={{display:'flex',flexDirection:'column',gap:16}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+              <h2 className="font-display" style={{fontSize:'1.5rem',fontWeight:800}}>Checklist</h2>
+              <button className="btn btn-ghost" style={{fontSize:'0.78rem',padding:'8px 12px'}} onClick={()=>setChecklist(DEFAULT_CHECKLIST)}>
+                <I n="restart_alt" xs/> Resetar
+              </button>
+            </div>
+
+            {/* Progress */}
+            <div className="card" style={{padding:'14px'}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
+                <span style={{fontSize:'0.78rem',color:'var(--text2)'}}>{done} de {checklist.length} itens</span>
+                <span className="font-display" style={{fontSize:'1.2rem',fontWeight:800,color:done===checklist.length?'var(--green)':'var(--text)'}}>
+                  {checklist.length>0?Math.round((done/checklist.length)*100):0}%
+                </span>
+              </div>
+              <div className="prog-bar"><div className="prog-fill" style={{width:`${checklist.length>0?(done/checklist.length)*100:0}%`,background:done===checklist.length?'var(--green)':'var(--amber)'}}></div></div>
+            </div>
+
+            {/* Items */}
+            <div className="card" style={{overflow:'hidden'}}>
+              {checklist.map(item => (
+                <div key={item.id} className="check-item">
+                  <div className={`check-box ${item.done?'checked':''}`} onClick={()=>toggle(item.id)}>
+                    {item.done && <I n="check" xs style={{color:'#000',fontWeight:'bold'}}/>}
+                  </div>
+                  <span onClick={()=>toggle(item.id)} style={{flex:1,fontSize:'0.92rem',textDecoration:item.done?'line-through':'none',color:item.done?'var(--text3)':'var(--text)',transition:'all 0.15s'}}>
+                    {item.text}
+                  </span>
+                  <button className="iconbtn" onClick={()=>removeItem(item.id)} style={{width:32,height:32,opacity:0.5,flexShrink:0}}>
+                    <I n="close" xs/>
+                  </button>
                 </div>
               ))}
             </div>
-            <button onClick={() => setItems(defaultChecklist)} className="mt-6 text-sm text-slate-500 hover:text-amber-500 font-medium underline">Resetar Checklist</button>
+
+            {/* Add new */}
+            <div style={{display:'flex',gap:8}}>
+              <input className="inp" value={newItem} onChange={e=>setNewItem(e.target.value)} placeholder="Adicionar item..." onKeyDown={e=>e.key==='Enter'&&addItem()} style={{flex:1}}/>
+              <button className="btn btn-amber" onClick={addItem} style={{padding:'12px 16px'}}><I n="add" sm/></button>
+            </div>
           </div>
         );
       };
 
-      const WeatherWidget = ({ lat, lng }) => {
-        const [weather, setWeather] = useState(null);
-        useEffect(() => { if (lat && lng) fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true`).then(res => res.json()).then(data => setWeather(data.current_weather)).catch(()=>{}); }, [lat, lng]);
-        if (!weather) return null;
-        const isRainy = [51, 53, 55, 61, 63, 65, 80, 81, 82].includes(weather.weathercode);
-        const isCloudy = [1, 2, 3, 45, 48].includes(weather.weathercode);
-        return (
-          <div className="flex items-center gap-1.5 text-xs bg-slate-100 dark:bg-neutral-900 px-2 py-1 rounded-md border border-slate-200 dark:border-neutral-700 text-slate-600 dark:text-neutral-300 font-medium">
-            {isRainy ? <CloudRain className="w-3.5 h-3.5 text-blue-500" /> : isCloudy ? <CloudSun className="w-3.5 h-3.5 text-slate-400" /> : <Sun className="w-3.5 h-3.5 text-amber-500" />}
-            {weather.temperature}°C
-          </div>
-        );
-      };
-
-      const PlacesList = () => {
-        const [filter, setFilter] = useState('all');
-        const filteredPlaces = places.filter(p => filter === 'all' || p.status === filter);
-        const formatDate = (dateString) => {
-          if (!dateString) return '';
-          const [y, m, d] = dateString.split('-');
-          return `${d}/${m}/${y}`;
+      // --- SETTINGS ---
+      const SettingsView = () => {
+        const handleBrand = (e) => {
+          const b = e.target.value;
+          const first = motoDatabase[b][0];
+          setMyMoto({ brand:b, model:first.model, consumption:first.consumption });
         };
-
-        return (
-          <div className="space-y-6 pb-24 md:pb-0 animate-fade-in relative min-h-full">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-slate-800 dark:text-neutral-100">Destinos</h2>
-              <div className="bg-slate-100 dark:bg-neutral-800 rounded-lg p-1 flex">
-                {['all', 'planned', 'visited'].map(f => (
-                  <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${filter === f ? 'bg-white dark:bg-neutral-600 text-slate-800 dark:text-white shadow-sm' : 'text-slate-500 dark:text-neutral-400'}`}>
-                    {f === 'all' ? 'Todos' : f === 'planned' ? 'Quero Ir' : 'Já Fui'}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-16">
-              {filteredPlaces.map(place => {
-                const distReal = (place.odometerEnd && place.odometerStart) ? (place.odometerEnd - place.odometerStart) : null;
-
-                return (
-                <div key={place.id} className="bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700/60 rounded-2xl p-5 flex flex-col justify-between shadow-sm">
-                  <div>
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <h3 className="text-lg font-bold text-slate-800 dark:text-neutral-200 flex items-center gap-2">{place.name} {place.status === 'planned' && place.lat && <WeatherWidget lat={place.lat} lng={place.lng} />}</h3>
-                        <span className="text-slate-500 dark:text-neutral-400 font-medium text-sm">{place.city || place.name} - {place.state}</span>
-                      </div>
-                      <div className="flex gap-1">
-                        {place.status === 'planned' && <button onClick={() => shareTrip(place)} className="text-slate-400 hover:text-amber-500 p-2"><Share2 className="w-5 h-5" /></button>}
-                        <button onClick={() => deletePlace(place.id)} className="text-slate-400 hover:text-red-500 p-2"><Trash2 className="w-5 h-5" /></button>
-                      </div>
-                    </div>
-                    
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {place.type && <span className="flex items-center gap-1 text-xs font-bold text-slate-600 dark:text-neutral-300 bg-slate-100 dark:bg-neutral-700/50 px-2.5 py-1 rounded-md"><TwoWheeler className="w-3.5 h-3.5 text-amber-500" /> {place.type}</span>}
-                      {place.plannedDate && place.status === 'planned' && <span className="flex items-center gap-1 text-xs font-bold text-slate-600 dark:text-neutral-300 bg-slate-100 dark:bg-neutral-700/50 px-2.5 py-1 rounded-md"><Calendar className="w-3.5 h-3.5 text-blue-500" /> {formatDate(place.plannedDate)}</span>}
-                    </div>
-
-                    {(place.distance > 0 || distReal) && (
-                      <div className="flex flex-wrap gap-4 mb-4 bg-slate-50 dark:bg-neutral-900/50 p-3.5 rounded-xl border border-slate-100 dark:border-neutral-800/80">
-                        {distReal ? (
-                          <div className="flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 font-bold w-full mb-1">
-                            <Speed className="w-4 h-4 text-blue-500" /> Distância Real: {distReal} km
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-neutral-300 font-medium"><Route className="w-4 h-4 text-slate-400" /> Est: {place.distance} km (Ida)</div>
-                        )}
-                        <div className="flex items-center gap-1.5 text-sm text-amber-600 dark:text-amber-400 font-semibold"><Fuel className="w-4 h-4 text-amber-500" /> Est. R$ {place.fuelCost?.toFixed(2)}</div>
-                        {place.actualCost > 0 && (
-                           <div className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400 font-semibold w-full mt-2 pt-2 border-t border-slate-200 dark:border-neutral-800">
-                            <Wallet className="w-4 h-4 text-green-500" /> Gasto Real: R$ {place.actualCost.toFixed(2)}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    {place.notes && <p className="text-sm text-slate-600 dark:text-neutral-400 mb-4 line-clamp-2">{place.notes}</p>}
-                  </div>
-
-                  {place.status === 'planned' && (
-                    <button onClick={() => setFinishTripModal({ isOpen: true, placeId: place.id, costs: { gas: place.fuelCost?.toFixed(2) || '', food: '', lodging: '', maintenance: '', others: '' }, odoStart: '', odoEnd: '' })} className="w-full mt-4 flex items-center justify-center gap-2 bg-slate-100 dark:bg-neutral-700 hover:bg-green-50 text-slate-700 dark:text-white hover:text-green-600 py-2.5 rounded-xl text-sm font-bold transition-all border border-slate-200 dark:border-transparent">
-                      <CheckCircle2 className="w-5 h-5" /> Marcar Concluído
-                    </button>
-                  )}
-                </div>
-              )})}
-            </div>
-
-            <button onClick={() => setIsAddModalOpen(true)} className="fixed bottom-24 right-6 md:bottom-10 md:right-10 bg-amber-500 text-white p-4 rounded-full shadow-lg shadow-amber-500/30 hover:bg-amber-600 transition-transform hover:scale-105 z-10 flex items-center justify-center">
-              <PlusCircle className="w-6 h-6" />
-            </button>
-          </div>
-        );
-      };
-
-      const MapView = () => {
-        const mapRef = useRef(null);
-        const mapContainer = useRef(null);
-        const tileLayerRef = useRef(null);
-
-        useEffect(() => {
-          const initMap = () => {
-            if (window.L && mapContainer.current) {
-              if (!mapRef.current) { mapRef.current = window.L.map(mapContainer.current).setView([ORIGIN_LAT, ORIGIN_LNG], 6); }
-              if (tileLayerRef.current) tileLayerRef.current.remove();
-              
-              const tileUrl = isDark ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png' : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
-              tileLayerRef.current = window.L.tileLayer(tileUrl).addTo(mapRef.current);
-
-              mapRef.current.eachLayer((layer) => { if (layer instanceof window.L.Marker) mapRef.current.removeLayer(layer); });
-
-              const IconVisited = window.L.icon({ iconUrl: encodeSvg(svgPinVisited), iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
-              const IconPlanned = window.L.icon({ iconUrl: encodeSvg(svgPinPlanned), iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
-
-              const bounds = [];
-              places.forEach(place => {
-                if (place.lat && place.lng) {
-                  const marker = window.L.marker([place.lat, place.lng], { icon: place.status === 'visited' ? IconVisited : IconPlanned }).addTo(mapRef.current);
-                  marker.bindPopup(`<div style="padding:2px;"><strong style="color:#1e293b;font-family:sans-serif;">${place.name}</strong></div>`);
-                  bounds.push([place.lat, place.lng]);
-                }
-              });
-              if (bounds.length > 0) mapRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
-            }
-          };
-
-          const checkLeaflet = setInterval(() => { if (window.L) { clearInterval(checkLeaflet); initMap(); } }, 100);
-          return () => clearInterval(checkLeaflet);
-        }, [places, currentView, isDark]);
-
-        return (
-          <div className="h-[calc(100vh-140px)] md:h-full w-full rounded-2xl overflow-hidden border border-slate-200 dark:border-neutral-800 relative z-0 shadow-sm"><div ref={mapContainer} className="w-full h-full"></div></div>
-        );
-      };
-
-      const DonutChart = ({ data, total }) => {
-        let cumulativePercent = 0;
-        const getCoordinatesForPercent = (percent) => {
-          const x = Math.cos(2 * Math.PI * percent);
-          const y = Math.sin(2 * Math.PI * percent);
-          return [x, y];
+        const handleModel = (e) => {
+          const m = motoDatabase[myMoto.brand].find(x=>x.model===e.target.value);
+          if(m) setMyMoto({...myMoto, model:m.model, consumption:m.consumption});
         };
-
-        if (total === 0) return (<div className="w-full h-full rounded-full border-4 border-slate-200 flex items-center justify-center"><span className="text-xs text-slate-400">R$ 0</span></div>);
-
         return (
-          <div className="relative w-full h-full">
-            <svg viewBox="-1.4 -1.4 2.8 2.8" className="w-full h-full transform -rotate-90 drop-shadow-sm">
-              {data.map(slice => {
-                const percent = slice.value / total;
-                if (percent === 0) return null;
-                if (percent === 1) return <circle key={slice.label} cx="0" cy="0" r="1" fill="transparent" stroke={slice.color} strokeWidth="0.45" />
-                const startCoords = getCoordinatesForPercent(cumulativePercent);
-                cumulativePercent += percent;
-                const endCoords = getCoordinatesForPercent(cumulativePercent);
-                const largeArcFlag = percent > 0.5 ? 1 : 0;
-                const pathData = [`M ${startCoords[0]} ${startCoords[1]}`, `A 1 1 0 ${largeArcFlag} 1 ${endCoords[0]} ${endCoords[1]}`].join(' ');
-                return <path key={slice.label} d={pathData} fill="none" stroke={slice.color} strokeWidth="0.45" className="transition-all duration-500 ease-in-out hover:opacity-80" />;
-              })}
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Total</span>
-              <span className="text-sm font-black text-slate-800 dark:text-neutral-200">R$ {total.toFixed(0)}</span>
-            </div>
-          </div>
-        );
-      };
+          <div className="fade-up" style={{display:'flex',flexDirection:'column',gap:16}}>
+            <h2 className="font-display" style={{fontSize:'1.5rem',fontWeight:800}}>Minha Moto</h2>
 
-      const FinanceView = () => {
-        const visited = places.filter(p => p.status === 'visited' || (p.actualCost > 0));
-        const estimated = visited.reduce((acc, curr) => acc + (curr.fuelCost || 0), 0);
-        const totalGeneral = generalExpenses.reduce((acc, curr) => acc + curr.amount, 0);
-        const actual = visited.reduce((acc, curr) => acc + (curr.actualCost || 0), 0) + totalGeneral;
-        const diff = actual - estimated;
-
-        const TripFinanceRow = ({ t }) => {
-          const [expanded, setExpanded] = useState(false);
-          const gas = t.costDetails?.gas || t.actualCost || 0;
-          const food = t.costDetails?.food || 0;
-          const lodging = t.costDetails?.lodging || 0;
-          const maintenance = t.costDetails?.maintenance || 0;
-          const others = t.costDetails?.others || 0;
-          const totalCost = gas + food + lodging + maintenance + others;
-
-          const chartData = [
-            { id: 'gas', label: 'Gasolina', value: gas, color: '#f59e0b', icon: Fuel, iconColor: 'text-amber-500', bgIcon: 'bg-amber-100 dark:bg-amber-500/20' },
-            { id: 'food', label: 'Alimentação', value: food, color: '#f97316', icon: Restaurant, iconColor: 'text-orange-500', bgIcon: 'bg-orange-100 dark:bg-orange-500/20' },
-            { id: 'lodging', label: 'Hospedagem', value: lodging, color: '#3b82f6', icon: Hotel, iconColor: 'text-blue-500', bgIcon: 'bg-blue-100 dark:bg-blue-500/20' },
-            { id: 'maintenance', label: 'Manutenção', value: maintenance, color: '#ef4444', icon: Build, iconColor: 'text-red-500', bgIcon: 'bg-red-100 dark:bg-red-500/20' },
-            { id: 'others', label: 'Outros', value: others, color: '#a855f7', icon: Category, iconColor: 'text-purple-500', bgIcon: 'bg-purple-100 dark:bg-purple-500/20' }
-          ].filter(item => item.value > 0);
-
-          return (
-            <div className="border-b border-slate-100 dark:border-neutral-700/50 last:border-0 overflow-hidden">
-              <div onClick={() => setExpanded(!expanded)} className="p-4 flex justify-between items-center bg-white dark:bg-neutral-800 hover:bg-slate-50 dark:hover:bg-neutral-700/30 transition-colors cursor-pointer select-none">
+            <div className="card" style={{padding:'20px',display:'flex',flexDirection:'column',gap:16}}>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
                 <div>
-                  <div className="font-bold text-slate-800 dark:text-neutral-200">{t.name}</div>
-                  <div className="text-xs text-slate-500">{new Date(t.date || t.plannedDate).toLocaleDateString('pt-BR')}</div>
+                  <label className="lbl">Fabricante</label>
+                  <select className="inp" value={myMoto.brand} onChange={handleBrand}>
+                    {Object.keys(motoDatabase).map(b=><option key={b} value={b}>{b}</option>)}
+                  </select>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="text-green-600 font-bold text-lg">R$ {t.actualCost?.toFixed(2) || '0.00'}</div>
-                  <ExpandMore className={`w-5 h-5 text-slate-400 transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`} />
+                <div>
+                  <label className="lbl">Modelo</label>
+                  <select className="inp" value={myMoto.model} onChange={handleModel}>
+                    {motoDatabase[myMoto.brand].map(m=><option key={m.model} value={m.model}>{m.model}</option>)}
+                  </select>
                 </div>
               </div>
-              
-              {expanded && (
-                <div className="bg-slate-50 dark:bg-neutral-900/50 border-t border-slate-100 dark:border-neutral-800 animate-fade-in">
-                  <div className="p-6 flex flex-col md:flex-row items-center gap-8">
-                    <div className="w-40 h-40 flex-shrink-0"><DonutChart data={chartData} total={totalCost} /></div>
-                    <div className="flex-1 w-full space-y-3">
-                      {chartData.length === 0 ? (<div className="text-sm text-slate-500">Sem gastos registrados.</div>) : (
-                        chartData.map(item => {
-                          const percentage = totalCost > 0 ? ((item.value / totalCost) * 100).toFixed(1) : 0;
-                          return (
-                            <div key={item.id} className="flex items-center justify-between p-3 bg-white dark:bg-neutral-800 rounded-xl border border-slate-100 dark:border-neutral-700 shadow-sm transition-colors">
-                              <div className="flex items-center gap-3">
-                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${item.bgIcon}`}><item.icon className={`w-4 h-4 ${item.iconColor}`} /></div>
-                                <div><div className="font-bold text-slate-700 dark:text-neutral-200 text-sm">{item.label}</div><div className="text-xs text-slate-400 font-medium">{percentage}% do orçamento</div></div>
-                              </div>
-                              <div className="font-black text-slate-800 dark:text-neutral-100">R$ {item.value.toFixed(2)}</div>
-                            </div>
-                          );
-                        })
-                      )}
-                      <div className="text-right text-xs text-slate-400 mt-2 pt-2 border-t border-slate-200 dark:border-neutral-700/50">*Estimativa de combustível original: R$ {t.fuelCost?.toFixed(2) || '0.00'}</div>
-                    </div>
-                  </div>
+              <div>
+                <label className="lbl">Consumo Real (km/L)</label>
+                <div style={{position:'relative'}}>
+                  <input type="number" step="0.5" value={myMoto.consumption} onChange={e=>setMyMoto({...myMoto,consumption:parseFloat(e.target.value)||0})} className="inp"/>
+                  <span style={{position:'absolute',right:14,top:'50%',transform:'translateY(-50%)',color:'var(--text3)',fontSize:'0.8rem',fontWeight:600}}>km/L</span>
                 </div>
-              )}
-            </div>
-          );
-        };
-
-        return (
-          <div className="space-y-6 animate-fade-in pb-24 md:pb-0 min-h-full">
-            <header className="mb-6 flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-slate-800 dark:text-neutral-100 flex items-center gap-2"><Wallet className="text-green-500 w-7 h-7" /> Gestão Financeira</h2>
-              <button onClick={() => setExpenseModal(true)} className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors"><PlusCircle className="w-5 h-5" /> <span className="hidden md:inline">Despesa</span></button>
-            </header>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <FinanceCard icon={Fuel} color="amber" label="Previsão (Gasolina)" value={estimated} />
-              <FinanceCard icon={Receipt} color="green" label="Gasto Real Total" value={actual} />
-              <FinanceCard icon={TrendingUp} color={diff > 0 ? "red" : "blue"} label="Diferença (Extras)" value={Math.abs(diff)} subtext={diff > 0 ? 'A mais' : 'Economia'} />
-            </div>
-            
-            <div className="bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-2xl overflow-hidden shadow-sm mt-8">
-              <div className="p-4 border-b border-slate-100 dark:border-neutral-700/50 bg-slate-50 dark:bg-neutral-800/50 font-bold text-slate-700 flex items-center gap-2"><PieChart className="w-4 h-4" /> Histórico por Viagem</div>
-              <div className="flex flex-col">
-                {visited.length === 0 ? (<div className="p-6 text-center text-slate-500">Nenhuma viagem concluída.</div>) : (visited.map(t => <TripFinanceRow key={t.id} t={t} />))}
+              </div>
+              <div style={{background:'var(--amber-glow)',border:'1px solid rgba(245,158,11,0.2)',borderRadius:8,padding:'12px 14px',display:'flex',alignItems:'center',gap:10}}>
+                <I n="two_wheeler" sm style={{color:'var(--amber)',flexShrink:0}}/>
+                <div>
+                  <div style={{fontWeight:700,fontSize:'0.9rem'}}>{myMoto.model}</div>
+                  <div style={{fontSize:'0.75rem',color:'var(--amber)',opacity:0.8}}>{myMoto.consumption} km/L · {myMoto.brand}</div>
+                </div>
               </div>
             </div>
 
-            <div className="bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-2xl overflow-hidden shadow-sm mt-6">
-              <div className="p-4 border-b border-slate-100 dark:border-neutral-700/50 bg-slate-50 dark:bg-neutral-800/50 font-bold text-slate-700 flex items-center gap-2"><Build className="w-4 h-4 text-red-500" /> Despesas Avulsas da Moto</div>
-              <div className="flex flex-col divide-y divide-slate-100 dark:divide-neutral-700/50">
-                {generalExpenses.length === 0 ? (<div className="p-6 text-center text-slate-500">Nenhuma despesa avulsa.</div>) : (
-                  generalExpenses.map(e => (
-                    <div key={e.id} className="p-4 flex justify-between items-center bg-white dark:bg-neutral-800 hover:bg-slate-50 dark:hover:bg-neutral-700/30 transition-colors">
-                      <div>
-                        <div className="font-bold text-slate-800 dark:text-neutral-200">{e.description || 'Despesa Geral'}</div>
-                        <div className="text-xs text-slate-500 flex items-center gap-2 mt-0.5">
-                          <span>{new Date(e.date).toLocaleDateString('pt-BR')}</span>
-                          <span className="bg-slate-100 dark:bg-neutral-700 px-1.5 py-0.5 rounded text-[10px] uppercase font-bold">{e.category}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="text-slate-800 dark:text-neutral-200 font-bold">R$ {e.amount.toFixed(2)}</div>
-                        <button onClick={() => deleteGeneralExpense(e.id)} className="text-slate-400 hover:text-red-500 p-1"><Trash2 className="w-5 h-5" /></button>
-                      </div>
-                    </div>
-                  ))
-                )}
+            <div className="card" style={{padding:'20px',display:'flex',flexDirection:'column',gap:14}}>
+              <div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'var(--text3)'}}>Aparência</div>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                <span style={{fontSize:'0.9rem',color:'var(--text2)'}}>Tema {isDark?'Escuro':'Claro'}</span>
+                <button onClick={()=>setTheme(t=>t==='dark'?'light':'dark')} style={{width:52,height:28,borderRadius:14,background:isDark?'var(--amber)':'var(--bg4)',border:'none',cursor:'pointer',position:'relative',transition:'background 0.2s'}}>
+                  <div style={{width:22,height:22,borderRadius:'50%',background:'#fff',position:'absolute',top:3,left:isDark?'calc(100% - 25px)':3,transition:'left 0.2s',boxShadow:'0 1px 3px rgba(0,0,0,0.3)'}}></div>
+                </button>
               </div>
+            </div>
+
+            <div className="card" style={{padding:'14px 18px'}}>
+              <div style={{fontSize:'0.63rem',color:'var(--text3)',textAlign:'center'}}>MotoTracker v08 · Base: {ORIGIN.label}</div>
             </div>
           </div>
         );
       };
 
-      return (
-        <div className={`h-screen w-full overflow-hidden transition-colors duration-300 ${isDark ? 'dark bg-neutral-950 text-neutral-200' : 'bg-slate-50 text-slate-800'} font-sans`}>
-          <div className="w-full h-full flex">
-            
-            {/* SIDEBAR COMPLETA RESTAURADA */}
-            <aside className="hidden md:flex flex-col w-64 h-full bg-white dark:bg-neutral-900 border-r border-slate-200 dark:border-neutral-800 p-6 overflow-y-auto flex-shrink-0">
-              <div className="flex items-center justify-between mb-10"><div className="flex items-center gap-2 text-amber-500 font-black text-xl"><Navigation className="w-6 h-6" /> MotoTracker</div></div>
-              <nav className="flex flex-col gap-1.5 flex-1">
-                <NavBtn icon={Home} label="Dashboard" view="dashboard" current={currentView} set={setCurrentView} />
-                <NavBtn icon={MapIcon} label="Mapa" view="map" current={currentView} set={setCurrentView} />
-                <NavBtn icon={List} label="Viagens" view="list" current={currentView} set={setCurrentView} />
-                <NavBtn icon={Wallet} label="Financeiro" view="finance" current={currentView} set={setCurrentView} />
-                <NavBtn icon={CheckSquare} label="Checklist" view="checklist" current={currentView} set={setCurrentView} />
-                
-                <div className="mt-6 pt-6 border-t border-slate-100 dark:border-neutral-800">
-                  <NavBtn icon={Settings} label="Configurações" view="settings" current={currentView} set={setCurrentView} />
+      // ================================================================
+      // MODALS
+      // ================================================================
+      const AddModal = () => {
+        const [localFuel, setLocalFuel] = useState(fuelPrice);
+        const onSubmit = (e) => {
+          e.preventDefault();
+          const fd = new FormData(e.target);
+          addPlace({
+            name: fd.get('name'), city: fd.get('city'), state: fd.get('state'),
+            type: fd.get('type'), plannedDate: fd.get('plannedDate'),
+            hasPassenger: fd.get('hasPassenger')==='on', notes: fd.get('notes')
+          }, localFuel);
+        };
+        return (
+          <div className="overlay" onClick={e=>e.target===e.currentTarget&&setAddModal(false)}>
+            <div className="sheet">
+              <div className="sheet-handle"></div>
+              <div style={{padding:'0 20px 24px'}}>
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20}}>
+                  <h2 className="font-display" style={{fontSize:'1.4rem',fontWeight:800}}>Novo Destino</h2>
+                  <button className="iconbtn" onClick={()=>setAddModal(false)}><I n="close" sm/></button>
                 </div>
-              </nav>
-              <div className="mt-auto pt-6 border-t border-slate-200 dark:border-neutral-800 flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Tema</span>
-                <ThemeToggle isDark={isDark} toggle={toggleTheme} />
-              </div>
-            </aside>
-
-            {/* MAIN CONTENT */}
-            <main className="flex-1 h-full overflow-y-auto p-5 md:p-10 relative pb-24 md:pb-10">
-              <div className="md:hidden flex justify-between items-center mb-6">
-                <div className="flex items-center gap-2 text-amber-500 font-black text-xl"><Navigation className="w-6 h-6" /> MotoTracker</div>
-                <ThemeToggle isDark={isDark} toggle={toggleTheme} />
-              </div>
-
-              {currentView === 'dashboard' && <Dashboard />}
-              {currentView === 'map' && <MapView />}
-              {currentView === 'list' && <PlacesList />}
-              {currentView === 'finance' && <FinanceView />}
-              {currentView === 'checklist' && <ChecklistView />}
-              {currentView === 'settings' && <SettingsView />}
-            </main>
-          </div>
-
-          {/* MOBILE NAV COMPLETA RESTAURADA */}
-          <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-neutral-900 border-t border-slate-200 dark:border-neutral-800 flex justify-between items-center px-1 py-1 pb-safe z-40 overflow-x-auto">
-            <MobileBtn icon={Home} label="Início" view="dashboard" current={currentView} set={setCurrentView} />
-            <MobileBtn icon={MapIcon} label="Mapa" view="map" current={currentView} set={setCurrentView} />
-            <MobileBtn icon={List} label="Viagens" view="list" current={currentView} set={setCurrentView} />
-            <MobileBtn icon={Wallet} label="Finanças" view="finance" current={currentView} set={setCurrentView} />
-            <MobileBtn icon={CheckSquare} label="Checklist" view="checklist" current={currentView} set={setCurrentView} />
-            <MobileBtn icon={Settings} label="Config." view="settings" current={currentView} set={setCurrentView} />
-          </nav>
-
-          {/* MODALS */}
-          {isAddModalOpen && (
-            <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in overflow-y-auto">
-              <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl my-auto">
-                <div className="flex justify-between items-center p-5 border-b border-slate-100 dark:border-neutral-800">
-                  <h2 className="text-xl font-bold text-slate-800 dark:text-white">Novo Destino</h2>
-                  <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white"><X className="w-6 h-6" /></button>
-                </div>
-                <form onSubmit={(e) => {
-                  e.preventDefault(); const fd = new FormData(e.target);
-                  addPlace({ name: fd.get('name'), city: fd.get('city'), state: fd.get('state').toUpperCase(), type: fd.get('type'), plannedDate: fd.get('plannedDate'), hasPassenger: fd.get('hasPassenger') === 'on', status: 'planned', notes: fd.get('notes') }, parseFloat(fd.get('customFuel')) || fuelPrice);
-                }} className="p-5 space-y-4">
-                  <Input label="Nome da Viagem" name="name" placeholder="Ex: Feriado na Serra" />
-                  <div className="grid grid-cols-2 gap-4">
-                    <Input label="Cidade Destino" name="city" placeholder="Ex: Guaramiranga" />
-                    <Input label="Estado (UF)" name="state" placeholder="CE" maxLength="2" isUppercase />
+                <form onSubmit={onSubmit} style={{display:'flex',flexDirection:'column',gap:14}}>
+                  <div><label className="lbl">Nome da Viagem</label><input required name="name" placeholder="Ex: Feriado em Canoa Quebrada" className="inp"/></div>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr auto',gap:10}}>
+                    <div><label className="lbl">Cidade Destino</label><input required name="city" placeholder="Ex: Aracati" className="inp"/></div>
+                    <div><label className="lbl">UF</label><input required name="state" placeholder="CE" maxLength="2" className="inp" style={{width:60,textTransform:'uppercase'}}/></div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-500 mb-1">Tipo de Viagem</label>
-                      <select name="type" className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-3 outline-none">
-                        <option value="Bate e Volta">Bate e Volta</option><option value="Viagem Curta">Viagem Curta</option><option value="Viagem Longa">Viagem Longa</option><option value="Expedição">Expedição</option>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+                    <div><label className="lbl">Tipo</label>
+                      <select name="type" className="inp">
+                        <option>Bate e Volta</option><option>Viagem Curta</option><option>Viagem Longa</option><option>Expedição</option>
                       </select>
                     </div>
-                    <Input label="Data Prevista" name="plannedDate" type="date" />
+                    <div><label className="lbl">Data Prevista</label><input name="plannedDate" type="date" className="inp"/></div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4 items-center">
-                    <Input label="Preço Gasolina (R$)" name="customFuel" type="number" step="0.01" defaultValue={fuelPrice} />
-                    <label className="flex items-center gap-2 cursor-pointer mt-5 bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-3 hover:border-amber-500 transition-colors">
-                      <input type="checkbox" name="hasPassenger" className="w-5 h-5 accent-amber-500 cursor-pointer" />
-                      <span className="text-sm font-semibold text-slate-700 dark:text-neutral-300">Leva Garupa?</span>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,alignItems:'end'}}>
+                    <div><label className="lbl">Preço Gasolina (R$/L)</label><input type="number" step="0.01" value={localFuel} onChange={e=>setLocalFuel(parseFloat(e.target.value)||0)} className="inp"/></div>
+                    <label style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer',background:'var(--bg3)',border:'1px solid var(--border-strong)',borderRadius:8,padding:'12px 14px'}}>
+                      <input type="checkbox" name="hasPassenger" style={{width:18,height:18,accentColor:'var(--amber)',cursor:'pointer'}}/>
+                      <span style={{fontSize:'0.88rem',fontWeight:600}}>Garupa?</span>
                     </label>
                   </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1">Anotações</label>
-                    <textarea name="notes" rows="2" className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-3 outline-none resize-none"></textarea>
-                  </div>
-                  <button type="submit" className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3.5 rounded-xl">Salvar no DB</button>
+                  <div><label className="lbl">Anotações</label><textarea name="notes" rows={2} className="inp" style={{resize:'none'}} placeholder="Rota preferida, pontos de parada..."/></div>
+                  <button type="submit" className="btn btn-amber" style={{width:'100%',padding:'16px',fontSize:'1rem',marginTop:4}}>
+                    <I n="save" sm/> Salvar Destino
+                  </button>
                 </form>
               </div>
             </div>
-          )}
+          </div>
+        );
+      };
 
-          {finishTripModal.isOpen && (
-            <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in overflow-y-auto">
-              <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl p-6 my-auto">
-                <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Finalizar Viagem</h2>
-                <p className="text-sm text-slate-500 dark:text-neutral-400 mb-5">Detalhe o hodômetro e os gastos.</p>
-                <form onSubmit={confirmFinishTrip} className="space-y-4">
-                  <div className="bg-slate-50 dark:bg-neutral-800/50 p-4 rounded-xl border border-slate-100 dark:border-neutral-700/50 mb-4">
-                    <h3 className="text-sm font-bold text-slate-700 dark:text-neutral-300 mb-3 flex items-center gap-2"><Speed className="w-4 h-4 text-blue-500" /> Quilometragem Real</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div><label className="block text-xs font-semibold text-slate-500 mb-1">Km Inicial</label><input type="number" step="0.1" value={finishTripModal.odoStart} onChange={(e) => setFinishTripModal({...finishTripModal, odoStart: e.target.value})} className="w-full bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-2.5 outline-none font-bold" placeholder="Ex: 12500" /></div>
-                      <div><label className="block text-xs font-semibold text-slate-500 mb-1">Km Final</label><input type="number" step="0.1" value={finishTripModal.odoEnd} onChange={(e) => setFinishTripModal({...finishTripModal, odoEnd: e.target.value})} className="w-full bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-2.5 outline-none font-bold" placeholder="Ex: 12850" /></div>
+      const FinishModal = () => {
+        const { costs, odoStart, odoEnd } = finishModal;
+        const total = ['gas','food','lodging','maintenance','others'].reduce((a,k)=>a+(parseFloat(costs[k])||0),0);
+        const setC = (k,v) => setFinishModal(prev=>({...prev, costs:{...prev.costs,[k]:v}}));
+        return (
+          <div className="overlay" onClick={e=>e.target===e.currentTarget&&setFinishModal(prev=>({...prev,open:false}))}>
+            <div className="sheet">
+              <div className="sheet-handle"></div>
+              <div style={{padding:'0 20px 24px'}}>
+                <div style={{marginBottom:20}}>
+                  <h2 className="font-display" style={{fontSize:'1.4rem',fontWeight:800}}>Finalizar Viagem</h2>
+                  <p style={{fontSize:'0.82rem',color:'var(--text2)',marginTop:4}}>Registre os gastos reais e hodômetro.</p>
+                </div>
+                <form onSubmit={finishTrip} style={{display:'flex',flexDirection:'column',gap:14}}>
+                  <div style={{background:'var(--bg3)',borderRadius:10,padding:'14px',border:'1px solid var(--border)'}}>
+                    <div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'var(--blue)',marginBottom:10,display:'flex',alignItems:'center',gap:6}}>
+                      <I n="speed" xs/> Hodômetro
+                    </div>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+                      <div><label className="lbl">Km Inicial</label><input type="number" step="0.1" value={odoStart} onChange={e=>setFinishModal(prev=>({...prev,odoStart:e.target.value}))} className="inp" placeholder="12500"/></div>
+                      <div><label className="lbl">Km Final</label><input type="number" step="0.1" value={odoEnd} onChange={e=>setFinishModal(prev=>({...prev,odoEnd:e.target.value}))} className="inp" placeholder="12850"/></div>
+                    </div>
+                    {odoStart&&odoEnd&&parseFloat(odoEnd)>parseFloat(odoStart) && (
+                      <div style={{marginTop:8,textAlign:'center',fontSize:'0.82rem',color:'var(--blue)',fontWeight:700}}>
+                        {parseFloat(odoEnd)-parseFloat(odoStart)} km rodados
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+                    {[
+                      {k:'gas',label:'Gasolina',icon:'local_gas_station',color:'var(--amber)'},
+                      {k:'food',label:'Alimentação',icon:'restaurant',color:'#F97316'},
+                      {k:'lodging',label:'Hospedagem',icon:'hotel',color:'var(--blue)'},
+                      {k:'maintenance',label:'Manutenção',icon:'build',color:'var(--red)'},
+                      {k:'others',label:'Outros',icon:'category',color:'#A855F7'},
+                    ].map(f=>(
+                      <div key={f.k}>
+                        <label className="lbl" style={{display:'flex',alignItems:'center',gap:4}}>
+                          <I n={f.icon} xs style={{color:f.color}}/> {f.label}
+                        </label>
+                        <div style={{position:'relative'}}>
+                          <span style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',color:'var(--text3)',fontSize:'0.82rem',fontWeight:600}}>R$</span>
+                          <input type="number" step="0.01" value={costs[f.k]} onChange={e=>setC(f.k,e.target.value)} className="inp" style={{paddingLeft:30}} placeholder="0,00"/>
+                        </div>
+                      </div>
+                    ))}
+                    <div style={{display:'flex',alignItems:'flex-end',paddingBottom:2}}>
+                      <div style={{background:'var(--amber-glow)',border:'1px solid rgba(245,158,11,0.2)',borderRadius:8,padding:'12px',width:'100%',textAlign:'center'}}>
+                        <div style={{fontSize:'0.65rem',color:'var(--amber)',fontWeight:700,textTransform:'uppercase',marginBottom:4}}>Total</div>
+                        <div className="font-display" style={{fontSize:'1.3rem',fontWeight:800,color:'var(--amber)'}}>{fmtCurrency(total)}</div>
+                      </div>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div><label className="block text-xs font-semibold text-slate-500 mb-1">Gasolina</label><div className="relative"><span className="absolute left-3 top-2.5 text-slate-400 text-sm font-bold">R$</span><input type="number" step="0.01" value={finishTripModal.costs.gas} onChange={(e) => setFinishTripModal({...finishTripModal, costs: {...finishTripModal.costs, gas: e.target.value}})} className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-2.5 pl-9 outline-none font-bold" /></div></div>
-                    <div><label className="block text-xs font-semibold text-slate-500 mb-1">Alimentação</label><div className="relative"><span className="absolute left-3 top-2.5 text-slate-400 text-sm font-bold">R$</span><input type="number" step="0.01" value={finishTripModal.costs.food} onChange={(e) => setFinishTripModal({...finishTripModal, costs: {...finishTripModal.costs, food: e.target.value}})} className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-2.5 pl-9 outline-none font-bold" /></div></div>
-                    <div><label className="block text-xs font-semibold text-slate-500 mb-1">Hospedagem</label><div className="relative"><span className="absolute left-3 top-2.5 text-slate-400 text-sm font-bold">R$</span><input type="number" step="0.01" value={finishTripModal.costs.lodging} onChange={(e) => setFinishTripModal({...finishTripModal, costs: {...finishTripModal.costs, lodging: e.target.value}})} className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-2.5 pl-9 outline-none font-bold" /></div></div>
-                    <div><label className="block text-xs font-semibold text-slate-500 mb-1">Manutenção</label><div className="relative"><span className="absolute left-3 top-2.5 text-slate-400 text-sm font-bold">R$</span><input type="number" step="0.01" value={finishTripModal.costs.maintenance} onChange={(e) => setFinishTripModal({...finishTripModal, costs: {...finishTripModal.costs, maintenance: e.target.value}})} className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-2.5 pl-9 outline-none font-bold" /></div></div>
-                    <div><label className="block text-xs font-semibold text-slate-500 mb-1">Outros</label><div className="relative"><span className="absolute left-3 top-2.5 text-slate-400 text-sm font-bold">R$</span><input type="number" step="0.01" value={finishTripModal.costs.others} onChange={(e) => setFinishTripModal({...finishTripModal, costs: {...finishTripModal.costs, others: e.target.value}})} className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-2.5 pl-9 outline-none font-bold" /></div></div>
-                  </div>
-                  <div className="flex gap-3 mt-4">
-                    <button type="button" onClick={() => setFinishTripModal({isOpen: false, placeId: null, costs: { gas: '', food: '', lodging: '', maintenance: '', others: '' }, odoStart: '', odoEnd: ''})} className="flex-1 bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300 font-bold py-3 rounded-xl hover:bg-slate-200 dark:hover:bg-neutral-700 transition-colors">Cancelar</button>
-                    <button type="submit" className="flex-1 bg-green-500 text-white font-bold py-3 rounded-xl hover:bg-green-600 transition-colors">Salvar no DB</button>
+
+                  <div style={{display:'flex',gap:10}}>
+                    <button type="button" className="btn btn-ghost" style={{flex:1}} onClick={()=>setFinishModal(prev=>({...prev,open:false}))}>Cancelar</button>
+                    <button type="submit" className="btn btn-green" style={{flex:2}}><I n="check_circle" sm/> Confirmar</button>
                   </div>
                 </form>
               </div>
             </div>
-          )}
+          </div>
+        );
+      };
 
-          {expenseModal && (
-            <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-              <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl">
-                <div className="flex justify-between items-center p-5 border-b border-slate-100 dark:border-neutral-800">
-                  <h2 className="text-xl font-bold text-slate-800 dark:text-white">Lançar Despesa</h2>
-                  <button onClick={() => setExpenseModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white"><X className="w-6 h-6" /></button>
+      const ExpenseModal = () => (
+        <div className="overlay" onClick={e=>e.target===e.currentTarget&&setExpenseModal(false)}>
+          <div className="sheet">
+            <div className="sheet-handle"></div>
+            <div style={{padding:'0 20px 24px'}}>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20}}>
+                <h2 className="font-display" style={{fontSize:'1.4rem',fontWeight:800}}>Lançar Despesa</h2>
+                <button className="iconbtn" onClick={()=>setExpenseModal(false)}><I n="close" sm/></button>
+              </div>
+              <form onSubmit={addExpense} style={{display:'flex',flexDirection:'column',gap:14}}>
+                <div><label className="lbl">Vincular a</label>
+                  <select name="tripId" className="inp">
+                    <option value="general">Nenhuma (Despesa Avulsa)</option>
+                    {places.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+                  </select>
                 </div>
-                <form onSubmit={handleAddExpense} className="p-5 space-y-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-500 dark:text-neutral-400 mb-1">Vincular a (Opcional)</label>
-                    <select required name="tripId" className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-3 outline-none">
-                      <option value="general">Nenhuma (Despesa Avulsa)</option>
-                      {places.map(p => <option key={p.id} value={p.id}>Viagem: {p.name}</option>)}
+                <div><label className="lbl">Descrição</label><input name="description" placeholder="Ex: Remendo no pneu" className="inp"/></div>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+                  <div><label className="lbl">Categoria</label>
+                    <select name="category" className="inp">
+                      <option value="maintenance">Manutenção</option>
+                      <option value="gas">Gasolina</option>
+                      <option value="food">Alimentação</option>
+                      <option value="lodging">Hospedagem</option>
+                      <option value="others">Outros</option>
                     </select>
                   </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-500 dark:text-neutral-400 mb-1">Descrição</label>
-                    <input name="description" type="text" placeholder="Ex: Remendo no pneu" className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-3 outline-none" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-500 dark:text-neutral-400 mb-1">Categoria</label>
-                      <select required name="category" className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-3 outline-none">
-                        <option value="maintenance">Manutenção</option><option value="gas">Gasolina</option><option value="food">Alimentação</option><option value="lodging">Hospedagem</option><option value="others">Outros</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-500 dark:text-neutral-400 mb-1">Valor (R$)</label>
-                      <div className="relative"><span className="absolute left-3 top-2.5 text-slate-400 text-sm font-bold">R$</span><input required name="amount" type="number" step="0.01" className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-2.5 pl-9 outline-none font-bold" /></div>
+                  <div><label className="lbl">Valor (R$)</label>
+                    <div style={{position:'relative'}}>
+                      <span style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',color:'var(--text3)',fontSize:'0.82rem',fontWeight:600}}>R$</span>
+                      <input required name="amount" type="number" step="0.01" className="inp" style={{paddingLeft:30}} placeholder="0,00"/>
                     </div>
                   </div>
-                  
-                  {/* NOVO CAMPO: KM ATUAL */}
-                  <div className="pt-2">
-                    <label className="block text-xs font-semibold text-slate-500 dark:text-neutral-400 mb-1">Km Atual da Moto (Opcional)</label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-2.5 text-slate-400 text-sm font-bold"><Speed className="w-4 h-4"/></span>
-                      <input name="currentKm" type="number" step="0.1" placeholder="Ex: 15200" className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-2.5 pl-9 outline-none font-bold text-slate-800 dark:text-white" />
-                    </div>
+                </div>
+                <div><label className="lbl">Km Atual (opcional)</label>
+                  <div style={{position:'relative'}}>
+                    <span style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',color:'var(--text3)',fontSize:'0.82rem',fontWeight:600}}><I n="speed" xs/></span>
+                    <input name="km" type="number" className="inp" style={{paddingLeft:34}} placeholder="Ex: 15200"/>
                   </div>
+                </div>
+                <button type="submit" className="btn btn-amber" style={{width:'100%',padding:'16px',fontSize:'1rem',marginTop:4}}>
+                  <I n="add_circle" sm/> Confirmar Lançamento
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      );
 
-                  <button type="submit" className="w-full mt-2 bg-green-500 hover:bg-green-600 text-white font-bold py-3.5 rounded-xl transition-colors">Confirmar Lançamento</button>
-                </form>
+      // ================================================================
+      // LAYOUT
+      // ================================================================
+      const NAV = [
+        { v:'dashboard', label:'Início', icon:'home' },
+        { v:'map', label:'Mapa', icon:'map' },
+        { v:'list', label:'Viagens', icon:'two_wheeler' },
+        { v:'finance', label:'Finanças', icon:'account_balance_wallet' },
+        { v:'checklist', label:'Check', icon:'checklist' },
+      ];
+
+      return (
+        <div style={{height:'100%',width:'100%',display:'flex',background:'var(--bg)',overflow:'hidden'}}>
+
+          {/* Sidebar — desktop only */}
+          <aside style={{width:220,flexShrink:0,borderRight:'1px solid var(--border)',display:'none',flexDirection:'column',padding:'24px 16px',overflow:'hidden'}} className="sidebar-desktop">
+            <style>{`.sidebar-desktop{display:none}@media(min-width:768px){.sidebar-desktop{display:flex!important}}.mobile-nav{display:flex}@media(min-width:768px){.mobile-nav{display:none!important}}`}</style>
+            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:32}}>
+              <I n="near_me" fill style={{color:'var(--amber)',fontSize:'1.4rem'}}/>
+              <span className="font-display" style={{fontSize:'1.3rem',fontWeight:800,letterSpacing:'0.02em',color:'var(--text)'}}>MotoTracker</span>
+            </div>
+            <nav style={{display:'flex',flexDirection:'column',gap:4,flex:1}}>
+              {NAV.map(n=>(
+                <div key={n.v} className={`nav-item ${view===n.v?'active':''}`} onClick={()=>setView(n.v)}>
+                  <I n={n.icon} sm/> {n.label}
+                </div>
+              ))}
+              <div style={{borderTop:'1px solid var(--border)',marginTop:8,paddingTop:8}}>
+                <div className={`nav-item ${view==='settings'?'active':''}`} onClick={()=>setView('settings')}>
+                  <I n="settings" sm/> Config.
+                </div>
+              </div>
+            </nav>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',paddingTop:16,borderTop:'1px solid var(--border)'}}>
+              <span style={{fontSize:'0.72rem',color:'var(--text3)',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.07em'}}>Tema</span>
+              <button onClick={()=>setTheme(t=>t==='dark'?'light':'dark')} className="iconbtn" style={{width:36,height:36}}>
+                <I n={isDark?'light_mode':'dark_mode'} xs/>
+              </button>
+            </div>
+          </aside>
+
+          {/* Main content */}
+          <main style={{flex:1,height:'100%',overflowY:'auto',overflowX:'hidden',padding:'20px 16px',paddingBottom:'88px'}} className="scroll-area">
+            <style>{`@media(min-width:768px){main{padding:28px 32px;padding-bottom:28px!important}}`}</style>
+
+            {/* Mobile header */}
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20}} className="mob-header">
+              <style>{`.mob-header{display:flex}@media(min-width:768px){.mob-header{display:none}}`}</style>
+              <div style={{display:'flex',alignItems:'center',gap:8}}>
+                <I n="near_me" fill style={{color:'var(--amber)',fontSize:'1.2rem'}}/>
+                <span className="font-display" style={{fontSize:'1.15rem',fontWeight:800,letterSpacing:'0.02em'}}>MotoTracker</span>
+              </div>
+              <div style={{display:'flex',gap:6}}>
+                {isConnected && <span style={{width:7,height:7,borderRadius:'50%',background:'var(--green)',display:'inline-block',alignSelf:'center',animation:'pulse 2s infinite'}}></span>}
+                <button className="iconbtn" style={{width:36,height:36}} onClick={()=>setTheme(t=>t==='dark'?'light':'dark')}>
+                  <I n={isDark?'light_mode':'dark_mode'} xs/>
+                </button>
               </div>
             </div>
+
+            {/* Views */}
+            {loading ? (
+              <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'40vh',gap:12,color:'var(--text3)'}}>
+                <I n="near_me" xl fill style={{color:'var(--amber)',animation:'pulse 1.5s infinite'}}/>
+                <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'1.1rem',fontWeight:700,letterSpacing:'0.05em',textTransform:'uppercase'}}>Conectando...</span>
+              </div>
+            ) : (
+              <>
+                {view==='dashboard' && <Dashboard/>}
+                {view==='map' && <MapView/>}
+                {view==='list' && <PlacesList/>}
+                {view==='finance' && <FinanceView/>}
+                {view==='checklist' && <ChecklistView/>}
+                {view==='settings' && <SettingsView/>}
+              </>
+            )}
+          </main>
+
+          {/* Mobile bottom nav */}
+          <nav className="mobile-nav" style={{position:'fixed',bottom:0,left:0,right:0,background:'var(--bg2)',borderTop:'1px solid var(--border)',padding:'6px 4px',paddingBottom:'max(6px, env(safe-area-inset-bottom))',display:'flex',alignItems:'center',zIndex:50,gap:2}}>
+            {NAV.map(n=>(
+              <div key={n.v} className={`mob-nav-item ${view===n.v?'active':''}`} onClick={()=>setView(n.v)}>
+                <I n={n.icon} sm/>
+                <span className="label">{n.label}</span>
+              </div>
+            ))}
+            <div className={`mob-nav-item ${view==='settings'?'active':''}`} onClick={()=>setView('settings')}>
+              <I n="settings" sm/>
+              <span className="label">Config.</span>
+            </div>
+          </nav>
+
+          {/* FAB — only on list view mobile */}
+          {view==='list' && (
+            <button className="mob-fab" onClick={()=>setAddModal(true)} style={{position:'fixed',bottom:80,right:16,background:'var(--amber)',color:'#000',border:'none',borderRadius:'50%',width:54,height:54,display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 20px rgba(245,158,11,0.35)',cursor:'pointer',zIndex:49}}>
+              <style>{`.mob-fab{display:flex}@media(min-width:768px){.mob-fab{display:none}}`}</style>
+              <I n="add" lg/>
+            </button>
           )}
 
-          {toastMsg && <div className="fixed top-5 left-1/2 -translate-x-1/2 bg-slate-800 dark:bg-neutral-800 text-white px-6 py-3 rounded-full shadow-lg z-50 animate-fade-in flex items-center gap-2 font-medium border border-slate-700"><CheckCircle2 className="w-5 h-5 text-amber-500" />{toastMsg}</div>}
+          {/* Modals */}
+          {addModal && <AddModal/>}
+          {finishModal.open && <FinishModal/>}
+          {expenseModal && <ExpenseModal/>}
+
+          {/* Toast */}
+          {toast && (
+            <div className="toast" style={{borderColor:toast.isError?'rgba(239,68,68,0.3)':'var(--border-strong)'}}>
+              <I n={toast.isError?'error':'check_circle'} sm style={{color:toast.isError?'var(--red)':'var(--green)'}}/>
+              {toast.msg}
+            </div>
+          )}
         </div>
       );
     }
 
-    const ThemeToggle = ({ isDark, toggle }) => (
-      <button onClick={toggle} className={`relative flex items-center w-14 h-8 rounded-full p-1 transition-colors duration-300 ${isDark ? 'bg-neutral-800 border border-neutral-700' : 'bg-slate-200 border border-slate-300'}`}>
-        <div className={`absolute w-6 h-6 rounded-full shadow-sm transform transition-transform duration-300 flex items-center justify-center ${isDark ? 'translate-x-6 bg-neutral-900' : 'translate-x-0 bg-white'}`}>
-          {isDark ? <Moon className="w-4 h-4 text-amber-400" /> : <Sun className="w-4 h-4 text-amber-500" />}
-        </div>
-      </button>
-    );
-
-    const StatCard = ({ value, label, icon: Icon, color }) => (
-      <div className="bg-white dark:bg-neutral-800/50 border border-slate-200 dark:border-neutral-700/60 p-4 rounded-2xl flex flex-col justify-between shadow-sm dark:shadow-none min-h-[100px]">
-        <div className="flex justify-between items-start mb-2"><div className={`p-2 rounded-lg bg-slate-50 dark:bg-neutral-900/50 ${color}`}><Icon className="w-6 h-6" /></div></div>
-        <div><div className="text-xl md:text-2xl font-black text-slate-800 dark:text-neutral-100">{value}</div><div className="text-[10px] md:text-xs text-slate-500 dark:text-neutral-400 font-bold">{label}</div></div>
-      </div>
-    );
-
-    const FinanceCard = ({ icon: Icon, color, label, value, subtext }) => {
-      const colors = { amber: 'text-amber-500', green: 'text-green-500', blue: 'text-blue-500', red: 'text-red-500' };
-      return (
-        <div className="bg-white dark:bg-neutral-800/50 border border-slate-200 dark:border-neutral-700 p-5 rounded-2xl shadow-sm dark:shadow-none">
-          <div className="flex items-center gap-2 text-slate-500 dark:text-neutral-400 mb-2 font-medium text-sm"><Icon className={`w-5 h-5 ${colors[color]}`} /> {label}</div>
-          <div className={`text-2xl font-black ${color==='green'?'text-green-600 dark:text-green-400':color==='red'?'text-red-500':color==='blue'?'text-blue-500':'text-slate-800 dark:text-neutral-200'}`}>R$ {value.toFixed(2)} <span className="text-sm font-medium opacity-80">{subtext}</span></div>
-        </div>
-      );
-    };
-
-    const Input = ({ label, name, placeholder, type="text", step, defaultValue, maxLength, isUppercase }) => (
-      <div>
-        <label className="block text-xs font-semibold text-slate-500 dark:text-neutral-400 mb-1">{label}</label>
-        <input required={type !== "date"} name={name} type={type} step={step} defaultValue={defaultValue} maxLength={maxLength} placeholder={placeholder} className={`w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-3 text-slate-800 dark:text-white focus:border-amber-500 outline-none transition-colors ${isUppercase ? 'uppercase' : ''}`} />
-      </div>
-    );
-
-    const NavBtn = ({ icon: Icon, label, view, current, set }) => (
-      <button onClick={() => set(view)} className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all text-left w-full ${current === view ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-500' : 'text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-neutral-800/50 hover:text-slate-800 dark:hover:text-neutral-200'}`}><Icon className="w-6 h-6" />{label}</button>
-    );
-
-    const MobileBtn = ({ icon: Icon, label, view, current, set }) => (
-      <button onClick={() => set(view)} className={`flex flex-col items-center gap-1 p-2 min-w-[64px] transition-colors ${current === view ? 'text-amber-500' : 'text-slate-400 dark:text-neutral-500'}`}><Icon className={`w-6 h-6 ${current === view ? 'text-amber-500' : ''}`} /><span className="text-[10px] font-bold">{label}</span></button>
-    );
-
     const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<App />);
+    root.render(<App/>);
   </script>
 </body>
-<!-- </html> -->
+</html>
