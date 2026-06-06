@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>DiarioDeBordo v11</title>
+  <title>DiarioDeBordo v12</title>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -17,6 +17,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
     import { getFirestore, collection, getDocs, addDoc, deleteDoc, updateDoc, doc, query, orderBy } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyD4NQKbwWXxzzTWscDW1ElatAhNUA-DLqQ",
@@ -28,10 +29,15 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    // Agora passamos o db como argumento global ou acessível ao React
-    window.db = db;
+    
+    // Expondo para o React
+    window.db = getFirestore(app);
+    window.auth = getAuth(app);
+    window.provider = new GoogleAuthProvider();
+    window.signInWithPopup = signInWithPopup;
+    window.onAuthStateChanged = onAuthStateChanged;
+    window.signOut = signOut;
+    
     window.collection = collection;
     window.getDocs = getDocs;
     window.addDoc = addDoc;
@@ -40,14 +46,14 @@
     window.doc = doc;
     window.query = query;
     window.orderBy = orderBy;
+
+    // Sinaliza que os módulos carregaram
+    window.FIREBASE_READY = true;
   </script>
 
   <script type="text/babel">
     const { useState, useEffect, useRef, useCallback } = React;
 
-    const supabaseUrl = 'https://ofgafzebcyjmtxdkgqyy.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mZ2FmemViY3lqbXR4ZGtncXl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMjQwODksImV4cCI6MjA5NDcwMDA4OX0.Xt4XfB3NJ2HKqbjaLsbjOY_WyTND-SubwBHkaPZq3eM';
-    const db = window.supabase.createClient(supabaseUrl, supabaseKey);
     const ORIGIN = { lat: -3.7327, lng: -38.5270, label: 'Fortaleza, CE' };
 
     const motoDatabase = {
@@ -85,6 +91,10 @@
     const copyText = (t) => { try { navigator.clipboard.writeText(t); } catch(e) { const el=document.createElement('textarea'); el.value=t; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); } };
 
     function App() {
+      const [fbReady, setFbReady] = useState(!!window.FIREBASE_READY);
+      const [user, setUser] = useState(null);
+      const [authLoading, setAuthLoading] = useState(true);
+
       const [theme, setTheme] = useState(() => localStorage.getItem('mt_theme') || 'dark');
       const [view, setView] = useState('dashboard');
       const [places, setPlaces] = useState([]);
@@ -94,7 +104,7 @@
       const [checklist, setChecklist] = useState(() => { try { return JSON.parse(localStorage.getItem('mt_checklist')||'null') || DEFAULT_CHECKLIST; } catch(e){return DEFAULT_CHECKLIST;} });
       const [isConnected, setIsConnected] = useState(false);
       const [toast, setToast] = useState('');
-      const [loading, setLoading] = useState(true);
+      const [loading, setLoading] = useState(false);
 
       const [addModal, setAddModal] = useState(false);
       const [expenseModal, setExpenseModal] = useState(false);
@@ -102,6 +112,26 @@
       const [deleteConfirm, setDeleteConfirm] = useState(null);
 
       const isDark = theme === 'dark';
+
+      // Aguarda o script de módulo injetar os métodos do Firebase
+      useEffect(() => {
+        if (fbReady) return;
+        const t = setInterval(() => {
+          if (window.FIREBASE_READY) { setFbReady(true); clearInterval(t); }
+        }, 50);
+        return () => clearInterval(t);
+      }, [fbReady]);
+
+      // Observador de Autenticação
+      useEffect(() => {
+        if (!fbReady) return;
+        const unsubscribe = window.onAuthStateChanged(window.auth, (currentUser) => {
+          setUser(currentUser);
+          setAuthLoading(false);
+          if (currentUser) fetchPlaces();
+        });
+        return () => unsubscribe();
+      }, [fbReady]);
 
       useEffect(() => {
         document.body.classList.toggle('light-mode', !isDark);
@@ -113,8 +143,6 @@
       useEffect(() => { localStorage.setItem('mt_moto', JSON.stringify(myMoto)); }, [myMoto]);
       useEffect(() => { localStorage.setItem('mt_checklist', JSON.stringify(checklist)); }, [checklist]);
 
-      useEffect(() => { fetchPlaces(); }, []);
-
       const showToast = (msg, isError=false) => {
         setToast({ msg, isError });
         setTimeout(() => setToast(''), 3000);
@@ -122,18 +150,26 @@
 
       const fetchPlaces = async () => {
         setLoading(true);
-        const { data, error } = await db.from('trips').select('*').order('created_at', { ascending: false });
+        try {
+          const q = window.query(window.collection(window.db, "trips"), window.orderBy("created_at", "desc"));
+          const snapshot = await window.getDocs(q);
+          setIsConnected(true);
+          setPlaces(snapshot.docs.map(docSnap => {
+            const r = docSnap.data();
+            return {
+              id: docSnap.id, name: r.name, city: r.city, state: r.state, type: r.type,
+              status: r.status, plannedDate: r.planned_date, date: r.date, notes: r.notes,
+              lat: r.lat, lng: r.lng, distance: r.distance, duration: r.duration,
+              fuelCost: r.fuel_cost, actualCost: r.actual_cost,
+              costDetails: r.cost_details || { gas:0, food:0, lodging:0, maintenance:0, others:0 },
+              hasPassenger: r.has_passenger, odometerStart: r.odometer_start, odometerEnd: r.odometer_end
+            };
+          }));
+        } catch (error) {
+          console.error(error);
+          showToast('Falha ao conectar ao banco', true);
+        }
         setLoading(false);
-        if (error) { showToast('Falha ao conectar ao banco', true); return; }
-        setIsConnected(true);
-        setPlaces(data.map(r => ({
-          id: r.id, name: r.name, city: r.city, state: r.state, type: r.type,
-          status: r.status, plannedDate: r.planned_date, date: r.date, notes: r.notes,
-          lat: r.lat, lng: r.lng, distance: r.distance, duration: r.duration,
-          fuelCost: r.fuel_cost, actualCost: r.actual_cost,
-          costDetails: r.cost_details || { gas:0, food:0, lodging:0, maintenance:0, others:0 },
-          hasPassenger: r.has_passenger, odometerStart: r.odometer_start, odometerEnd: r.odometer_end
-        })));
       };
 
       const geocode = async (city, state) => {
@@ -169,38 +205,39 @@
           has_passenger: form.hasPassenger, notes: form.notes || '',
           lat: coords?.lat || null, lng: coords?.lng || null,
           distance: route.distance, duration: route.duration, fuel_cost: route.fuelCost,
-          actual_cost: 0, cost_details: { gas:0, food:0, lodging:0, maintenance:0, others:0 }
+          actual_cost: 0, cost_details: { gas:0, food:0, lodging:0, maintenance:0, others:0 },
+          created_at: new Date().toISOString()
         };
 
-        console.log("Tentando inserir no banco:", rec);
-
-        const { data, error } = await db.from('trips').insert([rec]).select();
-        
-        if (error) { 
-            console.error("ERRO DO SUPABASE:", error); 
-            alert("Erro ao salvar: " + error.message);
-            return; 
+        try {
+          const docRef = await window.addDoc(window.collection(window.db, 'trips'), rec);
+          const saved = { id: docRef.id, ...rec };
+          
+          setPlaces(prev => [{
+            id: saved.id, name: saved.name, city: saved.city, state: saved.state,
+            type: saved.type, status: 'planned', plannedDate: saved.planned_date,
+            date: null, notes: saved.notes, lat: saved.lat, lng: saved.lng,
+            distance: saved.distance, duration: saved.duration, fuelCost: saved.fuel_cost,
+            actualCost: 0, costDetails: { gas:0, food:0, lodging:0, maintenance:0, others:0 },
+            hasPassenger: saved.has_passenger, odometerStart: null, odometerEnd: null
+          }, ...prev]);
+          setAddModal(false);
+          showToast('Destino salvo!');
+        } catch (error) {
+          console.error("ERRO DO FIREBASE:", error);
+          alert("Erro ao salvar: " + error.message);
         }
-
-        const saved = data[0];
-        setPlaces(prev => [{
-          id: saved.id, name: saved.name, city: saved.city, state: saved.state,
-          type: saved.type, status: 'planned', plannedDate: saved.planned_date,
-          date: null, notes: saved.notes, lat: saved.lat, lng: saved.lng,
-          distance: saved.distance, duration: saved.duration, fuelCost: saved.fuel_cost,
-          actualCost: 0, costDetails: { gas:0, food:0, lodging:0, maintenance:0, others:0 },
-          hasPassenger: saved.has_passenger, odometerStart: null, odometerEnd: null
-        }, ...prev]);
-        setAddModal(false);
-        showToast('Destino salvo!');
       };
 
       const deletePlace = async (id) => {
-        const { error } = await db.from('trips').delete().eq('id', id);
-        if (error) { showToast('Erro ao excluir', true); return; }
-        setPlaces(prev => prev.filter(p => p.id !== id));
-        setDeleteConfirm(null);
-        showToast('Destino removido.');
+        try {
+          await window.deleteDoc(window.doc(window.db, 'trips', id));
+          setPlaces(prev => prev.filter(p => p.id !== id));
+          setDeleteConfirm(null);
+          showToast('Destino removido.');
+        } catch(error) {
+          showToast('Erro ao excluir', true);
+        }
       };
 
       const finishTrip = async (e) => {
@@ -209,11 +246,18 @@
         const cd = { gas:parseFloat(costs.gas)||0, food:parseFloat(costs.food)||0, lodging:parseFloat(costs.lodging)||0, maintenance:parseFloat(costs.maintenance)||0, others:parseFloat(costs.others)||0 };
         const total = Object.values(cd).reduce((a,b)=>a+b,0);
         const today = new Date().toISOString().split('T')[0];
-        const { error } = await db.from('trips').update({ status:'visited', date:today, actual_cost:total, cost_details:cd, odometer_start:parseFloat(odoStart)||null, odometer_end:parseFloat(odoEnd)||null }).eq('id', placeId);
-        if (error) { showToast('Erro ao concluir', true); return; }
-        setPlaces(prev => prev.map(p => p.id===placeId ? {...p, status:'visited', date:today, actualCost:total, costDetails:cd, odometerStart:parseFloat(odoStart)||null, odometerEnd:parseFloat(odoEnd)||null} : p));
-        setFinishModal({ open:false, placeId:null, costs:{gas:'',food:'',lodging:'',maintenance:'',others:''}, odoStart:'', odoEnd:'' });
-        showToast('Viagem concluída! 🏁');
+        
+        try {
+          await window.updateDoc(window.doc(window.db, 'trips', placeId), { 
+            status:'visited', date:today, actual_cost:total, cost_details:cd, 
+            odometer_start:parseFloat(odoStart)||null, odometer_end:parseFloat(odoEnd)||null 
+          });
+          setPlaces(prev => prev.map(p => p.id===placeId ? {...p, status:'visited', date:today, actualCost:total, costDetails:cd, odometerStart:parseFloat(odoStart)||null, odometerEnd:parseFloat(odoEnd)||null} : p));
+          setFinishModal({ open:false, placeId:null, costs:{gas:'',food:'',lodging:'',maintenance:'',others:''}, odoStart:'', odoEnd:'' });
+          showToast('Viagem concluída! 🏁');
+        } catch(error) {
+          showToast('Erro ao concluir', true);
+        }
       };
 
       const addExpense = async (e) => {
@@ -235,11 +279,15 @@
           const cur = p.costDetails || {};
           const newCosts = { ...cur, [category]: (cur[category]||0) + amount };
           const newTotal = (p.actualCost||0) + amount;
-          const { error } = await db.from('trips').update({ actual_cost: newTotal, cost_details: newCosts }).eq('id', tripId);
-          if (error) { showToast('Erro ao salvar', true); return; }
-          setPlaces(prev => prev.map(x => x.id===tripId ? {...x, actualCost:newTotal, costDetails:newCosts} : x));
-          setExpenseModal(false);
-          showToast('Despesa vinculada!');
+          
+          try {
+            await window.updateDoc(window.doc(window.db, 'trips', tripId), { actual_cost: newTotal, cost_details: newCosts });
+            setPlaces(prev => prev.map(x => x.id===tripId ? {...x, actualCost:newTotal, costDetails:newCosts} : x));
+            setExpenseModal(false);
+            showToast('Despesa vinculada!');
+          } catch(error) {
+            showToast('Erro ao salvar', true);
+          }
         }
       };
 
@@ -249,6 +297,32 @@
         copyText(text);
         showToast('Copiado pro WhatsApp!');
       };
+
+      // Exibição do estado de inicialização do Firebase e Autenticação
+      if (!fbReady || authLoading) {
+        return (
+          <div style={{height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', color:'var(--text3)', background:'var(--bg)', gap:12}}>
+            <span style={{fontFamily:"'Barlow Condensed',sans-serif", fontSize:'1.2rem', fontWeight:700, letterSpacing:'0.05em', textTransform:'uppercase'}}>
+              {!fbReady ? 'Inicializando Sistema...' : 'Verificando Acesso...'}
+            </span>
+          </div>
+        );
+      }
+
+      // Tela de Login
+      if (!user) {
+        return (
+          <div style={{height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'var(--bg)', color:'var(--text)', gap: 24, padding: 20}}>
+            <div style={{textAlign:'center'}}>
+              <h1 className="font-display" style={{fontSize: '2.4rem', fontWeight: 800, color: 'var(--amber)', marginBottom: 8}}>MotoTracker</h1>
+              <p style={{color: 'var(--text2)', fontSize: '0.95rem'}}>Seu diário de bordo pessoal.</p>
+            </div>
+            <button className="btn btn-amber" style={{padding: '16px 32px', fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: 10, borderRadius: 12}} onClick={() => window.signInWithPopup(window.auth, window.provider)}>
+              Entrar com Google
+            </button>
+          </div>
+        );
+      }
 
       const Dashboard = () => {
         const visited = places.filter(p => p.status === 'visited');
@@ -275,8 +349,8 @@
             <div className="flex items-start justify-between">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="conn-dot"></span>
-                  <span style={{fontSize:'0.65rem',textTransform:'uppercase',letterSpacing:'0.1em',color:'var(--text3)',fontWeight:600}}>{isConnected ? 'Online · Supabase' : 'Offline'}</span>
+                  <span className="conn-dot" style={{background: isConnected ? 'var(--green)' : 'var(--red)'}}></span>
+                  <span style={{fontSize:'0.65rem',textTransform:'uppercase',letterSpacing:'0.1em',color:'var(--text3)',fontWeight:600}}>{isConnected ? 'Online · Firebase' : 'Offline'}</span>
                 </div>
                 <h1 className="font-display" style={{fontSize:'2rem',fontWeight:800,lineHeight:1,color:'var(--text)'}}>
                   {myMoto.model}
@@ -879,6 +953,16 @@
             </div>
 
             <div className="card" style={{padding:'20px',display:'flex',flexDirection:'column',gap:14}}>
+              <div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'var(--text3)'}}>Conta</div>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                <span style={{fontSize:'0.9rem',color:'var(--text2)'}}>{user?.displayName || user?.email}</span>
+                <button onClick={() => window.signOut(window.auth)} className="btn btn-ghost" style={{padding:'6px 12px', fontSize:'0.8rem'}}>
+                  Sair
+                </button>
+              </div>
+            </div>
+
+            <div className="card" style={{padding:'20px',display:'flex',flexDirection:'column',gap:14}}>
               <div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'var(--text3)'}}>Aparência</div>
               <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
                 <span style={{fontSize:'0.9rem',color:'var(--text2)'}}>Tema {isDark?'Escuro':'Claro'}</span>
@@ -889,7 +973,7 @@
             </div>
 
             <div className="card" style={{padding:'14px 18px'}}>
-              <div style={{fontSize:'0.63rem',color:'var(--text3)',textAlign:'center'}}>MotoTracker v08 · Base: {ORIGIN.label}</div>
+              <div style={{fontSize:'0.63rem',color:'var(--text3)',textAlign:'center'}}>MotoTracker v11 · Firebase Auth · Base: {ORIGIN.label}</div>
             </div>
           </div>
         );
@@ -1172,3 +1256,5 @@
   </script>
 </body>
 </html>
+
+```
