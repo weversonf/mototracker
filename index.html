@@ -2,1261 +2,262 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>MotoTracker v10</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MotoTracker v08</title>
+
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class', theme: { extend: {} } }</script>
+
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --amber: #F59E0B;
-      --amber-dark: #B45309;
-      --amber-glow: rgba(245,158,11,0.15);
-      --bg: #0A0A0A;
-      --bg2: #111111;
-      --bg3: #1A1A1A;
-      --bg4: #222222;
-      --border: rgba(255,255,255,0.07);
-      --border-strong: rgba(255,255,255,0.12);
-      --text: #F0F0F0;
-      --text2: #888;
-      --text3: #555;
-      --green: #22C55E;
-      --red: #EF4444;
-      --blue: #3B82F6;
-    }
-    .light-mode {
-      --bg: #F5F4F0;
-      --bg2: #FFFFFF;
-      --bg3: #ECECEC;
-      --bg4: #E0E0E0;
-      --border: rgba(0,0,0,0.07);
-      --border-strong: rgba(0,0,0,0.14);
-      --text: #0A0A0A;
-      --text2: #666;
-      --text3: #999;
-      --amber-glow: rgba(245,158,11,0.1);
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body, #root { height: 100%; width: 100%; overflow: hidden; }
-    body { background: var(--bg); color: var(--text); font-family: 'Barlow', sans-serif; }
-    .font-display { font-family: 'Barlow Condensed', sans-serif; }
-    .mat { font-family: 'Material Symbols Rounded'; font-size: 1.25rem; display: inline-flex; align-items: center; justify-content: center; line-height: 1; font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; user-select: none; }
-    .mat.fill { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-    .mat.lg { font-size: 1.75rem; }
-    .mat.xl { font-size: 2.25rem; }
-    .mat.sm { font-size: 1rem; }
-    .mat.xs { font-size: 0.85rem; }
-    ::-webkit-scrollbar { width: 3px; height: 3px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 2px; }
-    @keyframes fadeUp { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform: translateY(0); } }
-    @keyframes slideIn { from { opacity:0; transform: translateX(-8px); } to { opacity:1; transform: translateX(0); } }
-    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
-    .fade-up { animation: fadeUp 0.25s ease-out both; }
-    .slide-in { animation: slideIn 0.2s ease-out both; }
-    .amber-rule { display: block; width: 32px; height: 2px; background: var(--amber); border-radius: 1px; }
-    .card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; }
-    .card-inner { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; }
-    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border-radius: 8px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 1rem; letter-spacing: 0.03em; cursor: pointer; border: none; transition: all 0.15s ease; text-transform: uppercase; }
-    .btn:active { transform: scale(0.97); }
-    .btn-amber { background: var(--amber); color: #000; padding: 14px 20px; }
-    .btn-amber:hover { background: #FBBF24; }
-    .btn-ghost { background: var(--bg3); color: var(--text); border: 1px solid var(--border-strong); padding: 12px 18px; }
-    .btn-ghost:hover { background: var(--bg4); }
-    .btn-danger { background: rgba(239,68,68,0.12); color: var(--red); border: 1px solid rgba(239,68,68,0.2); padding: 10px 14px; }
-    .btn-danger:hover { background: rgba(239,68,68,0.2); }
-    .btn-green { background: var(--green); color: #000; padding: 14px 20px; }
-    .btn-green:hover { filter: brightness(1.1); }
-    .iconbtn { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 8px; cursor: pointer; border: 1px solid var(--border); background: var(--bg3); color: var(--text2); transition: all 0.15s; }
-    .iconbtn:hover { background: var(--bg4); color: var(--text); border-color: var(--border-strong); }
-    .iconbtn:active { transform: scale(0.95); }
-    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; font-family: 'Barlow Condensed', sans-serif; }
-    .badge-amber { background: var(--amber-glow); color: var(--amber); border: 1px solid rgba(245,158,11,0.25); }
-    .badge-green { background: rgba(34,197,94,0.12); color: var(--green); border: 1px solid rgba(34,197,94,0.2); }
-    .badge-blue { background: rgba(59,130,246,0.12); color: var(--blue); border: 1px solid rgba(59,130,246,0.2); }
-    .badge-gray { background: var(--bg3); color: var(--text2); border: 1px solid var(--border-strong); }
-    .stat-block { display: flex; flex-direction: column; gap: 2px; }
-    .stat-value { font-family: 'Barlow Condensed', sans-serif; font-size: 1.75rem; font-weight: 800; line-height: 1; color: var(--text); }
-    .stat-label { font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); }
-    .inp { width: 100%; background: var(--bg3); border: 1px solid var(--border-strong); border-radius: 8px; padding: 12px 14px; color: var(--text); font-family: 'Barlow', sans-serif; font-size: 0.95rem; outline: none; transition: border-color 0.15s; -webkit-appearance: none; }
-    .inp:focus { border-color: var(--amber); }
-    .inp::placeholder { color: var(--text3); }
-    select.inp { cursor: pointer; }
-    label.lbl { display: block; font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text3); margin-bottom: 6px; }
-    .nav-item { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 8px; cursor: pointer; font-family: 'Barlow Condensed', sans-serif; font-size: 1.05rem; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; color: var(--text2); transition: all 0.15s; border: 1px solid transparent; }
-    .nav-item:hover { background: var(--bg3); color: var(--text); border-color: var(--border); }
-    .nav-item.active { background: var(--amber-glow); color: var(--amber); border-color: rgba(245,158,11,0.25); }
-    .mob-nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 4px; flex: 1; cursor: pointer; border-radius: 8px; transition: all 0.15s; }
-    .mob-nav-item span.label { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text3); transition: color 0.15s; font-family: 'Barlow Condensed', sans-serif; }
-    .mob-nav-item .mat { color: var(--text3); transition: color 0.15s; font-size: 1.4rem; }
-    .mob-nav-item.active .mat { color: var(--amber); }
-    .mob-nav-item.active .label { color: var(--amber); }
-    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); z-index: 100; display: flex; align-items: flex-end; justify-content: center; }
-    .sheet { background: var(--bg2); border: 1px solid var(--border-strong); border-radius: 20px 20px 0 0; width: 100%; max-width: 480px; max-height: 92vh; overflow-y: auto; animation: fadeUp 0.25s ease-out; }
-    .sheet-handle { width: 36px; height: 4px; background: var(--border-strong); border-radius: 2px; margin: 12px auto 20px; }
-    .divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
-    .check-item { display: flex; align-items: center; gap: 14px; padding: 16px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.12s; }
-    .check-item:last-child { border-bottom: none; }
-    .check-item:hover { background: var(--bg3); }
-    .check-box { width: 22px; height: 22px; border-radius: 5px; border: 2px solid var(--border-strong); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
-    .check-box.checked { background: var(--amber); border-color: var(--amber); }
-    .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--bg2); border: 1px solid var(--border-strong); color: var(--text); padding: 12px 20px; border-radius: 40px; font-size: 0.875rem; font-weight: 600; z-index: 999; display: flex; align-items: center; gap: 8px; animation: fadeUp 0.2s ease-out; white-space: nowrap; box-shadow: 0 4px 24px rgba(0,0,0,0.4); }
-    .leaflet-container { background: #111 !important; }
-    .prog-bar { height: 4px; background: var(--bg4); border-radius: 2px; overflow: hidden; }
-    .prog-fill { height: 100%; background: var(--amber); border-radius: 2px; transition: width 0.5s ease; }
-    .conn-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); display: inline-block; animation: pulse 2s infinite; }
-    input[type=range] { -webkit-appearance: none; appearance: none; height: 4px; background: var(--bg4); border-radius: 2px; outline: none; }
-    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--amber); cursor: pointer; }
-    .scroll-area { overflow-y: auto; -webkit-overflow-scrolling: touch; }
-    .pb-safe { padding-bottom: max(env(safe-area-inset-bottom), 16px); }
 
-    .light-mode .card { background: #FFF; }
-    .light-mode .card-inner { background: var(--bg3); }
-    .light-mode body { background: var(--bg); color: var(--text); }
-    .light-mode .inp { background: var(--bg3); }
-    .light-mode .nav-item:hover { background: var(--bg3); }
-    .light-mode .toast { background: #FFF; }
-    .light-mode .sheet { background: #FFF; }
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+
+  <style>
+    .material-symbols-rounded { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
+    .material-symbols-rounded.w-5 { font-size: 1.25rem; }
+    .material-symbols-rounded.w-6 { font-size: 1.5rem; }
+    .material-symbols-rounded.w-8 { font-size: 2rem; }
+    .pb-safe { padding-bottom: env(safe-area-inset-bottom, 1rem); }
+    .animate-fade-in { animation: fadeIn 0.2s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    ::-webkit-scrollbar { display: none; }
   </style>
 </head>
-<body>
+<body class="bg-slate-50 text-slate-800 dark:bg-neutral-950 dark:text-neutral-200">
+  
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect, useRef, useCallback } = React;
+    const { useState, useEffect, useRef } = React;
 
+    // --- CONFIGURAÇÃO DO SUPABASE ---
     const supabaseUrl = 'https://ofgafzebcyjmtxdkgqyy.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mZ2FmemViY3lqbXR4ZGtncXl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMjQwODksImV4cCI6MjA5NDcwMDA4OX0.Xt4XfB3NJ2HKqbjaLsbjOY_WyTND-SubwBHkaPZq3eM';
-    const db = window.supabase.createClient(supabaseUrl, supabaseKey);
-    const ORIGIN = { lat: -3.7327, lng: -38.5270, label: 'Fortaleza, CE' };
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+    // --- MAPA DE ÍCONES ---
+    const MIcon = ({ name, className }) => <span className={`material-symbols-rounded ${className || ''}`}>{name}</span>;
+    const Home = (p) => <MIcon name="home" {...p} />;
+    const List = (p) => <MIcon name="list" {...p} />;
+    const PlusCircle = (p) => <MIcon name="add_circle" {...p} />;
+    const CheckCircle2 = (p) => <MIcon name="check_circle" {...p} />;
+    const Trash2 = (p) => <MIcon name="delete" {...p} />;
+    const Navigation = (p) => <MIcon name="near_me" {...p} />;
+    const Fuel = (p) => <MIcon name="local_gas_station" {...p} />;
+    const Clock = (p) => <MIcon name="schedule" {...p} />;
+    const EditIcon = (p) => <MIcon name="edit" {...p} />;
+    const X = (p) => <MIcon name="close" {...p} />;
+    const Wallet = (p) => <MIcon name="account_balance_wallet" {...p} />;
+    const MapPin = (p) => <MIcon name="location_on" {...p} />;
+    const Thermometer = (p) => <MIcon name="device_thermostat" {...p} />;
+    const Settings = (p) => <MIcon name="settings" {...p} />;
+    const Calendar = (p) => <MIcon name="calendar_month" {...p} />;
+    const Users = (p) => <MIcon name="group" {...p} />;
+    const Route = (p) => <MIcon name="route" {...p} />;
+    const CheckSquare = (p) => <MIcon name="check_box" {...p} />;
+
+    const ORIGIN_LAT = -3.7327; // Fortaleza
+    const ORIGIN_LNG = -38.5270;
 
     const motoDatabase = {
-      "Yamaha": [{ model:"Fazer 250",consumption:29},{ model:"MT-03",consumption:22},{ model:"Ténéré 250",consumption:30},{ model:"Crosser 150",consumption:38}],
-      "Honda": [{ model:"CB 300F Twister",consumption:35},{ model:"XRE 300",consumption:26},{ model:"CG 160 Titan",consumption:40},{ model:"Sahara 300",consumption:30}],
-      "BMW": [{ model:"G 310 GS",consumption:25},{ model:"F 850 GS",consumption:20},{ model:"R 1250 GS",consumption:18}],
-      "Kawasaki": [{ model:"Ninja 400",consumption:25},{ model:"Versys 300",consumption:24},{ model:"Z400",consumption:26}],
-      "Royal Enfield": [{ model:"Meteor 350",consumption:28},{ model:"Himalayan 411",consumption:26}],
-      "Outra": [{ model:"Modelo Personalizado",consumption:25}]
+      "Yamaha": [ { model: "Fazer 250", consumption: 29 }, { model: "MT-03", consumption: 22 }, { model: "Tenere 250", consumption: 30 } ],
+      "Honda": [ { model: "CB 300F Twister", consumption: 35 }, { model: "XRE 300", consumption: 26 }, { model: "CG 160", consumption: 40 } ],
+      "Outra": [ { model: "Modelo Personalizado", consumption: 25 } ]
     };
-
-    const DEFAULT_CHECKLIST = [
-      { id:1, text:"Calibrar pneus", done:false },
-      { id:2, text:"Nível do óleo", done:false },
-      { id:3, text:"Corrente limpa e lubrificada", done:false },
-      { id:4, text:"Documentos (CNH + CRLV)", done:false },
-      { id:5, text:"Capa de chuva", done:false },
-      { id:6, text:"Kit reparo de pneu", done:false },
-      { id:7, text:"Carregador de celular/GPS", done:false },
-      { id:8, text:"Ferramenta básica", done:false },
-    ];
-
-    const svgPin = (color, stroke) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 36"><path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 24 12 24s12-15 12-24C24 5.373 18.627 0 12 0z" fill="${color}" stroke="${stroke}" stroke-width="1.5"/><circle cx="12" cy="12" r="5" fill="white" opacity="0.9"/></svg>`;
-    const enc = (s) => `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(s)}`;
-
-    const I = ({ n, className='', lg=false, xl=false, sm=false, xs=false, fill=false }) => {
-      let sz = lg ? 'lg' : xl ? 'xl' : sm ? 'sm' : xs ? 'xs' : '';
-      let f = fill ? 'fill' : '';
-      return <span className={`mat ${sz} ${f} ${className}`}>{n}</span>;
-    };
-
-    const fmtCurrency = (v) => `R$ ${(v||0).toFixed(2).replace('.', ',')}`;
-    const fmtDate = (s) => { if(!s) return ''; const [y,m,d]=s.split('-'); return `${d}/${m}/${y}`; };
-    const fmtDuration = (min) => { const h=Math.floor(min/60); const m=min%60; return h===0?`${m}min`:`${h}h${m>0?` ${m}min`:''}`; };
-    const copyText = (t) => { try { navigator.clipboard.writeText(t); } catch(e) { const el=document.createElement('textarea'); el.value=t; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); } };
 
     function App() {
-      const [theme, setTheme] = useState(() => localStorage.getItem('mt_theme') || 'dark');
-      const [view, setView] = useState('dashboard');
+      const [theme, setTheme] = useState(() => localStorage.getItem('motoTrackerTheme') || 'dark');
       const [places, setPlaces] = useState([]);
-      const [generalExpenses, setGeneralExpenses] = useState(() => { try { return JSON.parse(localStorage.getItem('mt_expenses_v2')||'[]'); } catch(e){return[];} });
-      const [fuelPrice, setFuelPrice] = useState(() => parseFloat(localStorage.getItem('mt_fuel')||'5.80'));
-      const [myMoto, setMyMoto] = useState(() => { try { return JSON.parse(localStorage.getItem('mt_moto')||'null') || {brand:'Yamaha',model:'Fazer 250',consumption:29}; } catch(e){return{brand:'Yamaha',model:'Fazer 250',consumption:29};} });
-      const [checklist, setChecklist] = useState(() => { try { return JSON.parse(localStorage.getItem('mt_checklist')||'null') || DEFAULT_CHECKLIST; } catch(e){return DEFAULT_CHECKLIST;} });
-      const [isConnected, setIsConnected] = useState(false);
-      const [toast, setToast] = useState('');
-      const [loading, setLoading] = useState(true);
+      const [editingPlace, setEditingPlace] = useState(null);
+      const [fuelPrice, setFuelPrice] = useState(() => parseFloat(localStorage.getItem('fuelPrice')) || 5.80);
+      const [myMoto, setMyMoto] = useState(() => JSON.parse(localStorage.getItem('myMotoConfig')) || { brand: 'Yamaha', model: 'Fazer 250', consumption: 29 });
+      const [currentView, setCurrentView] = useState('dashboard');
+      const [toastMsg, setToastMsg] = useState('');
+      const [isDbConnected, setIsDbConnected] = useState(false);
+      const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-      const [addModal, setAddModal] = useState(false);
-      const [expenseModal, setExpenseModal] = useState(false);
-      const [finishModal, setFinishModal] = useState({ open:false, placeId:null, costs:{gas:'',food:'',lodging:'',maintenance:'',others:''}, odoStart:'', odoEnd:'' });
-      const [deleteConfirm, setDeleteConfirm] = useState(null);
-
-      const isDark = theme === 'dark';
-
+      useEffect(() => { fetchTrips(); }, []);
+      useEffect(() => { localStorage.setItem('fuelPrice', fuelPrice); }, [fuelPrice]);
+      useEffect(() => { localStorage.setItem('myMotoConfig', JSON.stringify(myMoto)); }, [myMoto]);
       useEffect(() => {
-        document.body.classList.toggle('light-mode', !isDark);
-        localStorage.setItem('mt_theme', theme);
+        document.documentElement.classList.toggle('dark', theme === 'dark');
+        localStorage.setItem('motoTrackerTheme', theme);
       }, [theme]);
 
-      useEffect(() => { localStorage.setItem('mt_expenses_v2', JSON.stringify(generalExpenses)); }, [generalExpenses]);
-      useEffect(() => { localStorage.setItem('mt_fuel', fuelPrice.toString()); }, [fuelPrice]);
-      useEffect(() => { localStorage.setItem('mt_moto', JSON.stringify(myMoto)); }, [myMoto]);
-      useEffect(() => { localStorage.setItem('mt_checklist', JSON.stringify(checklist)); }, [checklist]);
-
-      useEffect(() => { fetchPlaces(); }, []);
-
-      const showToast = (msg, isError=false) => {
-        setToast({ msg, isError });
-        setTimeout(() => setToast(''), 3000);
+      const fetchTrips = async () => {
+        const { data, error } = await supabase.from('trips').select('*').order('created_at', { ascending: false });
+        if (!error) { setPlaces(data); setIsDbConnected(true); }
       };
 
-      const fetchPlaces = async () => {
-        setLoading(true);
-        const { data, error } = await db.from('trips').select('*').order('created_at', { ascending: false });
-        setLoading(false);
-        if (error) { showToast('Falha ao conectar ao banco', true); return; }
-        setIsConnected(true);
-        setPlaces(data.map(r => ({
-          id: r.id, name: r.name, city: r.city, state: r.state, type: r.type,
-          status: r.status, plannedDate: r.planned_date, date: r.date, notes: r.notes,
-          lat: r.lat, lng: r.lng, distance: r.distance, duration: r.duration,
-          fuelCost: r.fuel_cost, actualCost: r.actual_cost,
-          costDetails: r.cost_details || { gas:0, food:0, lodging:0, maintenance:0, others:0 },
-          hasPassenger: r.has_passenger, odometerStart: r.odometer_start, odometerEnd: r.odometer_end
-        })));
-      };
+      const showToast = (msg) => { setToastMsg(msg); setTimeout(() => setToastMsg(''), 3000); };
 
-      const geocode = async (city, state) => {
+      const updatePlace = async (id, updatedData) => {
         try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(city)}&state=${encodeURIComponent(state)}&country=Brazil&format=json`);
-          const data = await res.json();
-          if (data?.length > 0) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-        } catch(e){}
-        return null;
-      };
-
-      const calcRoute = async (lat, lng, price, consumption) => {
-        try {
-          const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${ORIGIN.lng},${ORIGIN.lat};${lng},${lat}?overview=false`);
-          const data = await res.json();
-          if (data.routes?.length > 0) {
-            const km = Math.round(data.routes[0].distance / 1000);
-            return { distance: km, duration: fmtDuration(Math.round(data.routes[0].duration / 60)), fuelCost: (km / consumption) * price };
-          }
-        } catch(e){}
-        return { distance: 0, duration: 'N/A', fuelCost: 0 };
-      };
-
-      const addPlace = async (form, price) => {
-        showToast('Calculando rota...');
-        const coords = await geocode(form.city, form.state);
-        let route = { distance: 0, duration: 'N/A', fuelCost: 0 };
-        if (coords) route = await calcRoute(coords.lat, coords.lng, price, myMoto.consumption);
-
-        const rec = {
-          name: form.name, city: form.city, state: form.state.toUpperCase(),
-          type: form.type, status: 'planned', planned_date: form.plannedDate || null,
-          has_passenger: form.hasPassenger, notes: form.notes || '',
-          lat: coords?.lat || null, lng: coords?.lng || null,
-          distance: route.distance, duration: route.duration, fuel_cost: route.fuelCost,
-          actual_cost: 0, cost_details: { gas:0, food:0, lodging:0, maintenance:0, others:0 }
-        };
-
-        console.log("Tentando inserir no banco:", rec);
-
-        const { data, error } = await db.from('trips').insert([rec]).select();
-        
-        if (error) { 
-            console.error("ERRO DO SUPABASE:", error); 
-            alert("Erro ao salvar: " + error.message);
-            return; 
+          const { error } = await supabase.from('trips').update(updatedData).eq('id', id);
+          if (error) throw error;
+          setPlaces(places.map(p => p.id === id ? { ...p, ...updatedData } : p));
+          setEditingPlace(null);
+          showToast("Viagem atualizada!");
+        } catch (error) {
+          showToast("Erro ao atualizar.");
         }
-
-        const saved = data[0];
-        setPlaces(prev => [{
-          id: saved.id, name: saved.name, city: saved.city, state: saved.state,
-          type: saved.type, status: 'planned', plannedDate: saved.planned_date,
-          date: null, notes: saved.notes, lat: saved.lat, lng: saved.lng,
-          distance: saved.distance, duration: saved.duration, fuelCost: saved.fuel_cost,
-          actualCost: 0, costDetails: { gas:0, food:0, lodging:0, maintenance:0, others:0 },
-          hasPassenger: saved.has_passenger, odometerStart: null, odometerEnd: null
-        }, ...prev]);
-        setAddModal(false);
-        showToast('Destino salvo!');
       };
 
       const deletePlace = async (id) => {
-        const { error } = await db.from('trips').delete().eq('id', id);
-        if (error) { showToast('Erro ao excluir', true); return; }
-        setPlaces(prev => prev.filter(p => p.id !== id));
-        setDeleteConfirm(null);
-        showToast('Destino removido.');
-      };
-
-      const finishTrip = async (e) => {
-        e.preventDefault();
-        const { placeId, costs, odoStart, odoEnd } = finishModal;
-        const cd = { gas:parseFloat(costs.gas)||0, food:parseFloat(costs.food)||0, lodging:parseFloat(costs.lodging)||0, maintenance:parseFloat(costs.maintenance)||0, others:parseFloat(costs.others)||0 };
-        const total = Object.values(cd).reduce((a,b)=>a+b,0);
-        const today = new Date().toISOString().split('T')[0];
-        const { error } = await db.from('trips').update({ status:'visited', date:today, actual_cost:total, cost_details:cd, odometer_start:parseFloat(odoStart)||null, odometer_end:parseFloat(odoEnd)||null }).eq('id', placeId);
-        if (error) { showToast('Erro ao concluir', true); return; }
-        setPlaces(prev => prev.map(p => p.id===placeId ? {...p, status:'visited', date:today, actualCost:total, costDetails:cd, odometerStart:parseFloat(odoStart)||null, odometerEnd:parseFloat(odoEnd)||null} : p));
-        setFinishModal({ open:false, placeId:null, costs:{gas:'',food:'',lodging:'',maintenance:'',others:''}, odoStart:'', odoEnd:'' });
-        showToast('Viagem concluída! 🏁');
-      };
-
-      const addExpense = async (e) => {
-        e.preventDefault();
-        const fd = new FormData(e.target);
-        const tripId = fd.get('tripId');
-        const category = fd.get('category');
-        const amount = parseFloat(fd.get('amount'))||0;
-        const desc = fd.get('description') || 'Despesa';
-        const km = fd.get('km');
-        const finalDesc = km ? `${desc} • Km ${km}` : desc;
-
-        if (tripId === 'general') {
-          setGeneralExpenses(prev => [{ id: Date.now().toString(), category, amount, description: finalDesc, date: new Date().toISOString() }, ...prev]);
-          setExpenseModal(false);
-          showToast('Despesa registrada.');
-        } else {
-          const p = places.find(x => x.id === tripId);
-          const cur = p.costDetails || {};
-          const newCosts = { ...cur, [category]: (cur[category]||0) + amount };
-          const newTotal = (p.actualCost||0) + amount;
-          const { error } = await db.from('trips').update({ actual_cost: newTotal, cost_details: newCosts }).eq('id', tripId);
-          if (error) { showToast('Erro ao salvar', true); return; }
-          setPlaces(prev => prev.map(x => x.id===tripId ? {...x, actualCost:newTotal, costDetails:newCosts} : x));
-          setExpenseModal(false);
-          showToast('Despesa vinculada!');
+        if (confirm('Excluir permanentemente?')) {
+          const { error } = await supabase.from('trips').delete().eq('id', id);
+          if (!error) { setPlaces(places.filter(p => p.id !== id)); showToast("Excluído."); }
         }
-      };
-
-      const shareTrip = (place) => {
-        const km = (place.odometerEnd && place.odometerStart) ? (place.odometerEnd - place.odometerStart) : place.distance;
-        const text = `🏍️ Bora pra ${place.name}!\n📍 ${place.city} - ${place.state}\n🛣️ ~${km}km de Fortaleza\n⛽ Combustível est.: ${fmtCurrency(place.fuelCost)}\n📅 ${fmtDate(place.plannedDate)||'Data a definir'}\n\nMotoTracker 🤙`;
-        copyText(text);
-        showToast('Copiado pro WhatsApp!');
-      };
-
-      const Dashboard = () => {
-        const visited = places.filter(p => p.status === 'visited');
-        const planned = places.filter(p => p.status === 'planned');
-        const totalKm = visited.reduce((acc, p) => {
-          const km = (p.odometerEnd && p.odometerStart) ? (p.odometerEnd - p.odometerStart) : (p.distance||0);
-          return acc + km;
-        }, 0);
-        const totalGen = generalExpenses.reduce((a, e) => a + e.amount, 0);
-        const totalSpent = visited.reduce((a, p) => a + (p.actualCost||0), 0) + totalGen;
-        const next = planned[0];
-
-        const [weather, setWeather] = useState(null);
-        useEffect(() => {
-          fetch(`https://api.open-meteo.com/v1/forecast?latitude=${ORIGIN.lat}&longitude=${ORIGIN.lng}&current_weather=true`)
-            .then(r=>r.json()).then(d=>setWeather(d.current_weather)).catch(()=>{});
-        }, []);
-
-        const done = checklist.filter(c=>c.done).length;
-        const checkPct = checklist.length > 0 ? Math.round((done/checklist.length)*100) : 0;
-
-        return (
-          <div className="fade-up space-y-5">
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="conn-dot"></span>
-                  <span style={{fontSize:'0.65rem',textTransform:'uppercase',letterSpacing:'0.1em',color:'var(--text3)',fontWeight:600}}>{isConnected ? 'Online · Supabase' : 'Offline'}</span>
-                </div>
-                <h1 className="font-display" style={{fontSize:'2rem',fontWeight:800,lineHeight:1,color:'var(--text)'}}>
-                  {myMoto.model}
-                </h1>
-                <p style={{fontSize:'0.8rem',color:'var(--text2)',marginTop:2}}>{myMoto.brand} · {myMoto.consumption} km/L</p>
-              </div>
-              <div className="flex gap-2">
-                <button className="iconbtn" onClick={() => setView('settings')} title="Configurações"><I n="settings" sm/></button>
-                <button className="iconbtn" onClick={() => setTheme(t=>t==='dark'?'light':'dark')} title="Tema">
-                  <I n={isDark ? 'light_mode' : 'dark_mode'} sm/>
-                </button>
-              </div>
-            </div>
-
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-              <div className="card" style={{padding:'16px'}}>
-                <div className="stat-label">KM Rodados</div>
-                <div className="stat-value" style={{color:'var(--amber)'}}>{totalKm.toLocaleString('pt-BR')}</div>
-                <div style={{fontSize:'0.7rem',color:'var(--text3)',marginTop:2}}>{visited.length} viagem{visited.length!==1?'s':''} concluída{visited.length!==1?'s':''}</div>
-              </div>
-              <div className="card" style={{padding:'16px'}}>
-                <div className="stat-label">Gasto Total</div>
-                <div className="stat-value" style={{color:'var(--green)',fontSize:'1.4rem'}}>{fmtCurrency(totalSpent)}</div>
-                <div style={{fontSize:'0.7rem',color:'var(--text3)',marginTop:2}}>{planned.length} na fila</div>
-              </div>
-            </div>
-
-            {next ? (
-              <div className="card" style={{padding:'16px'}}>
-                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
-                  <div style={{display:'flex',alignItems:'center',gap:6}}>
-                    <I n="near_me" sm style={{color:'var(--amber)'}}/> 
-                    <span style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'var(--amber)'}}>Próxima Parada</span>
-                  </div>
-                  {next.plannedDate && <span className="badge badge-amber"><I n="calendar_month" xs/>{fmtDate(next.plannedDate)}</span>}
-                </div>
-                <div className="font-display" style={{fontSize:'1.5rem',fontWeight:800,lineHeight:1.1,marginBottom:4}}>{next.name}</div>
-                <div style={{fontSize:'0.85rem',color:'var(--text2)',marginBottom:14}}>{next.city} · {next.state}</div>
-                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8,marginBottom:14}}>
-                  <div className="card-inner" style={{padding:'10px',textAlign:'center'}}>
-                    <div style={{fontSize:'0.62rem',color:'var(--text3)',fontWeight:600,textTransform:'uppercase',marginBottom:3}}>Distância</div>
-                    <div style={{fontWeight:700,fontSize:'0.9rem'}}>{next.distance} km</div>
-                  </div>
-                  <div className="card-inner" style={{padding:'10px',textAlign:'center'}}>
-                    <div style={{fontSize:'0.62rem',color:'var(--text3)',fontWeight:600,textTransform:'uppercase',marginBottom:3}}>Tempo Est.</div>
-                    <div style={{fontWeight:700,fontSize:'0.9rem'}}>{next.duration}</div>
-                  </div>
-                  <div className="card-inner" style={{padding:'10px',textAlign:'center'}}>
-                    <div style={{fontSize:'0.62rem',color:'var(--text3)',fontWeight:600,textTransform:'uppercase',marginBottom:3}}>Combustível</div>
-                    <div style={{fontWeight:700,fontSize:'0.9rem',color:'var(--amber)'}}>{fmtCurrency(next.fuelCost)}</div>
-                  </div>
-                </div>
-                <div style={{display:'flex',gap:8}}>
-                  <button className="btn btn-ghost" style={{flex:1,fontSize:'0.85rem'}} onClick={()=>shareTrip(next)}>
-                    <I n="share" sm/> Compartilhar
-                  </button>
-                  <button className="btn btn-amber" style={{flex:1,fontSize:'0.85rem'}} onClick={()=>setFinishModal({open:true,placeId:next.id,costs:{gas:next.fuelCost?.toFixed(2)||'',food:'',lodging:'',maintenance:'',others:''},odoStart:'',odoEnd:''})}>
-                    <I n="check_circle" sm/> Concluir
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="card" style={{padding:'24px',textAlign:'center'}}>
-                <I n="add_road" lg style={{color:'var(--text3)',marginBottom:8}}/>
-                <div style={{color:'var(--text2)',fontSize:'0.9rem',marginBottom:12}}>Nenhuma viagem planejada</div>
-                <button className="btn btn-amber" onClick={()=>setAddModal(true)}>
-                  <I n="add_circle" sm/> Planejar Viagem
-                </button>
-              </div>
-            )}
-
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-              <div className="card" style={{padding:'14px'}}>
-                <div style={{fontSize:'0.65rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'var(--text3)',marginBottom:8}}>Base · Fortaleza</div>
-                {weather ? (
-                  <div style={{display:'flex',alignItems:'center',gap:8}}>
-                    <I n="partly_cloudy_day" lg style={{color:'var(--amber)'}}/>
-                    <div>
-                      <div className="font-display" style={{fontSize:'1.6rem',fontWeight:800,lineHeight:1}}>{weather.temperature}°C</div>
-                      <div style={{fontSize:'0.7rem',color:'var(--text3)'}}>Agora</div>
-                    </div>
-                  </div>
-                ) : <div style={{color:'var(--text3)',fontSize:'0.8rem'}}>Carregando...</div>}
-              </div>
-              <div className="card" style={{padding:'14px'}}>
-                <div style={{fontSize:'0.65rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'var(--text3)',marginBottom:6}}>Gasolina (R$/L)</div>
-                <input
-                  type="number" step="0.01" value={fuelPrice}
-                  onChange={e=>setFuelPrice(parseFloat(e.target.value)||0)}
-                  className="inp" style={{padding:'8px 10px',fontSize:'1.1rem',fontWeight:700}}
-                />
-              </div>
-            </div>
-
-            <div className="card" style={{padding:'16px'}}>
-              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
-                <div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'var(--text3)'}}>Checklist Pré-Viagem</div>
-                <span style={{fontSize:'0.85rem',fontWeight:700,color: checkPct===100?'var(--green)':'var(--text2)'}}>{done}/{checklist.length}</span>
-              </div>
-              <div className="prog-bar"><div className="prog-fill" style={{width:`${checkPct}%`}}></div></div>
-              <button className="btn btn-ghost" style={{width:'100%',marginTop:12,fontSize:'0.85rem'}} onClick={()=>setView('checklist')}>
-                {checkPct===100 ? <><I n="check_circle" sm style={{color:'var(--green)'}}/> Tudo pronto!</> : <><I n="checklist" sm/> Ver checklist</>}
-              </button>
-            </div>
-          </div>
-        );
-      };
-
-      const MapView = () => {
-        const mapRef = useRef(null);
-        const containerRef = useRef(null);
-        const tileRef = useRef(null);
-
-        useEffect(() => {
-          const init = () => {
-            if (!window.L || !containerRef.current) return;
-            if (!mapRef.current) {
-              mapRef.current = window.L.map(containerRef.current).setView([ORIGIN.lat, ORIGIN.lng], 6);
-            }
-            if (tileRef.current) tileRef.current.remove();
-            const url = isDark ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png' : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
-            tileRef.current = window.L.tileLayer(url).addTo(mapRef.current);
-            mapRef.current.eachLayer(l => { if (l instanceof window.L.Marker) mapRef.current.removeLayer(l); });
-            const iconV = window.L.icon({ iconUrl: enc(svgPin('#22C55E','#14532d')), iconSize:[28,42], iconAnchor:[14,42], popupAnchor:[0,-42] });
-            const iconP = window.L.icon({ iconUrl: enc(svgPin('#F59E0B','#78350f')), iconSize:[28,42], iconAnchor:[14,42], popupAnchor:[0,-42] });
-            const bounds = [];
-            places.forEach(p => {
-              if (!p.lat || !p.lng) return;
-              const m = window.L.marker([p.lat,p.lng], { icon: p.status==='visited'?iconV:iconP }).addTo(mapRef.current);
-              const km = (p.odometerEnd&&p.odometerStart) ? (p.odometerEnd-p.odometerStart) : p.distance;
-              m.bindPopup(`<div style="font-family:sans-serif;min-width:160px"><strong style="font-size:13px">${p.name}</strong><br/><span style="color:#888;font-size:11px">${p.city||''} · ${p.state||''}</span><br/><span style="color:${p.status==='visited'?'#22C55E':'#F59E0B'};font-size:11px;font-weight:bold">${p.status==='visited'?'✓ Visitado':'Planejado'}</span>${km?`<br/><span style="font-size:11px">~${km} km</span>`:''}</div>`);
-              bounds.push([p.lat,p.lng]);
-            });
-            if (bounds.length > 0) mapRef.current.fitBounds(bounds, { padding:[40,40], maxZoom:13 });
-          };
-          const t = setInterval(()=>{ if(window.L){clearInterval(t);init();} }, 100);
-          return ()=>clearInterval(t);
-        }, [places, view, isDark]);
-
-        return (
-          <div className="fade-up" style={{display:'flex',flexDirection:'column',height:'100%',gap:10}}>
-            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-              <h2 className="font-display" style={{fontSize:'1.5rem',fontWeight:800}}>Mapa de Destinos</h2>
-              <div style={{display:'flex',gap:8}}>
-                <span className="badge badge-green"><span style={{width:6,height:6,borderRadius:'50%',background:'var(--green)',display:'inline-block'}}></span> Visitado</span>
-                <span className="badge badge-amber"><span style={{width:6,height:6,borderRadius:'50%',background:'var(--amber)',display:'inline-block'}}></span> Planejado</span>
-              </div>
-            </div>
-            <div ref={containerRef} style={{flex:1,borderRadius:12,overflow:'hidden',border:'1px solid var(--border)',minHeight:300}}></div>
-          </div>
-        );
       };
 
       const PlacesList = () => {
         const [filter, setFilter] = useState('all');
-        const filtered = places.filter(p => filter==='all'||p.status===filter);
+        const filtered = places.filter(p => filter === 'all' || p.status === filter);
+        const formatDate = (s) => s ? s.split('-').reverse().join('/') : '';
 
         return (
-          <div className="fade-up" style={{display:'flex',flexDirection:'column',gap:16}}>
-            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-              <h2 className="font-display" style={{fontSize:'1.5rem',fontWeight:800}}>Viagens</h2>
-              <button className="btn btn-amber" style={{fontSize:'0.82rem',padding:'10px 14px'}} onClick={()=>setAddModal(true)}>
-                <I n="add" sm/> Nova
-              </button>
-            </div>
-
-            <div style={{display:'flex',gap:6,background:'var(--bg3)',padding:4,borderRadius:8,border:'1px solid var(--border)'}}>
-              {[['all','Todas'],['planned','Planejadas'],['visited','Concluídas']].map(([f,l])=>(
-                <button key={f} onClick={()=>setFilter(f)} style={{flex:1,padding:'8px 0',borderRadius:6,border:'none',background:filter===f?'var(--bg2)':'transparent',color:filter===f?'var(--text)':'var(--text3)',fontFamily:"'Barlow Condensed',sans-serif",fontSize:'0.85rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.04em',cursor:'pointer',transition:'all 0.15s',boxShadow:filter===f?'0 1px 4px rgba(0,0,0,0.2)':'none'}}>
-                  {l}
+          <div className="space-y-6 pb-24">
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+              {['all', 'planejada', 'concluida'].map(f => (
+                <button key={f} onClick={() => setFilter(f)} className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all ${filter === f ? 'bg-amber-500 text-white shadow-lg' : 'bg-slate-100 dark:bg-neutral-800 text-slate-500'}`}>
+                  {f === 'all' ? 'Todas' : f === 'planejada' ? 'Planejadas' : 'Concluídas'}
                 </button>
               ))}
             </div>
-
-            {filtered.length === 0 && (
-              <div className="card" style={{padding:32,textAlign:'center',color:'var(--text2)'}}>
-                <I n="road" lg style={{color:'var(--text3)',marginBottom:8}}/><br/>
-                Nenhuma viagem aqui ainda.
-              </div>
-            )}
-
-            {filtered.map((place, i) => {
-              const realKm = (place.odometerEnd&&place.odometerStart) ? (place.odometerEnd-place.odometerStart) : null;
-              const isDeleting = deleteConfirm === place.id;
-              return (
-                <div key={place.id} className="card fade-up" style={{animationDelay:`${i*0.04}s`,overflow:'hidden'}}>
-                  <div style={{padding:'16px 16px 12px',borderBottom:'1px solid var(--border)'}}>
-                    <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:8}}>
-                      <div style={{flex:1,minWidth:0}}>
-                        <div style={{display:'flex',alignItems:'center',gap:6,flexWrap:'wrap',marginBottom:4}}>
-                          {place.type && <span className="badge badge-gray">{place.type}</span>}
-                          {place.status==='visited'
-                            ? <span className="badge badge-green"><I n="check_circle" xs/> Concluída</span>
-                            : <span className="badge badge-amber"><I n="schedule" xs/> Planejada</span>}
-                          {place.plannedDate && place.status==='planned' && <span className="badge badge-gray"><I n="calendar_month" xs/> {fmtDate(place.plannedDate)}</span>}
-                        </div>
-                        <div className="font-display" style={{fontSize:'1.25rem',fontWeight:800,lineHeight:1.1,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{place.name}</div>
-                        <div style={{fontSize:'0.82rem',color:'var(--text2)',marginTop:2}}>{place.city} · {place.state}</div>
-                      </div>
-                      <div style={{display:'flex',gap:4,flexShrink:0}}>
-                        {place.status==='planned' && (
-                          <button className="iconbtn" onClick={()=>shareTrip(place)} title="Compartilhar" style={{width:38,height:38}}>
-                            <I n="share" xs/>
-                          </button>
-                        )}
-                        <button className="iconbtn" onClick={()=>setDeleteConfirm(isDeleting?null:place.id)} title="Excluir" style={{width:38,height:38,color:isDeleting?'var(--red)':'var(--text2)',borderColor:isDeleting?'rgba(239,68,68,0.3)':'var(--border)'}}>
-                          <I n={isDeleting?'close':'delete'} xs/>
-                        </button>
-                      </div>
+            <div className="grid gap-4">
+              {filtered.map(place => (
+                <div key={place.id} className="bg-white dark:bg-neutral-900 border border-slate-100 dark:border-neutral-800 rounded-3xl p-5 shadow-sm">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className="text-lg font-bold dark:text-white">{place.name}</h3>
+                      <p className="text-slate-500 text-sm">{place.city}, {place.state}</p>
+                    </div>
+                    <div className="flex gap-1">
+                      <button onClick={() => setEditingPlace(place)} className="p-2 text-slate-400 hover:text-amber-600 rounded-lg"><EditIcon className="w-5 h-5" /></button>
+                      <button onClick={() => deletePlace(place.id)} className="p-2 text-slate-400 hover:text-red-600 rounded-lg"><Trash2 className="w-5 h-5" /></button>
                     </div>
                   </div>
-
-                  {(place.distance > 0 || realKm) && (
-                    <div style={{padding:'10px 16px',display:'flex',gap:16,flexWrap:'wrap',borderBottom:'1px solid var(--border)'}}>
-                      {realKm ? (
-                        <div style={{display:'flex',alignItems:'center',gap:6}}>
-                          <I n="speed" xs style={{color:'var(--blue)'}}/> 
-                          <span style={{fontSize:'0.82rem',fontWeight:700,color:'var(--blue)'}}>{realKm} km real</span>
-                        </div>
-                      ) : (
-                        <div style={{display:'flex',alignItems:'center',gap:6}}>
-                          <I n="route" xs style={{color:'var(--text3)'}}/>
-                          <span style={{fontSize:'0.82rem',color:'var(--text2)'}}>~{place.distance} km</span>
-                        </div>
-                      )}
-                      <div style={{display:'flex',alignItems:'center',gap:6}}>
-                        <I n="schedule" xs style={{color:'var(--text3)'}}/>
-                        <span style={{fontSize:'0.82rem',color:'var(--text2)'}}>{place.duration}</span>
-                      </div>
-                      <div style={{display:'flex',alignItems:'center',gap:6}}>
-                        <I n="local_gas_station" xs style={{color:'var(--amber)'}}/>
-                        <span style={{fontSize:'0.82rem',fontWeight:600,color:'var(--amber)'}}>{fmtCurrency(place.fuelCost)}</span>
-                      </div>
-                      {place.actualCost > 0 && (
-                        <div style={{display:'flex',alignItems:'center',gap:6}}>
-                          <I n="account_balance_wallet" xs style={{color:'var(--green)'}}/>
-                          <span style={{fontSize:'0.82rem',fontWeight:700,color:'var(--green)'}}>Gasto: {fmtCurrency(place.actualCost)}</span>
-                        </div>
-                      )}
+                  <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-50 dark:border-neutral-800">
+                    <div className="flex items-center gap-2 text-slate-400 text-xs font-bold">
+                      <Calendar className="w-4 h-4" /> {formatDate(place.planned_date)}
                     </div>
-                  )}
-
-                  {place.notes && (
-                    <div style={{padding:'8px 16px',borderBottom:'1px solid var(--border)'}}>
-                      <p style={{fontSize:'0.8rem',color:'var(--text2)',lineHeight:1.5}}>{place.notes}</p>
-                    </div>
-                  )}
-
-                  {isDeleting && (
-                    <div style={{padding:'12px 16px',background:'rgba(239,68,68,0.06)',borderTop:'1px solid rgba(239,68,68,0.15)'}}>
-                      <p style={{fontSize:'0.82rem',color:'var(--red)',marginBottom:10}}>Confirmar exclusão permanente?</p>
-                      <div style={{display:'flex',gap:8}}>
-                        <button className="btn btn-ghost" style={{flex:1,fontSize:'0.82rem',padding:'10px'}} onClick={()=>setDeleteConfirm(null)}>Cancelar</button>
-                        <button className="btn btn-danger" style={{flex:1,fontSize:'0.82rem',padding:'10px'}} onClick={()=>deletePlace(place.id)}>
-                          <I n="delete" xs/> Excluir
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {place.status==='planned' && !isDeleting && (
-                    <div style={{padding:'10px 16px'}}>
-                      <button className="btn btn-green" style={{width:'100%',fontSize:'0.88rem'}}
-                        onClick={()=>setFinishModal({open:true,placeId:place.id,costs:{gas:place.fuelCost?.toFixed(2)||'',food:'',lodging:'',maintenance:'',others:''},odoStart:'',odoEnd:''})}>
-                        <I n="check_circle" sm/> Marcar como Concluída
-                      </button>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        );
-      };
-
-      const DonutChart = ({ items, total, size=120 }) => {
-        if (!total || items.length === 0) return null;
-        const r = 42; const cx = 60; const cy = 60;
-        const circumference = 2 * Math.PI * r;
-        const gap = 2;
-        let currentAngle = -90;
-        const slices = items.map(item => {
-          const pct = item.value / total;
-          const degrees = pct * 360 - gap;
-          const startAngle = currentAngle;
-          currentAngle += pct * 360;
-          const startRad = (startAngle * Math.PI) / 180;
-          const endRad = ((startAngle + degrees) * Math.PI) / 180;
-          const x1 = cx + r * Math.cos(startRad);
-          const y1 = cy + r * Math.sin(startRad);
-          const x2 = cx + r * Math.cos(endRad);
-          const y2 = cy + r * Math.sin(endRad);
-          const large = degrees > 180 ? 1 : 0;
-          return { ...item, pct, d: `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z`, degrees };
-        });
-        return (
-          <svg viewBox="0 0 120 120" width={size} height={size} style={{flexShrink:0}}>
-            {slices.map(s => (
-              <path key={s.key} d={s.d} fill={s.rawColor} opacity="0.92"/>
-            ))}
-            <circle cx={cx} cy={cy} r={26} fill="var(--bg2)"/>
-            <text x={cx} y={cy-5} textAnchor="middle" fontSize="9" fontWeight="700" fill="var(--text3)" fontFamily="'Barlow Condensed',sans-serif" style={{textTransform:'uppercase',letterSpacing:'0.05em'}}>TOTAL</text>
-            <text x={cx} y={cy+9} textAnchor="middle" fontSize="11" fontWeight="800" fill="var(--text)" fontFamily="'Barlow Condensed',sans-serif">{fmtCurrency(total).replace('R$ ','R$')}</text>
-          </svg>
-        );
-      };
-
-      const FinanceView = () => {
-        const visited = places.filter(p => p.status==='visited'||p.actualCost>0);
-        const totalGen = generalExpenses.reduce((a,e)=>a+e.amount, 0);
-        const totalEst = visited.reduce((a,p)=>a+(p.fuelCost||0), 0);
-        const totalReal = visited.reduce((a,p)=>a+(p.actualCost||0), 0) + totalGen;
-        const diff = totalReal - totalEst;
-        const [expanded, setExpanded] = useState(null);
-
-        const cats = [
-          { key:'gas',         label:'Gasolina',     icon:'local_gas_station', color:'var(--amber)',  rawColor:'#F59E0B' },
-          { key:'food',        label:'Alimentação',  icon:'restaurant',        color:'#F97316',      rawColor:'#F97316' },
-          { key:'lodging',     label:'Hospedagem',   icon:'hotel',             color:'var(--blue)',  rawColor:'#3B82F6' },
-          { key:'maintenance', label:'Manutenção',   icon:'build',             color:'var(--red)',   rawColor:'#EF4444' },
-          { key:'others',      label:'Outros',       icon:'category',          color:'#A855F7',      rawColor:'#A855F7' },
-        ];
-
-        const allCatTotals = cats.map(c => ({
-          ...c,
-          value: visited.reduce((a,t) => a + ((t.costDetails||{})[c.key]||0), 0)
-        })).filter(c => c.value > 0);
-        const allTotal = allCatTotals.reduce((a,c)=>a+c.value,0);
-
-        return (
-          <div className="fade-up" style={{display:'flex',flexDirection:'column',gap:16}}>
-            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-              <h2 className="font-display" style={{fontSize:'1.5rem',fontWeight:800}}>Financeiro</h2>
-              <button className="btn btn-amber" style={{fontSize:'0.82rem',padding:'10px 14px'}} onClick={()=>setExpenseModal(true)}>
-                <I n="add" sm/> Despesa
-              </button>
-            </div>
-
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-              <div className="card" style={{padding:'14px'}}>
-                <div style={{fontSize:'0.63rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.07em',color:'var(--text3)',marginBottom:6}}>Est. Combustível</div>
-                <div className="font-display" style={{fontSize:'1.3rem',fontWeight:800,color:'var(--amber)'}}>{fmtCurrency(totalEst)}</div>
-              </div>
-              <div className="card" style={{padding:'14px'}}>
-                <div style={{fontSize:'0.63rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.07em',color:'var(--text3)',marginBottom:6}}>Gasto Real</div>
-                <div className="font-display" style={{fontSize:'1.3rem',fontWeight:800,color:'var(--green)'}}>{fmtCurrency(totalReal)}</div>
-              </div>
-            </div>
-            <div className="card" style={{padding:'14px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-              <span style={{fontSize:'0.8rem',color:'var(--text2)'}}>Diferença (Est. → Real)</span>
-              <div className="font-display" style={{fontSize:'1.25rem',fontWeight:800,color:diff>0?'var(--red)':'var(--green)'}}>
-                {diff>0?'+':''}{fmtCurrency(Math.abs(diff))} {diff>0?'a mais':'economizado'}
-              </div>
-            </div>
-
-            {visited.length >= 1 && allCatTotals.length > 0 && (
-              <div className="card" style={{padding:'16px'}}>
-                <div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'var(--text3)',marginBottom:14,display:'flex',alignItems:'center',gap:6}}>
-                  <I n="pie_chart" xs style={{color:'var(--amber)'}}/> Distribuição Geral · Todas as Viagens
-                </div>
-                <div style={{display:'flex',alignItems:'center',gap:16}}>
-                  <DonutChart items={allCatTotals} total={allTotal} size={110}/>
-                  <div style={{flex:1,display:'flex',flexDirection:'column',gap:8}}>
-                    {allCatTotals.map(c => {
-                      const pct = allTotal > 0 ? Math.round((c.value/allTotal)*100) : 0;
-                      return (
-                        <div key={c.key}>
-                          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:3}}>
-                            <div style={{display:'flex',alignItems:'center',gap:5}}>
-                              <span style={{width:8,height:8,borderRadius:'50%',background:c.rawColor,display:'inline-block',flexShrink:0}}></span>
-                              <span style={{fontSize:'0.75rem',color:'var(--text2)'}}>{c.label}</span>
-                            </div>
-                            <span style={{fontSize:'0.75rem',fontWeight:700,color:'var(--text)'}}>{pct}%</span>
-                          </div>
-                          <div style={{height:3,background:'var(--bg4)',borderRadius:2,overflow:'hidden'}}>
-                            <div style={{height:'100%',width:`${pct}%`,background:c.rawColor,borderRadius:2,transition:'width 0.6s ease'}}></div>
-                          </div>
-                        </div>
-                      );
-                    })}
+                    <span className={`text-[10px] font-black uppercase px-2 py-1 rounded-md ${place.status === 'concluida' ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600'}`}>{place.status}</span>
                   </div>
-                </div>
-              </div>
-            )}
-
-            {visited.length > 0 && (
-              <div>
-                <div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'var(--text3)',marginBottom:8}}>Por Viagem</div>
-                <div className="card" style={{overflow:'hidden'}}>
-                  {visited.map((t,i) => {
-                    const isExp = expanded === t.id;
-                    const cd = t.costDetails || {};
-                    const items = cats.map(c=>({...c, value:(cd[c.key]||0)})).filter(c=>c.value>0);
-                    const tripTotal = items.reduce((a,c)=>a+c.value,0);
-                    return (
-                      <div key={t.id} style={{borderBottom:i<visited.length-1?'1px solid var(--border)':'none'}}>
-                        <div onClick={()=>setExpanded(isExp?null:t.id)} style={{padding:'14px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',cursor:'pointer',userSelect:'none'}}>
-                          <div style={{flex:1,minWidth:0}}>
-                            <div style={{fontWeight:600,fontSize:'0.95rem',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{t.name}</div>
-                            <div style={{fontSize:'0.72rem',color:'var(--text2)',marginTop:2}}>
-                              {fmtDate(t.date||t.plannedDate)}
-                              {(t.odometerStart&&t.odometerEnd) && ` · ${t.odometerEnd-t.odometerStart} km rodados`}
-                            </div>
-                            {items.length > 0 && (
-                              <div style={{display:'flex',height:4,borderRadius:2,overflow:'hidden',marginTop:7,gap:1}}>
-                                {items.map(c=>(
-                                  <div key={c.key} title={`${c.label}: ${fmtCurrency(c.value)}`}
-                                    style={{flex:c.value,background:c.rawColor,minWidth:2,transition:'flex 0.4s ease'}}/>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                          <div style={{display:'flex',alignItems:'center',gap:8,marginLeft:12,flexShrink:0}}>
-                            <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:'1.05rem',color:'var(--green)'}}>{fmtCurrency(t.actualCost)}</span>
-                            <I n={isExp?'expand_less':'expand_more'} sm style={{color:'var(--text3)'}}/>
-                          </div>
-                        </div>
-
-                        {isExp && (
-                          <div style={{padding:'0 16px 18px',borderTop:'1px solid var(--border)',paddingTop:14}}>
-                            {items.length === 0
-                              ? <div style={{fontSize:'0.8rem',color:'var(--text3)'}}>Sem detalhamento de categorias.</div>
-                              : (
-                                <>
-                                  <div style={{display:'flex',alignItems:'center',gap:16,marginBottom:14}}>
-                                    <DonutChart items={items} total={tripTotal} size={100}/>
-                                    <div style={{flex:1,display:'flex',flexDirection:'column',gap:6}}>
-                                      {items.map(c=>{
-                                        const pct = tripTotal>0 ? Math.round((c.value/tripTotal)*100) : 0;
-                                        return (
-                                          <div key={c.key}>
-                                            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:3}}>
-                                              <div style={{display:'flex',alignItems:'center',gap:5}}>
-                                                <span style={{width:7,height:7,borderRadius:'50%',background:c.rawColor,display:'inline-block'}}></span>
-                                                <span style={{fontSize:'0.73rem',color:'var(--text2)'}}>{c.label}</span>
-                                              </div>
-                                              <span style={{fontSize:'0.73rem',fontWeight:700}}>{pct}%</span>
-                                            </div>
-                                            <div style={{height:3,background:'var(--bg4)',borderRadius:2,overflow:'hidden'}}>
-                                              <div style={{height:'100%',width:`${pct}%`,background:c.rawColor,borderRadius:2}}></div>
-                                            </div>
-                                          </div>
-                                        );
-                                      })}
-                                    </div>
-                                  </div>
-
-                                  <div style={{display:'flex',flexDirection:'column',gap:5}}>
-                                    {items.map(c=>(
-                                      <div key={c.key} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 10px',background:'var(--bg3)',borderRadius:7}}>
-                                        <I n={c.icon} sm style={{color:c.color,flexShrink:0}}/>
-                                        <span style={{flex:1,fontSize:'0.82rem',color:'var(--text2)'}}>{c.label}</span>
-                                        <span style={{fontWeight:700,fontSize:'0.88rem'}}>{fmtCurrency(c.value)}</span>
-                                      </div>
-                                    ))}
-                                  </div>
-
-                                  {t.fuelCost > 0 && (
-                                    <div style={{marginTop:10,padding:'10px 12px',background:'var(--amber-glow)',borderRadius:7,border:'1px solid rgba(245,158,11,0.15)',fontSize:'0.75rem',color:'var(--amber)',display:'flex',justifyContent:'space-between'}}>
-                                      <span>Combustível estimado</span>
-                                      <span style={{fontWeight:700}}>{fmtCurrency(t.fuelCost)}</span>
-                                    </div>
-                                  )}
-                                </>
-                              )
-                            }
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {generalExpenses.length > 0 && (
-              <div>
-                <div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'var(--text3)',marginBottom:8}}>Despesas Avulsas</div>
-                <div className="card" style={{overflow:'hidden'}}>
-                  {generalExpenses.map((e,i) => (
-                    <div key={e.id} style={{padding:'12px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',borderBottom:i<generalExpenses.length-1?'1px solid var(--border)':'none'}}>
-                      <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontSize:'0.88rem',fontWeight:600,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{e.description}</div>
-                        <div style={{fontSize:'0.72rem',color:'var(--text3)',marginTop:2}}>
-                          {new Date(e.date).toLocaleDateString('pt-BR')} · <span style={{textTransform:'uppercase',letterSpacing:'0.05em'}}>{e.category}</span>
-                        </div>
-                      </div>
-                      <div style={{display:'flex',alignItems:'center',gap:8,flexShrink:0,marginLeft:8}}>
-                        <span style={{fontWeight:700,fontFamily:"'Barlow Condensed',sans-serif",fontSize:'1rem'}}>{fmtCurrency(e.amount)}</span>
-                        <button className="iconbtn" onClick={()=>{if(window.confirm('Excluir despesa?'))setGeneralExpenses(prev=>prev.filter(x=>x.id!==e.id));}} style={{width:34,height:34}}>
-                          <I n="delete" xs/>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        );
-      };
-
-      const ChecklistView = () => {
-        const [newItem, setNewItem] = useState('');
-        const done = checklist.filter(c=>c.done).length;
-        const toggle = (id) => setChecklist(prev=>prev.map(c=>c.id===id?{...c,done:!c.done}:c));
-        const addItem = () => {
-          if(!newItem.trim()) return;
-          setChecklist(prev=>[...prev,{id:Date.now(),text:newItem.trim(),done:false}]);
-          setNewItem('');
-        };
-        const removeItem = (id) => setChecklist(prev=>prev.filter(c=>c.id!==id));
-
-        return (
-          <div className="fade-up" style={{display:'flex',flexDirection:'column',gap:16}}>
-            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-              <h2 className="font-display" style={{fontSize:'1.5rem',fontWeight:800}}>Checklist</h2>
-              <button className="btn btn-ghost" style={{fontSize:'0.78rem',padding:'8px 12px'}} onClick={()=>setChecklist(DEFAULT_CHECKLIST)}>
-                <I n="restart_alt" xs/> Resetar
-              </button>
-            </div>
-
-            <div className="card" style={{padding:'14px'}}>
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
-                <span style={{fontSize:'0.78rem',color:'var(--text2)'}}>{done} de {checklist.length} itens</span>
-                <span className="font-display" style={{fontSize:'1.2rem',fontWeight:800,color:done===checklist.length?'var(--green)':'var(--text)'}}>
-                  {checklist.length>0?Math.round((done/checklist.length)*100):0}%
-                </span>
-              </div>
-              <div className="prog-bar"><div className="prog-fill" style={{width:`${checklist.length>0?(done/checklist.length)*100:0}%`,background:done===checklist.length?'var(--green)':'var(--amber)'}}></div></div>
-            </div>
-
-            <div className="card" style={{overflow:'hidden'}}>
-              {checklist.map(item => (
-                <div key={item.id} className="check-item">
-                  <div className={`check-box ${item.done?'checked':''}`} onClick={()=>toggle(item.id)}>
-                    {item.done && <I n="check" xs style={{color:'#000',fontWeight:'bold'}}/>}
-                  </div>
-                  <span onClick={()=>toggle(item.id)} style={{flex:1,fontSize:'0.92rem',textDecoration:item.done?'line-through':'none',color:item.done?'var(--text3)':'var(--text)',transition:'all 0.15s'}}>
-                    {item.text}
-                  </span>
-                  <button className="iconbtn" onClick={()=>removeItem(item.id)} style={{width:32,height:32,opacity:0.5,flexShrink:0}}>
-                    <I n="close" xs/>
-                  </button>
                 </div>
               ))}
             </div>
-
-            <div style={{display:'flex',gap:8}}>
-              <input className="inp" value={newItem} onChange={e=>setNewItem(e.target.value)} placeholder="Adicionar item..." onKeyDown={e=>e.key==='Enter'&&addItem()} style={{flex:1}}/>
-              <button className="btn btn-amber" onClick={addItem} style={{padding:'12px 16px'}}><I n="add" sm/></button>
-            </div>
           </div>
         );
       };
 
-      const SettingsView = () => {
-        const handleBrand = (e) => {
-          const b = e.target.value;
-          const first = motoDatabase[b][0];
-          setMyMoto({ brand:b, model:first.model, consumption:first.consumption });
-        };
-        const handleModel = (e) => {
-          const m = motoDatabase[myMoto.brand].find(x=>x.model===e.target.value);
-          if(m) setMyMoto({...myMoto, model:m.model, consumption:m.consumption});
-        };
+      const Dashboard = () => {
+        const [temp, setTemp] = useState('--');
+        useEffect(() => {
+          fetch(`https://api.open-meteo.com/v1/forecast?latitude=${ORIGIN_LAT}&longitude=${ORIGIN_LNG}&current_weather=true`)
+            .then(r => r.json()).then(d => setTemp(d.current_weather.temperature));
+        }, []);
+
         return (
-          <div className="fade-up" style={{display:'flex',flexDirection:'column',gap:16}}>
-            <h2 className="font-display" style={{fontSize:'1.5rem',fontWeight:800}}>Minha Moto</h2>
+          <div className="space-y-6 animate-fade-in pb-24">
+            <header className="flex justify-between items-center">
+              <h1 className="text-2xl font-black dark:text-white flex items-center gap-2"><Navigation className="text-amber-500" /> MotoTracker</h1>
+              <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="p-2 bg-white dark:bg-neutral-800 rounded-xl shadow-sm">
+                <MIcon name={theme === 'dark' ? 'light_mode' : 'dark_mode'} className="w-6 h-6 text-amber-500" />
+              </button>
+            </header>
 
-            <div className="card" style={{padding:'20px',display:'flex',flexDirection:'column',gap:16}}>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
-                <div>
-                  <label className="lbl">Fabricante</label>
-                  <select className="inp" value={myMoto.brand} onChange={handleBrand}>
-                    {Object.keys(motoDatabase).map(b=><option key={b} value={b}>{b}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="lbl">Modelo</label>
-                  <select className="inp" value={myMoto.model} onChange={handleModel}>
-                    {motoDatabase[myMoto.brand].map(m=><option key={m.model} value={m.model}>{m.model}</option>)}
-                  </select>
-                </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-amber-500 p-5 rounded-3xl text-white shadow-xl shadow-amber-500/20">
+                <p className="text-xs font-bold opacity-80 uppercase">Viagens</p>
+                <p className="text-3xl font-black">{places.length}</p>
               </div>
-              <div>
-                <label className="lbl">Consumo Real (km/L)</label>
-                <div style={{position:'relative'}}>
-                  <input type="number" step="0.5" value={myMoto.consumption} onChange={e=>setMyMoto({...myMoto,consumption:parseFloat(e.target.value)||0})} className="inp"/>
-                  <span style={{position:'absolute',right:14,top:'50%',transform:'translateY(-50%)',color:'var(--text3)',fontSize:'0.8rem',fontWeight:600}}>km/L</span>
-                </div>
-              </div>
-              <div style={{background:'var(--amber-glow)',border:'1px solid rgba(245,158,11,0.2)',borderRadius:8,padding:'12px 14px',display:'flex',alignItems:'center',gap:10}}>
-                <I n="two_wheeler" sm style={{color:'var(--amber)',flexShrink:0}}/>
-                <div>
-                  <div style={{fontWeight:700,fontSize:'0.9rem'}}>{myMoto.model}</div>
-                  <div style={{fontSize:'0.75rem',color:'var(--amber)',opacity:0.8}}>{myMoto.consumption} km/L · {myMoto.brand}</div>
-                </div>
+              <div className="bg-blue-600 p-5 rounded-3xl text-white shadow-xl shadow-blue-600/20">
+                <p className="text-xs font-bold opacity-80 uppercase">Clima Base</p>
+                <p className="text-3xl font-black">{temp}°C</p>
               </div>
             </div>
 
-            <div className="card" style={{padding:'20px',display:'flex',flexDirection:'column',gap:14}}>
-              <div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'var(--text3)'}}>Aparência</div>
-              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-                <span style={{fontSize:'0.9rem',color:'var(--text2)'}}>Tema {isDark?'Escuro':'Claro'}</span>
-                <button onClick={()=>setTheme(t=>t==='dark'?'light':'dark')} style={{width:52,height:28,borderRadius:14,background:isDark?'var(--amber)':'var(--bg4)',border:'none',cursor:'pointer',position:'relative',transition:'background 0.2s'}}>
-                  <div style={{width:22,height:22,borderRadius:'50%',background:'#fff',position:'absolute',top:3,left:isDark?'calc(100% - 25px)':3,transition:'left 0.2s',boxShadow:'0 1px 3px rgba(0,0,0,0.3)'}}></div>
-                </button>
-              </div>
-            </div>
-
-            <div className="card" style={{padding:'14px 18px'}}>
-              <div style={{fontSize:'0.63rem',color:'var(--text3)',textAlign:'center'}}>MotoTracker v08 · Base: {ORIGIN.label}</div>
-            </div>
-          </div>
-        );
-      };
-
-      const AddModal = () => {
-        const [localFuel, setLocalFuel] = useState(fuelPrice);
-        const onSubmit = (e) => {
-          e.preventDefault();
-          const fd = new FormData(e.target);
-          addPlace({
-            name: fd.get('name'), city: fd.get('city'), state: fd.get('state'),
-            type: fd.get('type'), plannedDate: fd.get('plannedDate'),
-            hasPassenger: fd.get('hasPassenger')==='on', notes: fd.get('notes')
-          }, localFuel);
-        };
-        return (
-          <div className="overlay" onClick={e=>e.target===e.currentTarget&&setAddModal(false)}>
-            <div className="sheet">
-              <div className="sheet-handle"></div>
-              <div style={{padding:'0 20px 24px'}}>
-                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20}}>
-                  <h2 className="font-display" style={{fontSize:'1.4rem',fontWeight:800}}>Novo Destino</h2>
-                  <button className="iconbtn" onClick={()=>setAddModal(false)}><I n="close" sm/></button>
-                </div>
-                <form onSubmit={onSubmit} style={{display:'flex',flexDirection:'column',gap:14}}>
-                  <div><label className="lbl">Nome da Viagem</label><input required name="name" placeholder="Ex: Feriado em Canoa Quebrada" className="inp"/></div>
-                  <div style={{display:'grid',gridTemplateColumns:'1fr auto',gap:10}}>
-                    <div><label className="lbl">Cidade Destino</label><input required name="city" placeholder="Ex: Aracati" className="inp"/></div>
-                    <div><label className="lbl">UF</label><input required name="state" placeholder="CE" maxLength="2" className="inp" style={{width:60,textTransform:'uppercase'}}/></div>
-                  </div>
-                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-                    <div><label className="lbl">Tipo</label>
-                      <select name="type" className="inp">
-                        <option>Bate e Volta</option><option>Viagem Curta</option><option>Viagem Longa</option><option>Expedição</option>
-                      </select>
-                    </div>
-                    <div><label className="lbl">Data Prevista</label><input name="plannedDate" type="date" className="inp"/></div>
-                  </div>
-                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,alignItems:'end'}}>
-                    <div><label className="lbl">Preço Gasolina (R$/L)</label><input type="number" step="0.01" value={localFuel} onChange={e=>setLocalFuel(parseFloat(e.target.value)||0)} className="inp"/></div>
-                    <label style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer',background:'var(--bg3)',border:'1px solid var(--border-strong)',borderRadius:8,padding:'12px 14px'}}>
-                      <input type="checkbox" name="hasPassenger" style={{width:18,height:18,accentColor:'var(--amber)',cursor:'pointer'}}/>
-                      <span style={{fontSize:'0.88rem',fontWeight:600}}>Garupa?</span>
-                    </label>
-                  </div>
-                  <div><label className="lbl">Anotações</label><textarea name="notes" rows={2} className="inp" style={{resize:'none'}} placeholder="Rota preferida, pontos de parada..."/></div>
-                  <button type="submit" className="btn btn-amber" style={{width:'100%',padding:'16px',fontSize:'1rem',marginTop:4}}>
-                    <I n="save" sm/> Salvar Destino
-                  </button>
-                </form>
+            <div className="bg-white dark:bg-neutral-900 border border-slate-100 dark:border-neutral-800 p-6 rounded-3xl shadow-sm">
+              <h3 className="font-bold mb-4 flex items-center gap-2"><Fuel className="text-amber-500" /> Minha {myMoto.model}</h3>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-slate-500">Consumo Médio</span>
+                <span className="font-black text-lg dark:text-white">{myMoto.consumption} km/L</span>
               </div>
             </div>
           </div>
         );
       };
-
-      const FinishModal = () => {
-        const { costs, odoStart, odoEnd } = finishModal;
-        const total = ['gas','food','lodging','maintenance','others'].reduce((a,k)=>a+(parseFloat(costs[k])||0),0);
-        const setC = (k,v) => setFinishModal(prev=>({...prev, costs:{...prev.costs,[k]:v}}));
-        return (
-          <div className="overlay" onClick={e=>e.target===e.currentTarget&&setFinishModal(prev=>({...prev,open:false}))}>
-            <div className="sheet">
-              <div className="sheet-handle"></div>
-              <div style={{padding:'0 20px 24px'}}>
-                <div style={{marginBottom:20}}>
-                  <h2 className="font-display" style={{fontSize:'1.4rem',fontWeight:800}}>Finalizar Viagem</h2>
-                  <p style={{fontSize:'0.82rem',color:'var(--text2)',marginTop:4}}>Registre os gastos reais e hodômetro.</p>
-                </div>
-                <form onSubmit={finishTrip} style={{display:'flex',flexDirection:'column',gap:14}}>
-                  <div style={{background:'var(--bg3)',borderRadius:10,padding:'14px',border:'1px solid var(--border)'}}>
-                    <div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'var(--blue)',marginBottom:10,display:'flex',alignItems:'center',gap:6}}>
-                      <I n="speed" xs/> Hodômetro
-                    </div>
-                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-                      <div><label className="lbl">Km Inicial</label><input type="number" step="0.1" value={odoStart} onChange={e=>setFinishModal(prev=>({...prev,odoStart:e.target.value}))} className="inp" placeholder="12500"/></div>
-                      <div><label className="lbl">Km Final</label><input type="number" step="0.1" value={odoEnd} onChange={e=>setFinishModal(prev=>({...prev,odoEnd:e.target.value}))} className="inp" placeholder="12850"/></div>
-                    </div>
-                    {odoStart&&odoEnd&&parseFloat(odoEnd)>parseFloat(odoStart) && (
-                      <div style={{marginTop:8,textAlign:'center',fontSize:'0.82rem',color:'var(--blue)',fontWeight:700}}>
-                        {parseFloat(odoEnd)-parseFloat(odoStart)} km rodados
-                      </div>
-                    )}
-                  </div>
-
-                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-                    {[
-                      {k:'gas',label:'Gasolina',icon:'local_gas_station',color:'var(--amber)'},
-                      {k:'food',label:'Alimentação',icon:'restaurant',color:'#F97316'},
-                      {k:'lodging',label:'Hospedagem',icon:'hotel',color:'var(--blue)'},
-                      {k:'maintenance',label:'Manutenção',icon:'build',color:'var(--red)'},
-                      {k:'others',label:'Outros',icon:'category',color:'#A855F7'},
-                    ].map(f=>(
-                      <div key={f.k}>
-                        <label className="lbl" style={{display:'flex',alignItems:'center',gap:4}}>
-                          <I n={f.icon} xs style={{color:f.color}}/> {f.label}
-                        </label>
-                        <div style={{position:'relative'}}>
-                          <span style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',color:'var(--text3)',fontSize:'0.82rem',fontWeight:600}}>R$</span>
-                          <input type="number" step="0.01" value={costs[f.k]} onChange={e=>setC(f.k,e.target.value)} className="inp" style={{paddingLeft:30}} placeholder="0,00"/>
-                        </div>
-                      </div>
-                    ))}
-                    <div style={{display:'flex',alignItems:'flex-end',paddingBottom:2}}>
-                      <div style={{background:'var(--amber-glow)',border:'1px solid rgba(245,158,11,0.2)',borderRadius:8,padding:'12px',width:'100%',textAlign:'center'}}>
-                        <div style={{fontSize:'0.65rem',color:'var(--amber)',fontWeight:700,textTransform:'uppercase',marginBottom:4}}>Total</div>
-                        <div className="font-display" style={{fontSize:'1.3rem',fontWeight:800,color:'var(--amber)'}}>{fmtCurrency(total)}</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div style={{display:'flex',gap:10}}>
-                    <button type="button" className="btn btn-ghost" style={{flex:1}} onClick={()=>setFinishModal(prev=>({...prev,open:false}))}>Cancelar</button>
-                    <button type="submit" className="btn btn-green" style={{flex:2}}><I n="check_circle" sm/> Confirmar</button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-        );
-      };
-
-      const ExpenseModal = () => (
-        <div className="overlay" onClick={e=>e.target===e.currentTarget&&setExpenseModal(false)}>
-          <div className="sheet">
-            <div className="sheet-handle"></div>
-            <div style={{padding:'0 20px 24px'}}>
-              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20}}>
-                <h2 className="font-display" style={{fontSize:'1.4rem',fontWeight:800}}>Lançar Despesa</h2>
-                <button className="iconbtn" onClick={()=>setExpenseModal(false)}><I n="close" sm/></button>
-              </div>
-              <form onSubmit={addExpense} style={{display:'flex',flexDirection:'column',gap:14}}>
-                <div><label className="lbl">Vincular a</label>
-                  <select name="tripId" className="inp">
-                    <option value="general">Nenhuma (Despesa Avulsa)</option>
-                    {places.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-                  </select>
-                </div>
-                <div><label className="lbl">Descrição</label><input name="description" placeholder="Ex: Remendo no pneu" className="inp"/></div>
-                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-                  <div><label className="lbl">Categoria</label>
-                    <select name="category" className="inp">
-                      <option value="maintenance">Manutenção</option>
-                      <option value="gas">Gasolina</option>
-                      <option value="food">Alimentação</option>
-                      <option value="lodging">Hospedagem</option>
-                      <option value="others">Outros</option>
-                    </select>
-                  </div>
-                  <div><label className="lbl">Valor (R$)</label>
-                    <div style={{position:'relative'}}>
-                      <span style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',color:'var(--text3)',fontSize:'0.82rem',fontWeight:600}}>R$</span>
-                      <input required name="amount" type="number" step="0.01" className="inp" style={{paddingLeft:30}} placeholder="0,00"/>
-                    </div>
-                  </div>
-                </div>
-                <div><label className="lbl">Km Atual (opcional)</label>
-                  <div style={{position:'relative'}}>
-                    <span style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',color:'var(--text3)',fontSize:'0.82rem',fontWeight:600}}><I n="speed" xs/></span>
-                    <input name="km" type="number" className="inp" style={{paddingLeft:34}} placeholder="Ex: 15200"/>
-                  </div>
-                </div>
-                <button type="submit" className="btn btn-amber" style={{width:'100%',padding:'16px',fontSize:'1rem',marginTop:4}}>
-                  <I n="add_circle" sm/> Confirmar Lançamento
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      );
-
-      const NAV = [
-        { v:'dashboard', label:'Início', icon:'home' },
-        { v:'map', label:'Mapa', icon:'map' },
-        { v:'list', label:'Viagens', icon:'two_wheeler' },
-        { v:'finance', label:'Finanças', icon:'account_balance_wallet' },
-        { v:'checklist', label:'Check', icon:'checklist' },
-      ];
 
       return (
-        <div style={{height:'100%',width:'100%',display:'flex',background:'var(--bg)',overflow:'hidden'}}>
+        <div className="max-w-md mx-auto min-h-screen p-4 md:p-8">
+          
+          {currentView === 'dashboard' && <Dashboard />}
+          {currentView === 'list' && <PlacesList />}
+          {currentView === 'settings' && <div className="dark:text-white">Configurações (Em breve)</div>}
 
-          <aside style={{width:220,flexShrink:0,borderRight:'1px solid var(--border)',display:'none',flexDirection:'column',padding:'24px 16px',overflow:'hidden'}} className="sidebar-desktop">
-            <style>{`.sidebar-desktop{display:none}@media(min-width:768px){.sidebar-desktop{display:flex!important}}.mobile-nav{display:flex}@media(min-width:768px){.mobile-nav{display:none!important}}`}</style>
-            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:32}}>
-              <I n="near_me" fill style={{color:'var(--amber)',fontSize:'1.4rem'}}/>
-              <span className="font-display" style={{fontSize:'1.3rem',fontWeight:800,letterSpacing:'0.02em',color:'var(--text)'}}>MotoTracker</span>
-            </div>
-            <nav style={{display:'flex',flexDirection:'column',gap:4,flex:1}}>
-              {NAV.map(n=>(
-                <div key={n.v} className={`nav-item ${view===n.v?'active':''}`} onClick={()=>setView(n.v)}>
-                  <I n={n.icon} sm/> {n.label}
-                </div>
-              ))}
-              <div style={{borderTop:'1px solid var(--border)',marginTop:8,paddingTop:8}}>
-                <div className={`nav-item ${view==='settings'?'active':''}`} onClick={()=>setView('settings')}>
-                  <I n="settings" sm/> Config.
-                </div>
-              </div>
-            </nav>
-            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',paddingTop:16,borderTop:'1px solid var(--border)'}}>
-              <span style={{fontSize:'0.72rem',color:'var(--text3)',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.07em'}}>Tema</span>
-              <button onClick={()=>setTheme(t=>t==='dark'?'light':'dark')} className="iconbtn" style={{width:36,height:36}}>
-                <I n={isDark?'light_mode':'dark_mode'} xs/>
-              </button>
-            </div>
-          </aside>
-
-          <main style={{flex:1,height:'100%',overflowY:'auto',overflowX:'hidden',padding:'20px 16px',paddingBottom:'88px'}} className="scroll-area">
-            <style>{`@media(min-width:768px){main{padding:28px 32px;padding-bottom:28px!important}}`}</style>
-
-            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20}} className="mob-header">
-              <style>{`.mob-header{display:flex}@media(min-width:768px){.mob-header{display:none}}`}</style>
-              <div style={{display:'flex',alignItems:'center',gap:8}}>
-                <I n="near_me" fill style={{color:'var(--amber)',fontSize:'1.2rem'}}/>
-                <span className="font-display" style={{fontSize:'1.15rem',fontWeight:800,letterSpacing:'0.02em'}}>MotoTracker</span>
-              </div>
-              <div style={{display:'flex',gap:6}}>
-                {isConnected && <span style={{width:7,height:7,borderRadius:'50%',background:'var(--green)',display:'inline-block',alignSelf:'center',animation:'pulse 2s infinite'}}></span>}
-                <button className="iconbtn" style={{width:36,height:36}} onClick={()=>setTheme(t=>t==='dark'?'light':'dark')}>
-                  <I n={isDark?'light_mode':'dark_mode'} xs/>
-                </button>
-              </div>
-            </div>
-
-            {loading ? (
-              <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'40vh',gap:12,color:'var(--text3)'}}>
-                <I n="near_me" xl fill style={{color:'var(--amber)',animation:'pulse 1.5s infinite'}}/>
-                <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'1.1rem',fontWeight:700,letterSpacing:'0.05em',textTransform:'uppercase'}}>Conectando...</span>
-              </div>
-            ) : (
-              <>
-                {view==='dashboard' && <Dashboard/>}
-                {view==='map' && <MapView/>}
-                {view==='list' && <PlacesList/>}
-                {view==='finance' && <FinanceView/>}
-                {view==='checklist' && <ChecklistView/>}
-                {view==='settings' && <SettingsView/>}
-              </>
-            )}
-          </main>
-
-          <nav className="mobile-nav" style={{position:'fixed',bottom:0,left:0,right:0,background:'var(--bg2)',borderTop:'1px solid var(--border)',padding:'6px 4px',paddingBottom:'max(6px, env(safe-area-inset-bottom))',display:'flex',alignItems:'center',zIndex:50,gap:2}}>
-            {NAV.map(n=>(
-              <div key={n.v} className={`mob-nav-item ${view===n.v?'active':''}`} onClick={()=>setView(n.v)}>
-                <I n={n.icon} sm/>
-                <span className="label">{n.label}</span>
-              </div>
-            ))}
-            <div className={`mob-nav-item ${view==='settings'?'active':''}`} onClick={()=>setView('settings')}>
-              <I n="settings" sm/>
-              <span className="label">Config.</span>
-            </div>
+          {/* MENU MOBILE */}
+          <nav className="fixed bottom-6 left-4 right-4 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-lg border border-slate-200 dark:border-neutral-800 rounded-3xl p-2 flex justify-around items-center shadow-2xl z-50">
+            <button onClick={() => setCurrentView('dashboard')} className={`p-3 rounded-2xl ${currentView === 'dashboard' ? 'bg-amber-500 text-white' : 'text-slate-400'}`}><Home className="w-6 h-6" /></button>
+            <button onClick={() => setCurrentView('list')} className={`p-3 rounded-2xl ${currentView === 'list' ? 'bg-amber-500 text-white' : 'text-slate-400'}`}><List className="w-6 h-6" /></button>
+            <button onClick={() => setCurrentView('settings')} className={`p-3 rounded-2xl ${currentView === 'settings' ? 'bg-amber-500 text-white' : 'text-slate-400'}`}><Settings className="w-6 h-6" /></button>
           </nav>
 
-          {view==='list' && (
-            <button className="mob-fab" onClick={()=>setAddModal(true)} style={{position:'fixed',bottom:80,right:16,background:'var(--amber)',color:'#000',border:'none',borderRadius:'50%',width:54,height:54,display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 20px rgba(245,158,11,0.35)',cursor:'pointer',zIndex:49}}>
-              <style>{`.mob-fab{display:flex}@media(min-width:768px){.mob-fab{display:none}}`}</style>
-              <I n="add" lg/>
-            </button>
-          )}
+          {/* TOAST */}
+          {toastMsg && <div className="fixed top-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-full text-sm font-bold shadow-2xl z-[100] animate-fade-in">{toastMsg}</div>}
 
-          {addModal && <AddModal/>}
-          {finishModal.open && <FinishModal/>}
-          {expenseModal && <ExpenseModal/>}
-
-          {toast && (
-            <div className="toast" style={{borderColor:toast.isError?'rgba(239,68,68,0.3)':'var(--border-strong)'}}>
-              <I n={toast.isError?'error':'check_circle'} sm style={{color:toast.isError?'var(--red)':'var(--green)'}}/>
-              {toast.msg}
+          {/* MODAL DE EDIÇÃO */}
+          {editingPlace && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+              <div className="bg-white dark:bg-neutral-900 rounded-3xl p-6 w-full max-w-md shadow-2xl border border-slate-200 dark:border-neutral-800">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-bold dark:text-white">Editar Viagem</h2>
+                  <button onClick={() => setEditingPlace(null)} className="text-slate-400"><X className="w-6 h-6" /></button>
+                </div>
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  const fd = new FormData(e.target);
+                  updatePlace(editingPlace.id, {
+                    name: fd.get('name'),
+                    city: fd.get('city'),
+                    state: fd.get('state').toUpperCase(),
+                    notes: fd.get('notes')
+                  });
+                }} className="space-y-4">
+                  <Input label="Destino" name="name" defaultValue={editingPlace.name} />
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input label="Cidade" name="city" defaultValue={editingPlace.city} />
+                    <Input label="UF" name="state" defaultValue={editingPlace.state} maxLength="2" isUppercase />
+                  </div>
+                  <textarea name="notes" placeholder="Anotações..." defaultValue={editingPlace.notes} className="w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-3 dark:text-white h-24 outline-none focus:border-amber-500" />
+                  <div className="flex gap-3 pt-4">
+                    <button type="button" onClick={() => setEditingPlace(null)} className="flex-1 py-4 bg-slate-100 dark:bg-neutral-800 text-slate-500 rounded-2xl font-bold">Cancelar</button>
+                    <button type="submit" className="flex-1 py-4 bg-amber-500 text-white rounded-2xl font-bold shadow-lg shadow-amber-500/20">Salvar</button>
+                  </div>
+                </form>
+              </div>
             </div>
           )}
         </div>
       );
     }
 
+    // --- COMPONENTES AUXILIARES ---
+    const Input = ({ label, name, type = "text", defaultValue, maxLength, isUppercase }) => (
+      <div>
+        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1 ml-1">{label}</label>
+        <input name={name} type={type} defaultValue={defaultValue} maxLength={maxLength} className={`w-full bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-3 text-slate-800 dark:text-white focus:border-amber-500 outline-none transition-colors ${isUppercase ? 'uppercase' : ''}`} />
+      </div>
+    );
+
     const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<App/>);
+    root.render(<App />);
   </script>
 </body>
 </html>
