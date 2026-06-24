@@ -3,57 +3,139 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>DiarioDeBordo v12</title>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <title>MotoTracker v10</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --amber: #F59E0B;
+      --amber-dark: #B45309;
+      --amber-glow: rgba(245,158,11,0.15);
+      --bg: #0A0A0A;
+      --bg2: #111111;
+      --bg3: #1A1A1A;
+      --bg4: #222222;
+      --border: rgba(255,255,255,0.07);
+      --border-strong: rgba(255,255,255,0.12);
+      --text: #F0F0F0;
+      --text2: #888;
+      --text3: #555;
+      --green: #22C55E;
+      --red: #EF4444;
+      --blue: #3B82F6;
+    }
+    .light-mode {
+      --bg: #F5F4F0;
+      --bg2: #FFFFFF;
+      --bg3: #ECECEC;
+      --bg4: #E0E0E0;
+      --border: rgba(0,0,0,0.07);
+      --border-strong: rgba(0,0,0,0.14);
+      --text: #0A0A0A;
+      --text2: #666;
+      --text3: #999;
+      --amber-glow: rgba(245,158,11,0.1);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body, #root { height: 100%; width: 100%; overflow: hidden; }
+    body { background: var(--bg); color: var(--text); font-family: 'Barlow', sans-serif; }
+    .font-display { font-family: 'Barlow Condensed', sans-serif; }
+    .mat { font-family: 'Material Symbols Rounded'; font-size: 1.25rem; display: inline-flex; align-items: center; justify-content: center; line-height: 1; font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; user-select: none; }
+    .mat.fill { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .mat.lg { font-size: 1.75rem; }
+    .mat.xl { font-size: 2.25rem; }
+    .mat.sm { font-size: 1rem; }
+    .mat.xs { font-size: 0.85rem; }
+    ::-webkit-scrollbar { width: 3px; height: 3px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 2px; }
+    @keyframes fadeUp { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform: translateY(0); } }
+    @keyframes slideIn { from { opacity:0; transform: translateX(-8px); } to { opacity:1; transform: translateX(0); } }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+    .fade-up { animation: fadeUp 0.25s ease-out both; }
+    .slide-in { animation: slideIn 0.2s ease-out both; }
+    .amber-rule { display: block; width: 32px; height: 2px; background: var(--amber); border-radius: 1px; }
+    .card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; }
+    .card-inner { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border-radius: 8px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 1rem; letter-spacing: 0.03em; cursor: pointer; border: none; transition: all 0.15s ease; text-transform: uppercase; }
+    .btn:active { transform: scale(0.97); }
+    .btn-amber { background: var(--amber); color: #000; padding: 14px 20px; }
+    .btn-amber:hover { background: #FBBF24; }
+    .btn-ghost { background: var(--bg3); color: var(--text); border: 1px solid var(--border-strong); padding: 12px 18px; }
+    .btn-ghost:hover { background: var(--bg4); }
+    .btn-danger { background: rgba(239,68,68,0.12); color: var(--red); border: 1px solid rgba(239,68,68,0.2); padding: 10px 14px; }
+    .btn-danger:hover { background: rgba(239,68,68,0.2); }
+    .btn-green { background: var(--green); color: #000; padding: 14px 20px; }
+    .btn-green:hover { filter: brightness(1.1); }
+    .iconbtn { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 8px; cursor: pointer; border: 1px solid var(--border); background: var(--bg3); color: var(--text2); transition: all 0.15s; }
+    .iconbtn:hover { background: var(--bg4); color: var(--text); border-color: var(--border-strong); }
+    .iconbtn:active { transform: scale(0.95); }
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; font-family: 'Barlow Condensed', sans-serif; }
+    .badge-amber { background: var(--amber-glow); color: var(--amber); border: 1px solid rgba(245,158,11,0.25); }
+    .badge-green { background: rgba(34,197,94,0.12); color: var(--green); border: 1px solid rgba(34,197,94,0.2); }
+    .badge-blue { background: rgba(59,130,246,0.12); color: var(--blue); border: 1px solid rgba(59,130,246,0.2); }
+    .badge-gray { background: var(--bg3); color: var(--text2); border: 1px solid var(--border-strong); }
+    .stat-block { display: flex; flex-direction: column; gap: 2px; }
+    .stat-value { font-family: 'Barlow Condensed', sans-serif; font-size: 1.75rem; font-weight: 800; line-height: 1; color: var(--text); }
+    .stat-label { font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); }
+    .inp { width: 100%; background: var(--bg3); border: 1px solid var(--border-strong); border-radius: 8px; padding: 12px 14px; color: var(--text); font-family: 'Barlow', sans-serif; font-size: 0.95rem; outline: none; transition: border-color 0.15s; -webkit-appearance: none; }
+    .inp:focus { border-color: var(--amber); }
+    .inp::placeholder { color: var(--text3); }
+    select.inp { cursor: pointer; }
+    label.lbl { display: block; font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text3); margin-bottom: 6px; }
+    .nav-item { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 8px; cursor: pointer; font-family: 'Barlow Condensed', sans-serif; font-size: 1.05rem; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; color: var(--text2); transition: all 0.15s; border: 1px solid transparent; }
+    .nav-item:hover { background: var(--bg3); color: var(--text); border-color: var(--border); }
+    .nav-item.active { background: var(--amber-glow); color: var(--amber); border-color: rgba(245,158,11,0.25); }
+    .mob-nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 4px; flex: 1; cursor: pointer; border-radius: 8px; transition: all 0.15s; }
+    .mob-nav-item span.label { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text3); transition: color 0.15s; font-family: 'Barlow Condensed', sans-serif; }
+    .mob-nav-item .mat { color: var(--text3); transition: color 0.15s; font-size: 1.4rem; }
+    .mob-nav-item.active .mat { color: var(--amber); }
+    .mob-nav-item.active .label { color: var(--amber); }
+    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); z-index: 100; display: flex; align-items: flex-end; justify-content: center; }
+    .sheet { background: var(--bg2); border: 1px solid var(--border-strong); border-radius: 20px 20px 0 0; width: 100%; max-width: 480px; max-height: 92vh; overflow-y: auto; animation: fadeUp 0.25s ease-out; }
+    .sheet-handle { width: 36px; height: 4px; background: var(--border-strong); border-radius: 2px; margin: 12px auto 20px; }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+    .check-item { display: flex; align-items: center; gap: 14px; padding: 16px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.12s; }
+    .check-item:last-child { border-bottom: none; }
+    .check-item:hover { background: var(--bg3); }
+    .check-box { width: 22px; height: 22px; border-radius: 5px; border: 2px solid var(--border-strong); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+    .check-box.checked { background: var(--amber); border-color: var(--amber); }
+    .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--bg2); border: 1px solid var(--border-strong); color: var(--text); padding: 12px 20px; border-radius: 40px; font-size: 0.875rem; font-weight: 600; z-index: 999; display: flex; align-items: center; gap: 8px; animation: fadeUp 0.2s ease-out; white-space: nowrap; box-shadow: 0 4px 24px rgba(0,0,0,0.4); }
+    .leaflet-container { background: #111 !important; }
+    .prog-bar { height: 4px; background: var(--bg4); border-radius: 2px; overflow: hidden; }
+    .prog-fill { height: 100%; background: var(--amber); border-radius: 2px; transition: width 0.5s ease; }
+    .conn-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); display: inline-block; animation: pulse 2s infinite; }
+    input[type=range] { -webkit-appearance: none; appearance: none; height: 4px; background: var(--bg4); border-radius: 2px; outline: none; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--amber); cursor: pointer; }
+    .scroll-area { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .pb-safe { padding-bottom: max(env(safe-area-inset-bottom), 16px); }
+
+    .light-mode .card { background: #FFF; }
+    .light-mode .card-inner { background: var(--bg3); }
+    .light-mode body { background: var(--bg); color: var(--text); }
+    .light-mode .inp { background: var(--bg3); }
+    .light-mode .nav-item:hover { background: var(--bg3); }
+    .light-mode .toast { background: #FFF; }
+    .light-mode .sheet { background: #FFF; }
+  </style>
 </head>
 <body>
   <div id="root"></div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
-    import { getFirestore, collection, getDocs, addDoc, deleteDoc, updateDoc, doc, query, orderBy } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
-    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyD4NQKbwWXxzzTWscDW1ElatAhNUA-DLqQ",
-      authDomain: "diariodebordo-269db.firebaseapp.com",
-      projectId: "diariodebordo-269db",
-      storageBucket: "diariodebordo-269db.firebasestorage.app",
-      messagingSenderId: "303960210975",
-      appId: "1:303960210975:web:0ef59f1a417909d4b19f2a"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    
-    // Expondo para o React
-    window.db = getFirestore(app);
-    window.auth = getAuth(app);
-    window.provider = new GoogleAuthProvider();
-    window.signInWithPopup = signInWithPopup;
-    window.onAuthStateChanged = onAuthStateChanged;
-    window.signOut = signOut;
-    
-    window.collection = collection;
-    window.getDocs = getDocs;
-    window.addDoc = addDoc;
-    window.deleteDoc = deleteDoc;
-    window.updateDoc = updateDoc;
-    window.doc = doc;
-    window.query = query;
-    window.orderBy = orderBy;
-
-    // Sinaliza que os módulos carregaram
-    window.FIREBASE_READY = true;
-  </script>
-
   <script type="text/babel">
     const { useState, useEffect, useRef, useCallback } = React;
 
+    const supabaseUrl = 'https://ofgafzebcyjmtxdkgqyy.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mZ2FmemViY3lqbXR4ZGtncXl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMjQwODksImV4cCI6MjA5NDcwMDA4OX0.Xt4XfB3NJ2HKqbjaLsbjOY_WyTND-SubwBHkaPZq3eM';
+    const db = window.supabase.createClient(supabaseUrl, supabaseKey);
     const ORIGIN = { lat: -3.7327, lng: -38.5270, label: 'Fortaleza, CE' };
 
     const motoDatabase = {
@@ -91,10 +173,6 @@
     const copyText = (t) => { try { navigator.clipboard.writeText(t); } catch(e) { const el=document.createElement('textarea'); el.value=t; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); } };
 
     function App() {
-      const [fbReady, setFbReady] = useState(!!window.FIREBASE_READY);
-      const [user, setUser] = useState(null);
-      const [authLoading, setAuthLoading] = useState(true);
-
       const [theme, setTheme] = useState(() => localStorage.getItem('mt_theme') || 'dark');
       const [view, setView] = useState('dashboard');
       const [places, setPlaces] = useState([]);
@@ -104,7 +182,7 @@
       const [checklist, setChecklist] = useState(() => { try { return JSON.parse(localStorage.getItem('mt_checklist')||'null') || DEFAULT_CHECKLIST; } catch(e){return DEFAULT_CHECKLIST;} });
       const [isConnected, setIsConnected] = useState(false);
       const [toast, setToast] = useState('');
-      const [loading, setLoading] = useState(false);
+      const [loading, setLoading] = useState(true);
 
       const [addModal, setAddModal] = useState(false);
       const [expenseModal, setExpenseModal] = useState(false);
@@ -112,26 +190,6 @@
       const [deleteConfirm, setDeleteConfirm] = useState(null);
 
       const isDark = theme === 'dark';
-
-      // Aguarda o script de módulo injetar os métodos do Firebase
-      useEffect(() => {
-        if (fbReady) return;
-        const t = setInterval(() => {
-          if (window.FIREBASE_READY) { setFbReady(true); clearInterval(t); }
-        }, 50);
-        return () => clearInterval(t);
-      }, [fbReady]);
-
-      // Observador de Autenticação
-      useEffect(() => {
-        if (!fbReady) return;
-        const unsubscribe = window.onAuthStateChanged(window.auth, (currentUser) => {
-          setUser(currentUser);
-          setAuthLoading(false);
-          if (currentUser) fetchPlaces();
-        });
-        return () => unsubscribe();
-      }, [fbReady]);
 
       useEffect(() => {
         document.body.classList.toggle('light-mode', !isDark);
@@ -143,6 +201,8 @@
       useEffect(() => { localStorage.setItem('mt_moto', JSON.stringify(myMoto)); }, [myMoto]);
       useEffect(() => { localStorage.setItem('mt_checklist', JSON.stringify(checklist)); }, [checklist]);
 
+      useEffect(() => { fetchPlaces(); }, []);
+
       const showToast = (msg, isError=false) => {
         setToast({ msg, isError });
         setTimeout(() => setToast(''), 3000);
@@ -150,26 +210,18 @@
 
       const fetchPlaces = async () => {
         setLoading(true);
-        try {
-          const q = window.query(window.collection(window.db, "trips"), window.orderBy("created_at", "desc"));
-          const snapshot = await window.getDocs(q);
-          setIsConnected(true);
-          setPlaces(snapshot.docs.map(docSnap => {
-            const r = docSnap.data();
-            return {
-              id: docSnap.id, name: r.name, city: r.city, state: r.state, type: r.type,
-              status: r.status, plannedDate: r.planned_date, date: r.date, notes: r.notes,
-              lat: r.lat, lng: r.lng, distance: r.distance, duration: r.duration,
-              fuelCost: r.fuel_cost, actualCost: r.actual_cost,
-              costDetails: r.cost_details || { gas:0, food:0, lodging:0, maintenance:0, others:0 },
-              hasPassenger: r.has_passenger, odometerStart: r.odometer_start, odometerEnd: r.odometer_end
-            };
-          }));
-        } catch (error) {
-          console.error(error);
-          showToast('Falha ao conectar ao banco', true);
-        }
+        const { data, error } = await db.from('trips').select('*').order('created_at', { ascending: false });
         setLoading(false);
+        if (error) { showToast('Falha ao conectar ao banco', true); return; }
+        setIsConnected(true);
+        setPlaces(data.map(r => ({
+          id: r.id, name: r.name, city: r.city, state: r.state, type: r.type,
+          status: r.status, plannedDate: r.planned_date, date: r.date, notes: r.notes,
+          lat: r.lat, lng: r.lng, distance: r.distance, duration: r.duration,
+          fuelCost: r.fuel_cost, actualCost: r.actual_cost,
+          costDetails: r.cost_details || { gas:0, food:0, lodging:0, maintenance:0, others:0 },
+          hasPassenger: r.has_passenger, odometerStart: r.odometer_start, odometerEnd: r.odometer_end
+        })));
       };
 
       const geocode = async (city, state) => {
@@ -205,39 +257,38 @@
           has_passenger: form.hasPassenger, notes: form.notes || '',
           lat: coords?.lat || null, lng: coords?.lng || null,
           distance: route.distance, duration: route.duration, fuel_cost: route.fuelCost,
-          actual_cost: 0, cost_details: { gas:0, food:0, lodging:0, maintenance:0, others:0 },
-          created_at: new Date().toISOString()
+          actual_cost: 0, cost_details: { gas:0, food:0, lodging:0, maintenance:0, others:0 }
         };
 
-        try {
-          const docRef = await window.addDoc(window.collection(window.db, 'trips'), rec);
-          const saved = { id: docRef.id, ...rec };
-          
-          setPlaces(prev => [{
-            id: saved.id, name: saved.name, city: saved.city, state: saved.state,
-            type: saved.type, status: 'planned', plannedDate: saved.planned_date,
-            date: null, notes: saved.notes, lat: saved.lat, lng: saved.lng,
-            distance: saved.distance, duration: saved.duration, fuelCost: saved.fuel_cost,
-            actualCost: 0, costDetails: { gas:0, food:0, lodging:0, maintenance:0, others:0 },
-            hasPassenger: saved.has_passenger, odometerStart: null, odometerEnd: null
-          }, ...prev]);
-          setAddModal(false);
-          showToast('Destino salvo!');
-        } catch (error) {
-          console.error("ERRO DO FIREBASE:", error);
-          alert("Erro ao salvar: " + error.message);
+        console.log("Tentando inserir no banco:", rec);
+
+        const { data, error } = await db.from('trips').insert([rec]).select();
+        
+        if (error) { 
+            console.error("ERRO DO SUPABASE:", error); 
+            alert("Erro ao salvar: " + error.message);
+            return; 
         }
+
+        const saved = data[0];
+        setPlaces(prev => [{
+          id: saved.id, name: saved.name, city: saved.city, state: saved.state,
+          type: saved.type, status: 'planned', plannedDate: saved.planned_date,
+          date: null, notes: saved.notes, lat: saved.lat, lng: saved.lng,
+          distance: saved.distance, duration: saved.duration, fuelCost: saved.fuel_cost,
+          actualCost: 0, costDetails: { gas:0, food:0, lodging:0, maintenance:0, others:0 },
+          hasPassenger: saved.has_passenger, odometerStart: null, odometerEnd: null
+        }, ...prev]);
+        setAddModal(false);
+        showToast('Destino salvo!');
       };
 
       const deletePlace = async (id) => {
-        try {
-          await window.deleteDoc(window.doc(window.db, 'trips', id));
-          setPlaces(prev => prev.filter(p => p.id !== id));
-          setDeleteConfirm(null);
-          showToast('Destino removido.');
-        } catch(error) {
-          showToast('Erro ao excluir', true);
-        }
+        const { error } = await db.from('trips').delete().eq('id', id);
+        if (error) { showToast('Erro ao excluir', true); return; }
+        setPlaces(prev => prev.filter(p => p.id !== id));
+        setDeleteConfirm(null);
+        showToast('Destino removido.');
       };
 
       const finishTrip = async (e) => {
@@ -246,18 +297,11 @@
         const cd = { gas:parseFloat(costs.gas)||0, food:parseFloat(costs.food)||0, lodging:parseFloat(costs.lodging)||0, maintenance:parseFloat(costs.maintenance)||0, others:parseFloat(costs.others)||0 };
         const total = Object.values(cd).reduce((a,b)=>a+b,0);
         const today = new Date().toISOString().split('T')[0];
-        
-        try {
-          await window.updateDoc(window.doc(window.db, 'trips', placeId), { 
-            status:'visited', date:today, actual_cost:total, cost_details:cd, 
-            odometer_start:parseFloat(odoStart)||null, odometer_end:parseFloat(odoEnd)||null 
-          });
-          setPlaces(prev => prev.map(p => p.id===placeId ? {...p, status:'visited', date:today, actualCost:total, costDetails:cd, odometerStart:parseFloat(odoStart)||null, odometerEnd:parseFloat(odoEnd)||null} : p));
-          setFinishModal({ open:false, placeId:null, costs:{gas:'',food:'',lodging:'',maintenance:'',others:''}, odoStart:'', odoEnd:'' });
-          showToast('Viagem concluída! 🏁');
-        } catch(error) {
-          showToast('Erro ao concluir', true);
-        }
+        const { error } = await db.from('trips').update({ status:'visited', date:today, actual_cost:total, cost_details:cd, odometer_start:parseFloat(odoStart)||null, odometer_end:parseFloat(odoEnd)||null }).eq('id', placeId);
+        if (error) { showToast('Erro ao concluir', true); return; }
+        setPlaces(prev => prev.map(p => p.id===placeId ? {...p, status:'visited', date:today, actualCost:total, costDetails:cd, odometerStart:parseFloat(odoStart)||null, odometerEnd:parseFloat(odoEnd)||null} : p));
+        setFinishModal({ open:false, placeId:null, costs:{gas:'',food:'',lodging:'',maintenance:'',others:''}, odoStart:'', odoEnd:'' });
+        showToast('Viagem concluída! 🏁');
       };
 
       const addExpense = async (e) => {
@@ -279,15 +323,11 @@
           const cur = p.costDetails || {};
           const newCosts = { ...cur, [category]: (cur[category]||0) + amount };
           const newTotal = (p.actualCost||0) + amount;
-          
-          try {
-            await window.updateDoc(window.doc(window.db, 'trips', tripId), { actual_cost: newTotal, cost_details: newCosts });
-            setPlaces(prev => prev.map(x => x.id===tripId ? {...x, actualCost:newTotal, costDetails:newCosts} : x));
-            setExpenseModal(false);
-            showToast('Despesa vinculada!');
-          } catch(error) {
-            showToast('Erro ao salvar', true);
-          }
+          const { error } = await db.from('trips').update({ actual_cost: newTotal, cost_details: newCosts }).eq('id', tripId);
+          if (error) { showToast('Erro ao salvar', true); return; }
+          setPlaces(prev => prev.map(x => x.id===tripId ? {...x, actualCost:newTotal, costDetails:newCosts} : x));
+          setExpenseModal(false);
+          showToast('Despesa vinculada!');
         }
       };
 
@@ -297,32 +337,6 @@
         copyText(text);
         showToast('Copiado pro WhatsApp!');
       };
-
-      // Exibição do estado de inicialização do Firebase e Autenticação
-      if (!fbReady || authLoading) {
-        return (
-          <div style={{height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', color:'var(--text3)', background:'var(--bg)', gap:12}}>
-            <span style={{fontFamily:"'Barlow Condensed',sans-serif", fontSize:'1.2rem', fontWeight:700, letterSpacing:'0.05em', textTransform:'uppercase'}}>
-              {!fbReady ? 'Inicializando Sistema...' : 'Verificando Acesso...'}
-            </span>
-          </div>
-        );
-      }
-
-      // Tela de Login
-      if (!user) {
-        return (
-          <div style={{height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'var(--bg)', color:'var(--text)', gap: 24, padding: 20}}>
-            <div style={{textAlign:'center'}}>
-              <h1 className="font-display" style={{fontSize: '2.4rem', fontWeight: 800, color: 'var(--amber)', marginBottom: 8}}>MotoTracker</h1>
-              <p style={{color: 'var(--text2)', fontSize: '0.95rem'}}>Seu diário de bordo pessoal.</p>
-            </div>
-            <button className="btn btn-amber" style={{padding: '16px 32px', fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: 10, borderRadius: 12}} onClick={() => window.signInWithPopup(window.auth, window.provider)}>
-              Entrar com Google
-            </button>
-          </div>
-        );
-      }
 
       const Dashboard = () => {
         const visited = places.filter(p => p.status === 'visited');
@@ -349,8 +363,8 @@
             <div className="flex items-start justify-between">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="conn-dot" style={{background: isConnected ? 'var(--green)' : 'var(--red)'}}></span>
-                  <span style={{fontSize:'0.65rem',textTransform:'uppercase',letterSpacing:'0.1em',color:'var(--text3)',fontWeight:600}}>{isConnected ? 'Online · Firebase' : 'Offline'}</span>
+                  <span className="conn-dot"></span>
+                  <span style={{fontSize:'0.65rem',textTransform:'uppercase',letterSpacing:'0.1em',color:'var(--text3)',fontWeight:600}}>{isConnected ? 'Online · Supabase' : 'Offline'}</span>
                 </div>
                 <h1 className="font-display" style={{fontSize:'2rem',fontWeight:800,lineHeight:1,color:'var(--text)'}}>
                   {myMoto.model}
@@ -953,16 +967,6 @@
             </div>
 
             <div className="card" style={{padding:'20px',display:'flex',flexDirection:'column',gap:14}}>
-              <div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'var(--text3)'}}>Conta</div>
-              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-                <span style={{fontSize:'0.9rem',color:'var(--text2)'}}>{user?.displayName || user?.email}</span>
-                <button onClick={() => window.signOut(window.auth)} className="btn btn-ghost" style={{padding:'6px 12px', fontSize:'0.8rem'}}>
-                  Sair
-                </button>
-              </div>
-            </div>
-
-            <div className="card" style={{padding:'20px',display:'flex',flexDirection:'column',gap:14}}>
               <div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.08em',color:'var(--text3)'}}>Aparência</div>
               <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
                 <span style={{fontSize:'0.9rem',color:'var(--text2)'}}>Tema {isDark?'Escuro':'Claro'}</span>
@@ -973,7 +977,7 @@
             </div>
 
             <div className="card" style={{padding:'14px 18px'}}>
-              <div style={{fontSize:'0.63rem',color:'var(--text3)',textAlign:'center'}}>MotoTracker v11 · Firebase Auth · Base: {ORIGIN.label}</div>
+              <div style={{fontSize:'0.63rem',color:'var(--text3)',textAlign:'center'}}>MotoTracker v08 · Base: {ORIGIN.label}</div>
             </div>
           </div>
         );
@@ -1256,5 +1260,3 @@
   </script>
 </body>
 </html>
-
-```
