@@ -36,7 +36,52 @@ O traçado aparece como uma linha editorial com pontos de saída, parada e desti
 
 ## Sincronização GitHub
 
-- [ ] Inspecionar branch padrão e conteúdo atual de `weversonf/mototracker`.
-- [ ] Preparar cópia Git limpa sem incluir segredos, artefatos ou dependências instaladas.
-- [ ] Sobrescrever o conteúdo remoto com o projeto MotoPulse.
-- [ ] Verificar o commit enviado e a árvore final no GitHub.
+- [x] Inspecionar branch padrão e conteúdo atual de `weversonf/mototracker`.
+- [x] Preparar cópia Git limpa sem incluir segredos, artefatos ou dependências instaladas.
+- [x] Sobrescrever o conteúdo remoto com o projeto MotoPulse.
+- [x] Verificar o commit enviado e a árvore final no GitHub.
+
+## Firebase e login Google
+
+- [x] Adicionar Firebase Web SDK usando variáveis `VITE_FIREBASE_*`.
+- [ ] Configurar provedor Google no Firebase Authentication.
+- [x] Criar tela inicial de login com Google e estados de carregamento/erro.
+- [x] Proteger o Dashboard e restaurar a sessão autenticada.
+- [x] Documentar variáveis e domínio autorizado para publicação na Vercel.
+- [x] Validar tipos, build e responsividade da tela de login.
+
+## Validação do login
+
+A tela foi validada em desktop e mobile. O botão fica desabilitado de forma explícita enquanto as variáveis `VITE_FIREBASE_*` não forem cadastradas na Vercel; depois disso, o fluxo abre o login Google e o Dashboard só aparece para uma sessão autenticada.
+
+O provedor Google e os domínios autorizados ainda dependem de configuração manual no Firebase Console, conforme `VERCEL_FIREBASE.md`.
+
+## Deploy na Vercel
+
+- [x] Confirmar autorização para criar/conectar o projeto na conta Vercel.
+- [x] Importar `weversonf/mototracker` e revisar build/output da SPA.
+- [x] Cadastrar variáveis públicas do Firebase nos ambientes da Vercel.
+- [x] Iniciar o deploy e verificar o domínio gerado.
+- [ ] Adicionar o domínio publicado aos domínios autorizados do Firebase.
+
+### Estado remoto observado
+
+O projeto Vercel `mototracker` já existe na conta `weversonf-6166`, está ligado à branch `main` e ao commit `9b2fb4c`. O domínio atual é `mototracker-alpha.vercel.app`. As seis variáveis do Firebase foram cadastradas em Production e Preview e a Vercel confirmou **Deployment created** após o redeploy.
+
+Ao abrir o domínio publicado, a resposta exibiu o conteúdo compilado de `server/index.ts` em vez da tela React. O deploy está Ready, mas a configuração de runtime/output da Vercel está incorreta para este projeto e precisa de ajuste antes de considerar a publicação concluída.
+
+O projeto local está no checkpoint `484609a`, que inclui login Google, Firebase e `vercel.json`, mas o deployment observado na Vercel ainda aponta para o commit antigo `9b2fb4c`. É necessário sincronizar o checkpoint mais recente ao repositório GitHub que alimenta a Vercel.
+
+O formulário da Vercel está com quatro variáveis em edição, mas a opção `Import .env` não expôs um campo visível após o clique. A configuração ainda não foi salva.
+
+Os seis campos `VITE_FIREBASE_*` foram salvos com a configuração do projeto `drivo-e-money` nos ambientes Production e Preview. A Vercel solicitou um redeploy para aplicar as mudanças.
+
+A tentativa de upload automático do arquivo `.env` não encontrou um campo de arquivo acessível; as variáveis foram cadastradas manualmente e salvas com sucesso.
+
+## Banco de dados existente
+
+- [ ] Recuperar do histórico do `mototracker` o schema, migrations e configuração do banco.
+- [ ] Confirmar se o banco original ainda está acessível e identificar o mecanismo usado.
+- [ ] Migrar o frontend estático para o template full-stack sem alterar dados existentes.
+- [ ] Conectar viagens, gastos, manutenção e abastecimentos às tabelas existentes.
+- [ ] Validar autenticação, leitura, gravação e compatibilidade do banco.
