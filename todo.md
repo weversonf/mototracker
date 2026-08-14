@@ -20,6 +20,17 @@ O CSS global foi reduzido para `clamp(31px, 4.2vw, 54px)` e a variante compacta 
 
 ## Persistência de viagens e timeline visual
 
+## Auditoria de bugs e melhorias
+
+- [ ] Executar auditoria de build, tipos, testes, logs e fluxos publicados do MotoTracker.
+- [ ] Corrigir a limpeza de coordenadas quando o usuário altera manualmente o local ou endereço de um ponto já selecionado.
+- [ ] Adicionar uma ação visível e segura para encerrar a sessão Google/Firebase pelo Perfil.
+- [ ] Exibir no Perfil o nome e o e-mail reais da conta Google conectada, em vez de dados fixos.
+- [ ] Corrigir defeitos reproduzíveis encontrados na auditoria.
+- [ ] Adicionar ou atualizar testes para impedir regressões das correções aplicadas.
+- [ ] Validar a versão corrigida em desktop e mobile.
+- [ ] Documentar melhorias recomendadas com prioridade e impacto esperado.
+
 - [x] Substituído pela arquitetura Firebase: ativar sessão Google e camada Cloud Firestore isolada por usuário, sem criar tabela ou procedimentos tRPC de viagens.
 - [x] Resolver os conflitos da migração sem substituir o login Google/Firebase ou a interface MotoTracker.
 - [x] Remover o redirecionamento Manus OAuth do bootstrap e manter o AuthProvider Firebase como única porta de autenticação.

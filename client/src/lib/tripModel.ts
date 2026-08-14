@@ -18,6 +18,15 @@ export function normalizePoint(point: RoutePoint): RoutePoint {
   };
 }
 
+export function editRoutePoint(
+  point: RoutePoint,
+  field: "label" | "address",
+  value: string,
+): RoutePoint {
+  const { coordinates: _coordinates, ...pointWithoutCoordinates } = point;
+  return { ...pointWithoutCoordinates, [field]: value };
+}
+
 export function normalizeTripInput(input: TripInput): TripInput {
   const name = input.name.trim();
   const points = input.points

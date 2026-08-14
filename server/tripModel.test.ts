@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeTripInput } from "@/lib/tripModel";
+import { editRoutePoint, normalizeTripInput } from "@/lib/tripModel";
 
 const validTrip = {
   name: "  Serra do Rastro  ",
@@ -27,5 +27,26 @@ describe("normalizeTripInput", () => {
     expect(() => normalizeTripInput({ ...validTrip, name: "  " })).toThrow("Dê um nome");
     expect(() => normalizeTripInput({ ...validTrip, points: validTrip.points.slice(1) })).toThrow("ponto de partida");
     expect(() => normalizeTripInput({ ...validTrip, points: validTrip.points.slice(0, 2) })).toThrow("destino");
+  });
+
+  it("remove coordenadas antigas ao editar manualmente um ponto", () => {
+    const editedPoint = editRoutePoint(
+      {
+        id: "start",
+        kind: "start",
+        label: "Fortaleza",
+        address: "Fortaleza, CE",
+        coordinates: { lat: -3.7319, lng: -38.5267 },
+      },
+      "label",
+      "Aquiraz",
+    );
+
+    expect(editedPoint).toEqual({
+      id: "start",
+      kind: "start",
+      label: "Aquiraz",
+      address: "Fortaleza, CE",
+    });
   });
 });

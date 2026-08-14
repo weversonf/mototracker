@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { editRoutePoint } from "@/lib/tripModel";
+import { getProfileIdentity } from "@/lib/profileIdentity";
 import { createTrip, updateTrip, watchTrips } from "@/lib/trips";
 import type { RoutePoint, Trip } from "@/types/trips";
 import {
@@ -21,6 +23,7 @@ import {
   ExternalLink,
   Fuel,
   Gauge,
+  LogOut,
   MapPin,
   Menu,
   MoreHorizontal,
@@ -307,7 +310,7 @@ function RoutesView() {
   };
 
   const updatePoint = (id: string, field: "label" | "address", value: string) => {
-    setRoutePoints((current) => current.map((point) => point.id === id ? { ...point, [field]: value } : point));
+    setRoutePoints((current) => current.map((point) => point.id === id ? editRoutePoint(point, field, value) : point));
   };
 
   const handlePlaceSearch = (pointId: string, field: "label" | "address", value: string) => {
@@ -450,10 +453,23 @@ function GarageView() {
 }
 
 function ProfileView() {
+  const { user, signOutUser } = useAuth();
   const [notifications, setNotifications] = useState(true);
   const [shareRides, setShareRides] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const { displayName, email, initials } = getProfileIdentity(user);
   const preferences = [{ label: "Alertas de manutenção", description: "Receber lembretes sobre a saúde da moto", value: notifications, setValue: setNotifications }, { label: "Compartilhar rolês", description: "Permitir que amigos acompanhem suas rotas", value: shareRides, setValue: setShareRides }];
-  return <><PageHeader eyebrow="PERFIL / PILOTO" title={<>Rafael, mantenha<br /><em>o motor em dia.</em></>} description="Gerencie suas preferências, privacidade e a forma como o MotoTracker acompanha suas viagens." action={<button className="profile-edit-button" onClick={() => toast("Perfil em modo de edição")}>Editar perfil <ArrowUpRight size={15} /></button>} /><div className="profile-layout"><article className="panel rider-card"><div className="rider-card__avatar">RB</div><p className="label-caps">PILOTO DESDE 2023</p><h2>Rafael Barros</h2><span>Florianópolis, SC · 2.480 km registrados</span><div className="rider-card__stats"><div><strong>18</strong><span>viagens</span></div><div><strong>4</strong><span>viagens salvas</span></div><div><strong>02</strong><span>conquistas</span></div></div></article><article className="panel settings-card"><div className="panel-heading"><div><p className="label-caps">PREFERÊNCIAS</p><h2>Como você pilota</h2></div><Settings2 size={21} /></div><div className="settings-list">{preferences.map((preference) => <button className="setting-row" key={preference.label} onClick={() => preference.setValue(!preference.value)}><span><strong>{preference.label}</strong><small>{preference.description}</small></span><span className={`toggle ${preference.value ? "toggle--on" : ""}`}><span /></span></button>)}</div><button className="secondary-button" onClick={() => toast("Preferências salvas", { description: "Suas escolhas foram atualizadas." })}>Salvar preferências <Check size={15} /></button></article></div></>;
+  const handleSignOut = async () => {
+    setIsSigningOut(true);
+    try {
+      await signOutUser();
+      toast.success("Sessão encerrada", { description: "Você saiu do MotoTracker com segurança." });
+    } catch {
+      toast.error("Não foi possível sair", { description: "Tente novamente em alguns instantes." });
+      setIsSigningOut(false);
+    }
+  };
+  return <><PageHeader eyebrow="PERFIL / PILOTO" title={<>Seu perfil,<br /><em>no seu ritmo.</em></>} description="Gerencie suas preferências, privacidade e a forma como o MotoTracker acompanha suas viagens." action={<button className="profile-edit-button" onClick={() => toast("Perfil em modo de edição")}>Editar perfil <ArrowUpRight size={15} /></button>} /><div className="profile-layout"><article className="panel rider-card"><div className="rider-card__avatar">{initials}</div><p className="label-caps">CONTA GOOGLE</p><h2>{displayName}</h2><span>{email}</span><div className="rider-card__stats"><div><strong>Google</strong><span>autenticação</span></div><div><strong>Privado</strong><span>seu diário</span></div><div><strong>Ativo</strong><span>acesso</span></div></div><button className="secondary-button" onClick={() => void handleSignOut()} disabled={isSigningOut}>{isSigningOut ? "Encerrando..." : <><LogOut size={15} /> Sair da conta</>}</button></article><article className="panel settings-card"><div className="panel-heading"><div><p className="label-caps">PREFERÊNCIAS</p><h2>Como você pilota</h2></div><Settings2 size={21} /></div><div className="settings-list">{preferences.map((preference) => <button className="setting-row" key={preference.label} onClick={() => preference.setValue(!preference.value)}><span><strong>{preference.label}</strong><small>{preference.description}</small></span><span className={`toggle ${preference.value ? "toggle--on" : ""}`}><span /></span></button>)}</div><button className="secondary-button" onClick={() => toast("Preferências salvas", { description: "Suas escolhas foram atualizadas." })}>Salvar preferências <Check size={15} /></button></article></div></>;
 }
 
 function SettingsView() {
@@ -468,8 +484,7 @@ export default function Home() {
     return ["Dashboard", "Viagens", "Gastos", "Garagem", "Perfil", "Configurações"].includes(requested ?? "") ? requested as Section : "Dashboard";
   });
   const [menuOpen, setMenuOpen] = useState(false);
-  const initials = (user?.displayName?.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("") || "RB").toUpperCase();
-  const displayName = user?.displayName || "Piloto";
+  const { initials, displayName } = getProfileIdentity(user);
   useEffect(() => { const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape") setMenuOpen(false); }; window.addEventListener("keydown", onKeyDown); return () => window.removeEventListener("keydown", onKeyDown); }, []);
   const handleNavigation = (section: Section) => { setActiveTab(section); setMenuOpen(false); window.history.replaceState(null, "", section === "Dashboard" ? "/" : `/?screen=${encodeURIComponent(section)}`); };
   const pageTitle = activeTab === "Dashboard" ? "Resumo" : activeTab;
