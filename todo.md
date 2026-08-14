@@ -22,13 +22,26 @@ O CSS global foi reduzido para `clamp(31px, 4.2vw, 54px)` e a variante compacta 
 
 ## Auditoria de bugs e melhorias
 
-- [ ] Executar auditoria de build, tipos, testes, logs e fluxos publicados do MotoTracker.
-- [ ] Corrigir a limpeza de coordenadas quando o usuário altera manualmente o local ou endereço de um ponto já selecionado.
-- [ ] Adicionar uma ação visível e segura para encerrar a sessão Google/Firebase pelo Perfil.
-- [ ] Exibir no Perfil o nome e o e-mail reais da conta Google conectada, em vez de dados fixos.
-- [ ] Corrigir defeitos reproduzíveis encontrados na auditoria.
-- [ ] Adicionar ou atualizar testes para impedir regressões das correções aplicadas.
+- [ ] Adicionar em Configurações um cadastro editável de moto com modelo, apelido e final da placa.
+- [ ] Registrar consumo médio em km/L e usar esse dado para estimar litros e custo em lançamentos de combustível.
+- [ ] Exibir um lembrete informativo de IPVA/licenciamento baseado no final da placa, sem apresentar vencimento oficial ou valor de tributo.
+- [ ] Validar o cadastro da moto e os cálculos de consumo em testes de regressão e layout responsivo.
+- [ ] Corrigir o registro financeiro para coletar categoria, descrição e valor antes do salvamento.
+- [ ] Tornar editáveis por clique ou toque todos os campos de partida, parada e destino em `Nova viagem`.
+- [ ] Cobrir os dois fluxos corrigidos com testes de regressão e validação visual responsiva.
+- [ ] Verificar a disponibilidade de `mototracker.vercel.app` e vinculá-lo ao projeto, mantendo o endereço atual como alternativa.
+- [ ] Verificar se `mototrackerbr.vercel.app` está livre como alternativa curta de endereço na Vercel.
+- [x] Executar auditoria de build, tipos, testes, logs e fluxos publicados do MotoTracker.
+- [x] Corrigir a limpeza de coordenadas quando o usuário altera manualmente o local ou endereço de um ponto já selecionado.
+- [x] Adicionar uma ação visível e segura para encerrar a sessão Google/Firebase pelo Perfil.
+- [x] Exibir no Perfil o nome e o e-mail reais da conta Google conectada, em vez de dados fixos.
+- [x] Corrigir defeitos reproduzíveis encontrados na auditoria.
+- [x] Adicionar ou atualizar testes para impedir regressões das correções aplicadas.
 - [ ] Validar a versão corrigida em desktop e mobile.
+- [x] Resolver o bootstrap local após a reinstalação de dependências: o servidor iniciou normalmente e o erro histórico de `dotenv` não voltou a ocorrer.
+- [x] Cobrir em teste a presença da ação de logout e a transição prevista após `signOutUser`.
+- [ ] Validar em mobile real e autenticado o Perfil com identidade real, o botão de saída e a edição manual de pontos.
+- [ ] Registrar a evidência da validação mobile publicada antes de encerrar a auditoria.
 - [ ] Documentar melhorias recomendadas com prioridade e impacto esperado.
 
 - [x] Substituído pela arquitetura Firebase: ativar sessão Google e camada Cloud Firestore isolada por usuário, sem criar tabela ou procedimentos tRPC de viagens.

@@ -314,3 +314,20 @@ h2 { margin: 9px 0 0; color: var(--cream); font: 600 19px/1.05 'Space Grotesk', 
 @keyframes drawer-in { from { opacity: 0; transform: translateX(-18px); } to { opacity: 1; transform: translateX(0); } }
 @media (max-width: 759px) { .finance-toolbar { align-items: start; flex-direction: column; gap: 12px; margin-top: -4px; }.finance-link { align-self: end; }.finance-overview-grid { grid-template-columns: 1fr; }.finance-total-card, .finance-distribution-card { min-height: 0; }.finance-distribution { justify-content: center; }.expenses-layout { grid-template-columns: 1fr; }.expense-entry-panel { grid-template-columns: 1fr; gap: 14px; }.entry-type-grid { display: grid; grid-template-columns: repeat(3, 1fr); }.entry-type { justify-content: center; padding: 0 5px; }.entry-actions { justify-content: end; }.entry-actions .primary-button, .entry-actions .secondary-button { width: auto; } }
 @media (max-width: 420px) { .finance-total-card__top strong { font-size: 32px; }.finance-total-card__footer { gap: 15px; }.finance-total-card__footer strong { font-size: 12px; }.finance-distribution { gap: 16px; }.finance-donut { width: 94px; height: 94px; }.finance-donut::after { inset: 15px; font-size: 12px; }.finance-legend b { font-size: 9px; }.finance-legend strong { font-size: 8px; } }
+
+.expense-entry-panel__form { display: grid; gap: 15px; }
+.expense-form-grid, .bike-settings-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.expense-form-grid label, .fuel-estimate label, .bike-settings-form label { display: grid; gap: 7px; color: #9eaa9c; font: 600 9px/1 'Space Grotesk', sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+.expense-form-grid input, .fuel-estimate input, .bike-settings-form input, .bike-settings-form select { width: 100%; min-height: 43px; padding: 0 12px; border: 1px solid rgba(235, 238, 220, .13); border-radius: 4px; outline: none; background: rgba(8, 13, 13, .56); color: var(--cream); font: 500 12px/1 'DM Sans', sans-serif; letter-spacing: normal; text-transform: none; transition: border-color .18s ease, box-shadow .18s ease; }
+.expense-form-grid input:focus, .fuel-estimate input:focus, .bike-settings-form input:focus, .bike-settings-form select:focus { border-color: rgba(240, 100, 60, .72); box-shadow: 0 0 0 3px rgba(240, 100, 60, .11); }
+.expense-form-grid input::placeholder, .fuel-estimate input::placeholder, .bike-settings-form input::placeholder { color: #66746b; }
+.fuel-estimate { display: grid; grid-template-columns: minmax(130px, .75fr) minmax(0, 1.25fr); align-items: end; gap: 12px; padding: 12px; border: 1px solid rgba(235, 238, 220, .08); border-radius: 5px; background: rgba(23, 32, 30, .6); }
+.fuel-estimate__result { min-height: 43px; display: flex; align-items: center; color: #99a79c; font-size: 10px; line-height: 1.5; }
+.fuel-estimate__result strong { color: var(--pulse-orange-soft); }
+.settings-grid--bike { margin-bottom: 15px; grid-template-columns: minmax(0, 1.2fr) minmax(280px, .8fr); }
+.bike-settings-card { display: grid; gap: 22px; }
+.bike-settings-form__wide { grid-column: 1 / -1; }
+.bike-settings-form small { color: #758279; font: 10px/1.45 'DM Sans', sans-serif; letter-spacing: normal; text-transform: none; }
+.bike-reminder-card { min-height: 100%; }
+.settings-card__notice { margin: 0; color: #738178; font-size: 10px; line-height: 1.55; }
+@media (max-width: 759px) { .expense-form-grid, .bike-settings-form, .fuel-estimate { grid-template-columns: 1fr; }.bike-settings-form__wide { grid-column: auto; }.settings-grid--bike { grid-template-columns: 1fr; }.fuel-estimate__result { min-height: 0; } }

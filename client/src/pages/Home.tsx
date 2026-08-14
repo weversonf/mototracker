@@ -6,6 +6,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { editRoutePoint } from "@/lib/tripModel";
 import { getProfileIdentity } from "@/lib/profileIdentity";
 import { createTrip, updateTrip, watchTrips } from "@/lib/trips";
+import { ExpensesView } from "@/components/ExpensesView";
+import { SettingsView } from "@/components/SettingsView";
 import type { RoutePoint, Trip } from "@/types/trips";
 import {
   Activity,
@@ -431,7 +433,7 @@ function RoutesView() {
   </>;
 }
 
-function ExpensesView() {
+function LegacyExpensesView() {
   const [filter, setFilter] = useState("Todos");
   const [period, setPeriod] = useState("Este mês");
   const [entryType, setEntryType] = useState("Combustível");
@@ -452,7 +454,7 @@ function GarageView() {
   return <><PageHeader eyebrow="GARAGEM / MINHA MOTO" title={<>A máquina pronta.<br /><em>Você também.</em></>} titleClassName="page-header__title--compact" description="Acompanhe saúde, manutenção e o perfil de pilotagem da sua companheira de estrada." action={<button className="secondary-button garage-action" onClick={() => toast("Adicionar moto", { description: "O cadastro de uma nova moto será liberado em breve." })}><Plus size={15} /> Adicionar moto</button>} /><div className="garage-grid"><article className="panel bike-profile-card"><div className="bike-profile-card__top"><div><p className="label-caps">MOTO PRINCIPAL</p><h2>Triumph Street Triple</h2><span>2024 · Graphite matte · 765 cc</span></div><div className="bike-emblem"><Bike size={26} /></div></div><div className="bike-visual"><div className="bike-visual__ring" /><Bike size={124} strokeWidth={.8} /><span className="bike-visual__plate">RB · 765</span></div><div className="bike-profile-card__footer"><span><ShieldCheck size={14} /> Saúde geral <strong>98%</strong></span><button className="text-button" onClick={() => toast("Detalhes da moto", { description: "Todos os sistemas estão dentro do intervalo recomendado." })}>Ver detalhes <ChevronRight size={14} /></button></div></article><div className="garage-stack"><article className="panel garage-stat-card"><div className="panel-heading"><div><p className="label-caps">PRÓXIMA REVISÃO</p><h2>1.240 km</h2></div><Wrench size={22} /></div><div className="progress-bar"><span style={{ width: "72%" }} /></div><div className="garage-stat-card__footer"><span>72% do intervalo</span><span>em 24 dias</span></div></article><article className="panel maintenance-log-card"><div className="panel-heading"><div><p className="label-caps">HISTÓRICO</p><h2>Últimos serviços</h2></div><ClipboardCheck size={21} /></div><div className="maintenance-log"><span><Wrench size={14} /><strong>Troca de óleo</strong><small>12 jun · R$ 140,00</small></span><span><Droplets size={14} /><strong>Lavagem completa</strong><small>08 jun · R$ 56,00</small></span></div><button className="text-button" onClick={() => toast("Registrar manutenção", { description: "Adicione serviço, data, quilometragem e valor." })}>Registrar serviço <Plus size={14} /></button></article><article className="panel ride-mode-card"><div className="panel-heading"><div><p className="label-caps">MODO DE PILOTAGEM</p><h2>{rideMode}</h2></div><SlidersHorizontal size={22} /></div><div className="mode-options">{["Road mode", "Rain mode", "Sport mode"].map((mode) => <button key={mode} className={rideMode === mode ? "mode-option mode-option--active" : "mode-option"} onClick={() => { setRideMode(mode); toast(`Modo ${mode} ativado`); }}>{mode}<span>{rideMode === mode && <Check size={14} />}</span></button>)}</div></article></div></div></>;
 }
 
-function ProfileView() {
+export function ProfileView() {
   const { user, signOutUser } = useAuth();
   const [notifications, setNotifications] = useState(true);
   const [shareRides, setShareRides] = useState(false);
@@ -472,7 +474,7 @@ function ProfileView() {
   return <><PageHeader eyebrow="PERFIL / PILOTO" title={<>Seu perfil,<br /><em>no seu ritmo.</em></>} description="Gerencie suas preferências, privacidade e a forma como o MotoTracker acompanha suas viagens." action={<button className="profile-edit-button" onClick={() => toast("Perfil em modo de edição")}>Editar perfil <ArrowUpRight size={15} /></button>} /><div className="profile-layout"><article className="panel rider-card"><div className="rider-card__avatar">{initials}</div><p className="label-caps">CONTA GOOGLE</p><h2>{displayName}</h2><span>{email}</span><div className="rider-card__stats"><div><strong>Google</strong><span>autenticação</span></div><div><strong>Privado</strong><span>seu diário</span></div><div><strong>Ativo</strong><span>acesso</span></div></div><button className="secondary-button" onClick={() => void handleSignOut()} disabled={isSigningOut}>{isSigningOut ? "Encerrando..." : <><LogOut size={15} /> Sair da conta</>}</button></article><article className="panel settings-card"><div className="panel-heading"><div><p className="label-caps">PREFERÊNCIAS</p><h2>Como você pilota</h2></div><Settings2 size={21} /></div><div className="settings-list">{preferences.map((preference) => <button className="setting-row" key={preference.label} onClick={() => preference.setValue(!preference.value)}><span><strong>{preference.label}</strong><small>{preference.description}</small></span><span className={`toggle ${preference.value ? "toggle--on" : ""}`}><span /></span></button>)}</div><button className="secondary-button" onClick={() => toast("Preferências salvas", { description: "Suas escolhas foram atualizadas." })}>Salvar preferências <Check size={15} /></button></article></div></>;
 }
 
-function SettingsView() {
+function LegacySettingsView() {
   return <><PageHeader eyebrow="SISTEMA / CONTROLE" title={<>Ajuste o painel<br /><em>ao seu jeito.</em></>} description="Controle aparência, notificações e a forma como você organiza seu diário de moto." /><div className="settings-grid"><article className="panel settings-card"><div className="panel-heading"><div><p className="label-caps">APARÊNCIA</p><h2>Interface</h2></div><SlidersHorizontal size={21} /></div>{["Modo noturno automático", "Mostrar custo por quilômetro", "Compactar cartões"].map((label, index) => <div className="setting-row setting-row--static" key={label}><span><strong>{label}</strong><small>{index === 0 ? "Ativo entre 18h e 06h" : "Ativo no dashboard principal"}</small></span><span className={`toggle ${index < 2 ? "toggle--on" : ""}`}><span /></span></div>)}</article><article className="panel settings-card settings-card--accent"><div className="settings-card__icon"><Bell size={18} /></div><p className="label-caps">CENTRAL DE ALERTAS</p><h2>Você está em dia.</h2><p className="settings-card__copy">Nenhuma notificação crítica pendente para a sua moto ou para as viagens salvas.</p><button className="secondary-button" onClick={() => toast("Tudo em dia", { description: "Nenhum alerta novo encontrado." })}>Verificar novamente <ArrowUpRight size={15} /></button></article></div></>;
 }
 
