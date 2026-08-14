@@ -1,4 +1,4 @@
-/* MotoPulse — auth gate: the private journal opens only after Google sign-in, while the existing app shell remains unchanged. */
+/* MotoTracker — auth gate: the private journal opens only after Google sign-in, while the existing app shell remains unchanged. */
 
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -45,4 +45,3 @@ export default function App() {
     </ErrorBoundary>
   );
 }
-

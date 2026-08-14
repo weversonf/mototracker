@@ -1,4 +1,4 @@
-/* MotoPulse — login screen: a calm, editorial gate for the private riding journal. Google is the only entry action. */
+/* MotoTracker — login screen: a calm, editorial gate for the private riding journal. Google is the only entry action. */
 
 import { Chrome, LockKeyhole, LoaderCircle, ShieldCheck } from "lucide-react";
 import { useState } from "react";
@@ -31,7 +31,7 @@ export default function Login({ configured, authError, onSignIn }: LoginProps) {
       <div className="auth-screen__wash" aria-hidden="true" />
       <section className="auth-card" aria-labelledby="login-title">
         <div className="auth-card__topline"><span className="status-dot status-dot--live" /> DIÁRIO DE ESTRADA · ACESSO PRIVADO</div>
-        <div className="auth-card__brand"><span className="brand-mark" aria-hidden="true"><span className="brand-mark__inner" /></span><span className="brand-name">Moto<span>Pulse</span></span></div>
+        <div className="auth-card__brand"><span className="brand-mark" aria-hidden="true"><span className="brand-mark__inner" /></span><span className="brand-name">Moto<span>Tracker</span></span></div>
         <div className="auth-card__copy">
           <p className="eyebrow">PLANEJE · REGISTRE · CUIDE</p>
           <h1 id="login-title">Sua moto.<br /><em>Suas histórias.</em></h1>
@@ -48,4 +48,3 @@ export default function Login({ configured, authError, onSignIn }: LoginProps) {
     </main>
   );
 }
-
