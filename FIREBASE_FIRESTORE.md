@@ -18,7 +18,7 @@ As regras foram deliberadamente restritas à coleção `mototrackerUsers/{fireba
 
 ## Estado verificado no Console
 
-As regras anteriormente publicadas eram temporárias, cobriam **todo o banco** e tinham vencimento em `2026-03-14`. A nova política do MotoTracker está preenchida no editor e aparece como a versão mais recente no histórico do Console. Porém, a gravação de uma viagem autenticada será o critério final para confirmar que a publicação foi concluída e que o acesso está isolado corretamente.
+As regras anteriormente publicadas eram temporárias, cobriam **todo o banco** e tinham vencimento em `2026-03-14`. A nova política restrita do MotoTracker foi publicada e posteriormente validada por criação/listagem autenticadas, além de negação explícita para leitura e escrita sem credenciais.
 
 ## Identidade do projeto
 
@@ -40,9 +40,17 @@ O roteiro de validação foi completado com **Fortaleza** como partida, **Beberi
 
 A viagem `Validação Firebase — Fortaleza` foi gravada com sucesso pela produção autenticada. O aplicativo exibiu a confirmação **“Planejamento salvo”** e retornou à aba **Planejadas**, onde a viagem apareceu com **1 parada** e as ações **Editar** e **Ir**. Junto da leitura vazia autorizada verificada antes da criação, esse resultado confirma que a regra Firestore está em vigor e permite ao usuário autenticado listar e criar viagens dentro do próprio caminho de coleção.
 
+Após uma recarga completa da página pública de Viagens, o estado transitório **“Carregando planejadas”** foi substituído pela viagem `Validação Firebase — Fortaleza`, com `1 parada` e os botões **Editar** e **Ir**. Isso confirma que a viagem não depende do estado em memória do formulário e é recuperada do Firestore em uma nova abertura da página.
+
 > A viagem de validação é um dado real na conta Firebase atualmente conectada. Ela deve ser removida somente se o proprietário confirmar que não deseja mantê-la.
 
-No Console Firebase, o histórico destaca a versão atual das regras, datada de **hoje, 23:27**, e o editor mostra exatamente a política do MotoTracker: autenticação obrigatória, comparação entre `request.auth.uid` e o UID do caminho, validação de formato na criação e preservação do proprietário na atualização. A próxima etapa é executar uma simulação com um UID distinto para validar a negação de acesso cruzado.
+## Auditoria final de escopo: sem GPS em tempo real
+
+A auditoria integral de `client/src/pages/Home.tsx` confirmou que o **Dashboard** apresenta resumo, orçamento, saúde da moto, gastos e um traçado visual estático de pontos planejados. O antigo indicador ambíguo `18 min` da próxima viagem foi substituído por `R$ 280 orçamento`. A tela de **Viagens** usa apenas origem, paradas e destino; ela consulta o Photon para sugestões de endereços e só abre Google Maps ou Waze quando o usuário escolhe explicitamente uma ação externa.
+
+O componente residual `client/src/components/Map.tsx` foi removido. Uma busca em todo `client/src` confirmou a inexistência de referências a `MapView` ou `components/Map`. Não há mapa renderizado, rastreamento de posição, GPS ativo, ETA ou telemetria de localização no Dashboard e nas Viagens.
+
+No Console Firebase, o histórico destaca a versão atual das regras, datada de **hoje, 23:27**, e o editor mostra exatamente a política do MotoTracker: autenticação obrigatória, comparação entre `request.auth.uid` e o UID do caminho, validação de formato na criação e preservação do proprietário na atualização. As chamadas de leitura e escrita sem credenciais, descritas a seguir, concluíram a verificação negativa da política.
 
 ### Testes negativos de acesso
 

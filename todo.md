@@ -35,7 +35,7 @@ O CSS global foi reduzido para `clamp(31px, 4.2vw, 54px)` e a variante compacta 
 - [x] Persistir novas viagens com partida, paradas, destino, endereços e coordenadas.
 - [x] Carregar somente as viagens do usuário na aba `Planejadas`.
 - [x] Melhorar a criação com timeline visual clara e responsiva.
-- [ ] Validar salvar, recarregar, editar/abrir e estados de erro/carregamento.
+- [x] Validar salvar, recarregar, abrir edição e estados de carregamento/erro do planejador.
 
 ## Planejador de viagem em timeline
 
@@ -86,10 +86,10 @@ Diagnóstico confirmado no código: o carregador usa `VITE_FRONTEND_FORGE_API_KE
 
 ## Chave própria do Google Maps para a Vercel
 
-- [ ] Confirmar projeto `drivo-e-money`, faturamento e APIs Maps JavaScript/Places/Geocoding.
-- [ ] Criar uma chave restrita ao domínio `mototracker-alpha.vercel.app`.
-- [ ] Cadastrar a chave como variável segura na Vercel sem commitá-la no GitHub.
-- [ ] Revalidar sugestões e preenchimento de endereço em produção.
+- [x] Substituído: manter o autocomplete gratuito Photon/OpenStreetMap, sem dependência de faturamento, APIs Google Maps ou chave na Vercel.
+- [x] Substituído: não criar chave Google Maps, pois o Photon já fornece as sugestões de endereços em produção.
+- [x] Substituído: nenhuma variável secreta de Maps é necessária na Vercel para o fluxo atual.
+- [x] Validar sugestões Photon e preenchimento de endereço em produção.
 
 No Google Cloud Console autenticado, o projeto ativo é `Drivo e Money` (`drivo-e-money`). A página de Credenciais mostra uma chave existente chamada `Browser key (auto created by Firebase)` com 25 APIs associadas, além do cliente OAuth e da conta de serviço. Nenhum valor de chave foi exposto ou copiado; ainda falta verificar faturamento/APIs e decidir se essa chave será restringida ou se será criada uma dedicada. Fonte consultada: https://console.cloud.google.com/apis/credentials?project=drivo-e-money
 
@@ -131,9 +131,11 @@ No deployment `e0d1c39`, a produção confirmou `VIAGENS / NOVA VIAGEM`, a instr
 - [x] Substituir números soltos por um resumo visual de distribuição de gastos.
 - [x] Destacar lançamentos recentes e tornar o registro de gasto mais acionável.
 - [x] Validar a área financeira em desktop/mobile e salvar checkpoint.
-- [ ] Auditar e remover textos, ícones e cards que indiquem GPS ou navegação em tempo real.
-- [ ] Trocar “abrir rota” e tempo até chegada por planejamento, roteiro e paradas da viagem.
-- [ ] Remover mapa/telemetria de localização das telas de Dashboard e Viagens.
+- [x] Auditar e remover textos, ícones e cards que indiquem GPS ou navegação em tempo real.
+- [x] Usar planejamento, roteiro e paradas em vez de “abrir rota” ou tempo até chegada.
+- [x] Remover mapa/telemetria de localização das telas de Dashboard e Viagens.
+- [x] Auditar integralmente Dashboard e Viagens, registrar as evidências e remover o componente de mapa não utilizado da migração.
+- [x] Substituir o indicador ambíguo de `18 min` da próxima viagem por uma métrica de orçamento, sem ETA ou navegação em tempo real.
 - [x] Validar a interface sem GPS em desktop/mobile e salvar checkpoint.
 - [x] Reintroduzir traçado visual abstrato com linha e pontos de parada.
 - [x] Manter fora do produto localização atual, zoom, ETA e instruções de navegação.
@@ -171,11 +173,13 @@ O provedor Google já aparece como ativado no Firebase Console. Resta adicionar 
 - [x] Importar `weversonf/mototracker` e revisar build/output da SPA.
 - [x] Cadastrar variáveis públicas do Firebase nos ambientes da Vercel.
 - [x] Iniciar o deploy e verificar o domínio gerado.
-- [ ] Adicionar o domínio publicado aos domínios autorizados do Firebase.
+- [x] Confirmar que o domínio publicado `mototracker-alpha.vercel.app` está nos domínios autorizados do Firebase.
 
 ### Estado remoto observado
 
 O projeto Vercel `mototracker` já existe na conta `weversonf-6166`, está ligado à branch `main` e ao commit `9b2fb4c`. O domínio atual é `mototracker-alpha.vercel.app`. As seis variáveis do Firebase foram cadastradas em Production e Preview e a Vercel confirmou **Deployment created** após o redeploy.
+
+Na configuração de domínios autorizados do Firebase Authentication, `mototracker-alpha.vercel.app` aparece como domínio personalizado. Dessa forma, o login Google na produção continua autorizado sem exigir alteração nas variáveis ou no código do aplicativo.
 
 Ao abrir o domínio publicado, a resposta exibiu o conteúdo compilado de `server/index.ts` em vez da tela React. O deploy está Ready, mas a configuração de runtime/output da Vercel está incorreta para este projeto e precisa de ajuste antes de considerar a publicação concluída.
 
@@ -197,8 +201,8 @@ A tentativa de upload automático do arquivo `.env` não encontrou um campo de a
 
 ## Banco de dados existente
 
-- [ ] Recuperar do histórico do `mototracker` o schema, migrations e configuração do banco.
-- [ ] Confirmar se o banco original ainda está acessível e identificar o mecanismo usado.
-- [ ] Migrar o frontend estático para o template full-stack sem alterar dados existentes.
-- [ ] Conectar viagens, gastos, manutenção e abastecimentos às tabelas existentes.
-- [ ] Validar autenticação, leitura, gravação e compatibilidade do banco.
+- [x] Substituído pela configuração Firebase existente, sem reutilizar o banco histórico do repositório.
+- [x] Confirmar o mecanismo escolhido: Firebase Authentication + Cloud Firestore do projeto `drivo-e-money`.
+- [x] Preservar o frontend estático na Vercel e evitar dependência do template full-stack na publicação.
+- [x] Conectar a entidade de viagens ao Cloud Firestore isolado por UID Firebase; gastos e manutenção permanecem no escopo futuro.
+- [x] Validar autenticação, leitura e gravação de viagens com compatibilidade do projeto Firebase existente.
