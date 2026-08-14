@@ -92,21 +92,41 @@ const FORGE_BASE_URL =
   "https://forge.butterfly-effect.dev";
 const MAPS_PROXY_URL = `${FORGE_BASE_URL}/v1/maps/proxy`;
 
-function loadMapScript() {
-  return new Promise(resolve => {
+let mapsScriptPromise: Promise<void> | null = null;
+
+export function ensureGoogleMapsLoaded() {
+  if (typeof window !== "undefined" && window.google?.maps?.places) {
+    return Promise.resolve();
+  }
+
+  if (mapsScriptPromise) return mapsScriptPromise;
+
+  mapsScriptPromise = new Promise<void>((resolve, reject) => {
+    const existingScript = document.querySelector<HTMLScriptElement>("script[data-mototracker-google-maps]");
+    if (existingScript) {
+      existingScript.addEventListener("load", () => resolve(), { once: true });
+      existingScript.addEventListener("error", () => reject(new Error("Google Maps não pôde ser carregado.")), { once: true });
+      return;
+    }
+
     const script = document.createElement("script");
     script.src = `${MAPS_PROXY_URL}/maps/api/js?key=${API_KEY}&v=weekly&libraries=marker,places,geocoding,geometry`;
     script.async = true;
     script.crossOrigin = "anonymous";
-    script.onload = () => {
-      resolve(null);
-      script.remove(); // Clean up immediately
-    };
-    script.onerror = () => {
-      console.error("Failed to load Google Maps script");
-    };
+    script.dataset.mototrackerGoogleMaps = "true";
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Google Maps não pôde ser carregado."));
     document.head.appendChild(script);
+  }).catch((error) => {
+    mapsScriptPromise = null;
+    throw error;
   });
+
+  return mapsScriptPromise;
+}
+
+function loadMapScript() {
+  return ensureGoogleMapsLoaded();
 }
 
 interface MapViewProps {

@@ -1,8 +1,9 @@
 /* MotoTracker — Industrial Editorial Control Center: graphite cockpit surfaces, asymmetric rhythm, Pulse Orange #F0643C, Space Grotesk + DM Sans. */
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { ensureGoogleMapsLoaded } from "@/components/Map";
 import {
   Activity,
   ArrowUpRight,
@@ -103,6 +104,60 @@ function wazeRouteUrl(points: RoutePoint[]) {
 
 const pointLabels: Record<RoutePointKind, string> = { start: "PONTO DE PARTIDA", stop: "PARADA", finish: "DESTINO" };
 
+type PlaceSuggestion = { placeId: string; primary: string; secondary: string; description: string };
+
+async function searchPlaces(input: string): Promise<PlaceSuggestion[]> {
+  if (input.trim().length < 2) return [];
+  await ensureGoogleMapsLoaded();
+  if (!window.google?.maps?.places) return [];
+
+  return new Promise((resolve, reject) => {
+    const service = new window.google.maps.places.AutocompleteService();
+    service.getPlacePredictions({ input, componentRestrictions: { country: "br" } }, (predictions, status) => {
+      if (status === window.google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
+        resolve([]);
+        return;
+      }
+      if (status !== window.google.maps.places.PlacesServiceStatus.OK || !predictions) {
+        reject(new Error("Não foi possível buscar lugares agora."));
+        return;
+      }
+      resolve(predictions.slice(0, 5).map((prediction) => ({
+        placeId: prediction.place_id,
+        primary: prediction.structured_formatting.main_text,
+        secondary: prediction.structured_formatting.secondary_text,
+        description: prediction.description,
+      })));
+    });
+  });
+}
+
+async function getPlaceDetails(placeId: string) {
+  await ensureGoogleMapsLoaded();
+  if (!window.google?.maps?.places) throw new Error("Detalhes do lugar indisponíveis.");
+
+  return new Promise<{ name: string; address: string }>((resolve, reject) => {
+    const service = new window.google.maps.places.PlacesService(document.createElement("div"));
+    service.getDetails({ placeId, fields: ["name", "formatted_address"] }, (place, status) => {
+      if (status !== window.google.maps.places.PlacesServiceStatus.OK || !place) {
+        reject(new Error("Não foi possível carregar o endereço exato."));
+        return;
+      }
+      resolve({ name: place.name ?? "Lugar selecionado", address: place.formatted_address ?? "" });
+    });
+  });
+}
+
+type SavedRoute = { name: string; meta: string; tag: string; icon: IconType; points: RoutePoint[] };
+
+function createBlankRoutePoints(): RoutePoint[] {
+  return [
+    { id: "new-start", kind: "start", label: "", address: "" },
+    { id: "new-stop", kind: "stop", label: "", address: "" },
+    { id: "new-finish", kind: "finish", label: "", address: "" },
+  ];
+}
+
 function MotoTrackerMark({ compact = false }: { compact?: boolean }) {
   return (
     <div className={`brand-lockup ${compact ? "brand-lockup--compact" : ""}`}>
@@ -161,56 +216,152 @@ function PageHeader({ eyebrow, title, description, action, titleClassName = "" }
 
 function RoutesView() {
   const [filter, setFilter] = useState("Planejadas");
+  const [isCreating, setIsCreating] = useState(false);
+  const [editingRouteName, setEditingRouteName] = useState<string | null>(null);
+  const [newTripName, setNewTripName] = useState("");
   const [activeRoute, setActiveRoute] = useState("Serra do Rastro");
   const [routePoints, setRoutePoints] = useState<RoutePoint[]>(() => cloneRoutePoints("Serra do Rastro"));
   const [runMenuOpen, setRunMenuOpen] = useState(false);
-  const routes = [{ name: "Serra do Rastro", meta: "14,8 km · 04 paradas", tag: "Favorita", icon: Route }, { name: "Costeira Norte", meta: "46,8 km · 06 paradas", tag: "Último rolê", icon: CalendarDays }, { name: "Vale dos Ventos", meta: "82,1 km · 08 paradas", tag: "Explorar", icon: ClipboardCheck }];
+  const [placeSearchPointId, setPlaceSearchPointId] = useState<string | null>(null);
+  const [placeQuery, setPlaceQuery] = useState("");
+  const [placeSuggestions, setPlaceSuggestions] = useState<PlaceSuggestion[]>([]);
+  const [placeLoading, setPlaceLoading] = useState(false);
+  const [placeError, setPlaceError] = useState("");
+  const placeRequestRef = useRef(0);
+  const [savedRoutes, setSavedRoutes] = useState<SavedRoute[]>(() => [
+    { name: "Serra do Rastro", meta: "14,8 km · 04 paradas", tag: "Favorita", icon: Route, points: cloneRoutePoints("Serra do Rastro") },
+    { name: "Costeira Norte", meta: "46,8 km · 06 paradas", tag: "Último rolê", icon: CalendarDays, points: cloneRoutePoints("Costeira Norte") },
+    { name: "Vale dos Ventos", meta: "82,1 km · 08 paradas", tag: "Explorar", icon: ClipboardCheck, points: cloneRoutePoints("Vale dos Ventos") },
+  ]);
   const stopCount = routePoints.filter((point) => point.kind === "stop").length;
 
-  const selectRoute = (routeName: string) => {
-    setActiveRoute(routeName);
-    setRoutePoints(cloneRoutePoints(routeName));
+  const openNewTrip = () => {
+    setIsCreating(true);
+    setEditingRouteName(null);
+    setNewTripName("");
+    setActiveRoute("Nova viagem");
+    setRoutePoints(createBlankRoutePoints());
     setRunMenuOpen(false);
-    toast.success("Viagem selecionada", { description: `${routeName} está pronta para planejamento.` });
+    setPlaceSearchPointId(null);
+    setPlaceSuggestions([]);
+    toast("Novo roteiro", { description: "Defina partida, paradas e destino da viagem." });
+  };
+
+  const openSavedRoute = (route: SavedRoute, openRunMenu = false) => {
+    setIsCreating(true);
+    setEditingRouteName(route.name);
+    setNewTripName(route.name);
+    setActiveRoute(route.name);
+    setRoutePoints(route.points.map((point) => ({ ...point })));
+    setRunMenuOpen(openRunMenu);
+    setPlaceSearchPointId(null);
+    setPlaceSuggestions([]);
+  };
+
+  const closeEditor = () => {
+    setIsCreating(false);
+    setEditingRouteName(null);
+    setRunMenuOpen(false);
+    setPlaceSearchPointId(null);
+    setPlaceSuggestions([]);
+    setFilter("Planejadas");
   };
 
   const updatePoint = (id: string, field: "label" | "address", value: string) => {
     setRoutePoints((current) => current.map((point) => point.id === id ? { ...point, [field]: value } : point));
   };
 
+  const handlePlaceSearch = (pointId: string, field: "label" | "address", value: string) => {
+    updatePoint(pointId, field, value);
+    setPlaceSearchPointId(pointId);
+    setPlaceQuery(value);
+    setPlaceError("");
+    const requestId = ++placeRequestRef.current;
+    if (value.trim().length < 2) {
+      setPlaceSuggestions([]);
+      setPlaceLoading(false);
+      return;
+    }
+    setPlaceLoading(true);
+    void searchPlaces(value).then((suggestions) => {
+      if (requestId === placeRequestRef.current) setPlaceSuggestions(suggestions);
+    }).catch(() => {
+      if (requestId === placeRequestRef.current) {
+        setPlaceSuggestions([]);
+        setPlaceError("Busca do Google Maps indisponível agora. Você pode preencher manualmente.");
+      }
+    }).finally(() => {
+      if (requestId === placeRequestRef.current) setPlaceLoading(false);
+    });
+  };
+
+  const selectPlaceSuggestion = async (pointId: string, suggestion: PlaceSuggestion) => {
+    setPlaceLoading(true);
+    setPlaceError("");
+    try {
+      const details = await getPlaceDetails(suggestion.placeId);
+      updatePoint(pointId, "label", details.name || suggestion.primary);
+      updatePoint(pointId, "address", details.address || suggestion.description);
+      setPlaceSearchPointId(null);
+      setPlaceQuery("");
+      setPlaceSuggestions([]);
+      toast.success("Lugar selecionado", { description: details.address || suggestion.description });
+    } catch {
+      setPlaceError("Não foi possível carregar o endereço exato. Tente novamente ou continue manualmente.");
+    } finally {
+      setPlaceLoading(false);
+    }
+  };
+
   const addStop = () => {
     setRoutePoints((current) => {
       const finishIndex = current.findIndex((point) => point.kind === "finish");
-      const nextStop: RoutePoint = { id: `stop-${Date.now()}`, kind: "stop", label: "Nova parada", address: "" };
+      const nextStop: RoutePoint = { id: `stop-${Date.now()}`, kind: "stop", label: "", address: "" };
       return [...current.slice(0, finishIndex), nextStop, ...current.slice(finishIndex)];
     });
-    toast("Parada adicionada", { description: "Preencha o nome e o endereço exato do ponto." });
+    toast("Parada adicionada", { description: "Digite o nome do lugar para ver sugestões do Google Maps." });
   };
 
   const removeStop = (id: string) => setRoutePoints((current) => current.filter((point) => point.id !== id));
 
-  const savePlanning = () => toast.success("Planejamento salvo", { description: `${activeRoute} agora tem ${stopCount} ${stopCount === 1 ? "parada" : "paradas"} organizadas.` });
+  const savePlanning = () => {
+    const name = newTripName.trim() || activeRoute.trim() || "Nova viagem";
+    const savedRoute: SavedRoute = { name, meta: `${routePoints.length - 2} ${routePoints.length - 2 === 1 ? "parada" : "paradas"}`, tag: editingRouteName ? "Planejada" : "Nova", icon: Route, points: routePoints.map((point) => ({ ...point })) };
+    setSavedRoutes((current) => editingRouteName ? current.map((route) => route.name === editingRouteName ? savedRoute : route) : [savedRoute, ...current]);
+    setActiveRoute(name);
+    setIsCreating(false);
+    setEditingRouteName(null);
+    setFilter("Planejadas");
+    setRunMenuOpen(false);
+    toast.success("Planejamento salvo", { description: `${name} agora está em Planejadas.` });
+  };
+
+  const routeEditor = <aside className="panel route-summary route-summary--planner route-summary--creating">
+    <div className="route-summary__body route-summary__body--planner">
+      <div className="route-summary__planner-head"><div><p className="label-caps">{editingRouteName ? "EDITAR ROTEIRO" : "NOVA VIAGEM"}</p><h2>{newTripName || "Sua nova viagem"}</h2></div><span className="route-summary__count">{stopCount} {stopCount === 1 ? "parada" : "paradas"}</span></div>
+      <div className="route-trip-name"><label className="label-caps" htmlFor="route-name">NOME DA VIAGEM</label><input id="route-name" className="route-point-input" value={newTripName} placeholder="Ex.: Fortaleza de fim de semana" onChange={(event) => setNewTripName(event.target.value)} /></div>
+      <div className="route-helper"><MapPin size={15} /><span>Digite um lugar e selecione uma sugestão do Google Maps para preencher o endereço exato.</span></div>
+      <div className="route-timeline" aria-label={`Timeline da viagem ${newTripName || "nova viagem"}`}>
+        {routePoints.map((point, index) => <div className={`route-timeline__item route-timeline__item--${point.kind}`} key={point.id}>
+          <div className="route-timeline__rail"><span>{index + 1}</span></div>
+          <div className="route-timeline__body"><div className="route-timeline__top"><p className="label-caps">{pointLabels[point.kind]}</p>{point.kind === "stop" && <button className="route-remove-button" aria-label={`Remover ${point.label || "parada"}`} onClick={() => removeStop(point.id)}><Trash2 size={14} /></button>}</div>
+            <div className="route-point-fields">
+              <input className="route-point-input" aria-label={`Nome do ponto ${index + 1}`} value={point.label} placeholder={point.kind === "start" ? "Ex.: Fortaleza" : point.kind === "finish" ? "Ex.: Canoa Quebrada" : "Ex.: Praia ou mirante"} onFocus={() => { setPlaceSearchPointId(point.id); setPlaceQuery(point.label); }} onChange={(event) => handlePlaceSearch(point.id, "label", event.target.value)} />
+              <div className="route-address-row"><MapPin size={14} /><input className="route-address-input" aria-label={`Endereço de ${point.label || `ponto ${index + 1}`}`} value={point.address} placeholder="Endereço exato" onFocus={() => { setPlaceSearchPointId(point.id); setPlaceQuery(point.address); }} onChange={(event) => handlePlaceSearch(point.id, "address", event.target.value)} /><a className="route-map-link" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pointQuery(point))}`} target="_blank" rel="noreferrer">Maps <ExternalLink size={12} /></a></div>
+              {placeSearchPointId === point.id && (placeLoading || placeError || placeSuggestions.length > 0) && <div className="place-suggestions" role="listbox" aria-label="Sugestões de lugares"><div className="place-suggestions__label">{placeLoading ? "BUSCANDO NO GOOGLE MAPS" : "SUGESTÕES DE LUGAR"}</div>{placeSuggestions.map((suggestion) => <button className="place-suggestion" key={suggestion.placeId} type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => void selectPlaceSuggestion(point.id, suggestion)}><MapPin size={15} /><span><strong>{suggestion.primary}</strong><small>{suggestion.secondary || suggestion.description}</small></span></button>)}{placeError && <p className="place-suggestions__error">{placeError}</p>}{!placeLoading && !placeError && placeSuggestions.length === 0 && placeQuery.trim().length >= 2 && <p className="place-suggestions__empty">Nenhum lugar encontrado. Continue digitando ou preencha manualmente.</p>}</div>}
+            </div>
+          </div>
+        </div>)}
+      </div>
+      <div className="route-editor__actions"><button className="secondary-button route-add-stop" onClick={addStop}><Plus size={14} /> Adicionar parada</button><button className="primary-button" onClick={savePlanning}><Check size={14} /> Salvar roteiro</button></div>
+      <div className="route-launch"><div><p className="label-caps">IR PARA A ESTRADA</p><span>Abra a viagem com a origem, destino e paradas definidas.</span></div><button className="route-go-button" onClick={() => setRunMenuOpen((current) => !current)}><Navigation size={14} /> Ir <ChevronRight size={13} /></button>{runMenuOpen && <div className="route-launch__menu"><a href={googleMapsRouteUrl(routePoints)} target="_blank" rel="noreferrer"><MapPin size={15} /><span><strong>Google Maps</strong><small>Abre com todas as paradas</small></span><ExternalLink size={13} /></a><a href={wazeRouteUrl(routePoints)} target="_blank" rel="noreferrer"><Navigation size={15} /><span><strong>Waze</strong><small>Abre o destino final; paradas na timeline</small></span><ExternalLink size={13} /></a></div>}</div>
+    </div>
+  </aside>;
 
   return <>
-    <PageHeader eyebrow="VIAGENS / PLANEJAMENTO" title={<>Planeje o próximo<br /><em>trecho da estrada.</em></>} description="Monte a viagem em uma timeline, confirme cada endereço e escolha onde continuar o trajeto." action={<button className="primary-button" onClick={() => { setActiveRoute("Nova viagem"); setRoutePoints(cloneRoutePoints("Serra do Rastro")); toast("Planejador aberto", { description: "Defina partida, paradas e destino da viagem." }); }}><Plus size={15} /> Nova viagem</button>} />
-    <div className="section-tabs" role="tablist">{["Planejadas", "Histórico", "Descobrir"].map((item) => <button key={item} className={filter === item ? "section-tab section-tab--active" : "section-tab"} onClick={() => setFilter(item)}>{item}</button>)}</div>
-    <div className="routes-layout routes-layout--planner">
-      <div className="route-list">{routes.map((route, index) => { const Icon = route.icon; const isActive = activeRoute === route.name; return <article className={`route-list-card panel ${isActive ? "route-list-card--active" : ""}`} key={route.name}><div className="route-list-card__index">0{index + 1}</div><div className="route-list-card__icon"><Icon size={20} /></div><div className="route-list-card__content"><div className="route-list-card__top"><div><p className="label-caps">{route.tag}</p><h2>{route.name}</h2></div><span className="route-list-card__distance">{route.meta}</span></div><div className="route-list-card__line"><span><CircleDot size={12} /> timeline editável</span><div className="route-list-card__actions"><button className="text-button" onClick={() => selectRoute(route.name)}>{isActive ? <><Check size={14} /> Editando</> : <>Editar <ChevronRight size={14} /></>}</button><button className="route-go-button route-go-button--small" onClick={() => { selectRoute(route.name); setRunMenuOpen(true); }}><Navigation size={13} /> Ir</button></div></div></div></article>; })}</div>
-      <aside className="panel route-summary route-summary--planner">
-        <div className="route-summary__body route-summary__body--planner">
-          <div className="route-summary__planner-head"><div><p className="label-caps">ROTEIRO EDITÁVEL</p><h2>{activeRoute}</h2></div><span className="route-summary__count">{stopCount} {stopCount === 1 ? "parada" : "paradas"}</span></div>
-          <div className="route-helper"><MapPin size={15} /><span>Use os links do Google Maps para conferir o endereço exato de cada ponto.</span></div>
-          <div className="route-timeline" aria-label={`Timeline da viagem ${activeRoute}`}>
-            {routePoints.map((point, index) => <div className={`route-timeline__item route-timeline__item--${point.kind}`} key={point.id}>
-              <div className="route-timeline__rail"><span>{index + 1}</span></div>
-              <div className="route-timeline__body"><div className="route-timeline__top"><p className="label-caps">{pointLabels[point.kind]}</p>{point.kind === "stop" && <button className="route-remove-button" aria-label={`Remover ${point.label}`} onClick={() => removeStop(point.id)}><Trash2 size={14} /></button>}</div><input className="route-point-input" aria-label={`Nome do ponto ${index + 1}`} value={point.label} onChange={(event) => updatePoint(point.id, "label", event.target.value)} /><div className="route-address-row"><MapPin size={14} /><input className="route-address-input" aria-label={`Endereço de ${point.label}`} value={point.address} placeholder="Endereço exato" onChange={(event) => updatePoint(point.id, "address", event.target.value)} /><a className="route-map-link" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pointQuery(point))}`} target="_blank" rel="noreferrer">Maps <ExternalLink size={12} /></a></div></div>
-            </div>)}
-          </div>
-          <div className="route-editor__actions"><button className="secondary-button route-add-stop" onClick={addStop}><Plus size={14} /> Adicionar parada</button><button className="primary-button" onClick={savePlanning}><Check size={14} /> Salvar roteiro</button></div>
-          <div className="route-launch"><div><p className="label-caps">IR PARA A ESTRADA</p><span>Abra a viagem com a origem, destino e paradas definidas.</span></div><button className="route-go-button" onClick={() => setRunMenuOpen((current) => !current)}><Navigation size={14} /> Ir <ChevronRight size={13} /></button>{runMenuOpen && <div className="route-launch__menu"><a href={googleMapsRouteUrl(routePoints)} target="_blank" rel="noreferrer"><MapPin size={15} /><span><strong>Google Maps</strong><small>Abre com todas as paradas</small></span><ExternalLink size={13} /></a><a href={wazeRouteUrl(routePoints)} target="_blank" rel="noreferrer"><Navigation size={15} /><span><strong>Waze</strong><small>Abre o destino final; paradas na timeline</small></span><ExternalLink size={13} /></a></div>}</div>
-        </div>
-      </aside>
-    </div>
+    <PageHeader eyebrow={isCreating ? "VIAGENS / NOVA VIAGEM" : "VIAGENS / PLANEJADAS"} title={isCreating ? <>Crie a próxima<br /><em>viagem.</em></> : <>Planeje o próximo<br /><em>trecho da estrada.</em></>} description={isCreating ? "Preencha somente os pontos deste novo roteiro e confirme cada endereço no Google Maps." : "Suas viagens salvas ficam aqui. Abra Nova viagem para montar um novo roteiro em timeline."} action={isCreating ? <button className="secondary-button" onClick={closeEditor}>Ver Planejadas <ChevronRight size={14} /></button> : <button className="primary-button" onClick={openNewTrip}><Plus size={15} /> Nova viagem</button>} />
+    {!isCreating && <><div className="section-tabs" role="tablist">{["Planejadas", "Histórico", "Descobrir"].map((item) => <button key={item} role="tab" aria-selected={filter === item} className={filter === item ? "section-tab section-tab--active" : "section-tab"} onClick={() => setFilter(item)}>{item}</button>)}</div><div className="routes-layout routes-layout--planner routes-layout--saved"><div className="route-list">{filter === "Planejadas" && savedRoutes.map((route, index) => { const Icon = route.icon; return <article className="route-list-card panel" key={route.name}><div className="route-list-card__index">0{index + 1}</div><div className="route-list-card__icon"><Icon size={20} /></div><div className="route-list-card__content"><div className="route-list-card__top"><div><p className="label-caps">{route.tag}</p><h2>{route.name}</h2></div><span className="route-list-card__distance">{route.meta}</span></div><div className="route-list-card__line"><span><CircleDot size={12} /> roteiro salvo</span><div className="route-list-card__actions"><button className="text-button" onClick={() => openSavedRoute(route)}>Editar <ChevronRight size={14} /></button><button className="route-go-button route-go-button--small" onClick={() => openSavedRoute(route, true)}><Navigation size={13} /> Ir</button></div></div></div></article>; })}{filter !== "Planejadas" && <article className="panel route-empty-state"><p className="label-caps">{filter === "Histórico" ? "SEM HISTÓRICO AINDA" : "DESCOBRIR"}</p><h2>{filter === "Histórico" ? "Suas viagens concluídas aparecerão aqui." : "Novos roteiros entram nesta área."}</h2><p>{filter === "Histórico" ? "Depois de registrar uma viagem, você encontrará o resumo e os pontos percorridos nesta aba." : "Use Nova viagem para criar um roteiro personalizado com seus próprios lugares."}</p></article>}</div></div></>}
+    {isCreating && <div className="routes-layout routes-layout--planner routes-layout--creating">{routeEditor}</div>}
   </>;
 }
 
