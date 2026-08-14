@@ -105,7 +105,7 @@ button:focus-visible { outline: 2px solid var(--pulse-orange); outline-offset: 3
 @media (max-width: 520px) { .auth-screen { align-items: end; padding: 14px; }.auth-card { padding: 23px; }.auth-card__brand { margin-top: 34px; }.auth-card__copy { margin-top: 45px; }.auth-card__copy h1 { font-size: 48px; }.auth-card__foot { flex-direction: column; gap: 8px; } }
 
 .app-shell { min-height: 100vh; display: flex; background: radial-gradient(circle at 82% 0%, rgba(55, 81, 72, .18), transparent 29rem), var(--ink); }
-.side-rail { position: relative; width: 74px; border-right: 1px solid var(--line); display: none; flex: 0 0 auto; flex-direction: column; align-items: center; justify-content: center; padding: 25px 12px 22px; background: rgba(10, 14, 14, .66); }
+.side-rail { position: sticky; top: 0; width: 74px; height: 100dvh; border-right: 1px solid var(--line); display: none; flex: 0 0 auto; align-self: flex-start; flex-direction: column; align-items: center; justify-content: center; padding: 25px 12px 22px; background: rgba(10, 14, 14, .66); }
 .side-rail__bottom { position: absolute; bottom: 22px; display: flex; flex-direction: column; align-items: center; }
 .side-rail__version { writing-mode: vertical-rl; transform: rotate(180deg); color: rgba(240, 240, 220, .25); font: 500 8px/1 'Space Grotesk', sans-serif; letter-spacing: .13em; }
 .side-nav { display: flex; flex-direction: column; gap: 17px; margin: 0; }
@@ -323,13 +323,20 @@ h2 { margin: 9px 0 0; color: var(--cream); font: 600 19px/1.05 'Space Grotesk', 
 
 .expense-entry-panel__form { display: grid; gap: 15px; }
 .expense-form-grid, .bike-settings-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.expense-form-grid__wide { grid-column: 1 / -1; }
 .expense-form-grid label, .fuel-estimate label, .bike-settings-form label { display: grid; gap: 7px; color: #9eaa9c; font: 600 9px/1 'Space Grotesk', sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+.expense-form-grid label small { color: #728077; font: 500 8px/1 'DM Sans', sans-serif; letter-spacing: 0; text-transform: none; }
 .expense-form-grid input, .fuel-estimate input, .bike-settings-form input, .bike-settings-form select { width: 100%; min-height: 43px; padding: 0 12px; border: 1px solid rgba(235, 238, 220, .13); border-radius: 4px; outline: none; background: rgba(8, 13, 13, .56); color: var(--cream); font: 500 12px/1 'DM Sans', sans-serif; letter-spacing: normal; text-transform: none; transition: border-color .18s ease, box-shadow .18s ease; }
 .expense-form-grid input:focus, .fuel-estimate input:focus, .bike-settings-form input:focus, .bike-settings-form select:focus { border-color: rgba(240, 100, 60, .72); box-shadow: 0 0 0 3px rgba(240, 100, 60, .11); }
 .expense-form-grid input::placeholder, .fuel-estimate input::placeholder, .bike-settings-form input::placeholder { color: #66746b; }
 .fuel-estimate { display: grid; grid-template-columns: minmax(130px, .75fr) minmax(0, 1.25fr); align-items: end; gap: 12px; padding: 12px; border: 1px solid rgba(235, 238, 220, .08); border-radius: 5px; background: rgba(23, 32, 30, .6); }
 .fuel-estimate__result { min-height: 43px; display: flex; align-items: center; color: #99a79c; font-size: 10px; line-height: 1.5; }
 .fuel-estimate__result strong { color: var(--pulse-orange-soft); }
+.expense-location-picker { display: grid; gap: 7px; color: #77847a; font-size: 9px; line-height: 1.45; }
+.expense-location-picker > span { font: 600 8px/1 'Space Grotesk', sans-serif; letter-spacing: .1em; text-transform: uppercase; }
+.expense-location-picker > div { display: flex; flex-wrap: wrap; gap: 6px; }
+.expense-location-chip { min-height: 29px; max-width: 100%; padding: 0 10px; overflow: hidden; border: 1px solid rgba(235, 238, 220, .12); border-radius: 999px; background: rgba(9, 13, 13, .28); color: #aab4a7; font: 600 9px/1 'DM Sans', sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+.expense-location-chip:hover, .expense-location-chip--active { border-color: rgba(240, 100, 60, .52); background: rgba(240, 100, 60, .1); color: var(--pulse-orange-soft); }
 .settings-grid--bike { margin-bottom: 15px; grid-template-columns: minmax(0, 1.2fr) minmax(280px, .8fr); }
 .bike-settings-card { display: grid; gap: 22px; }
 .bike-settings-form__wide { grid-column: 1 / -1; }
