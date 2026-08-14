@@ -52,6 +52,10 @@ O CSS global foi reduzido para `clamp(31px, 4.2vw, 54px)` e a variante compacta 
 - [ ] Validar em mobile real e autenticado o Perfil com identidade real, o botão de saída e a edição manual de pontos.
 - [ ] Registrar a evidência da validação mobile publicada antes de encerrar a auditoria.
 - [x] Documentar melhorias recomendadas com prioridade e impacto esperado em `IMPROVEMENTS.md`.
+- [ ] Adicionar no editor de viagens salvas uma ação de exclusão com confirmação explícita, remoção no Firestore e retorno seguro para a aba Planejadas.
+- [x] Auditar a origem dos lançamentos financeiros visíveis: os gastos ficam apenas no estado da sessão, sem gravação em Firestore ou armazenamento persistente; não há registros financeiros no banco para excluir.
+- [x] Aumentar o respiro interno e entre elementos dos estados vazios e painéis, revisando especialmente a Garagem e a visualização mobile.
+- [ ] Confirmar no MotoTracker publicado e autenticado que a Garagem e os demais estados vazios mantêm o novo espaçamento em celular real.
 
 - [x] Substituído pela arquitetura Firebase: ativar sessão Google e camada Cloud Firestore isolada por usuário, sem criar tabela ou procedimentos tRPC de viagens.
 - [x] Resolver os conflitos da migração sem substituir o login Google/Firebase ou a interface MotoTracker.
