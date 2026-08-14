@@ -63,6 +63,7 @@ O CSS global foi reduzido para `clamp(31px, 4.2vw, 54px)` e a variante compacta 
 - [x] Adicionar em Configurações um botão de instalação que use o evento nativo do navegador e explique quando a instalação não estiver disponível.
 - [x] Adicionar ao registro de despesas um campo de local/estabelecimento, permitindo cadastrar um novo local ou selecionar locais usados anteriormente.
 - [x] Garantir que a navegação lateral do desktop permaneça centralizada na viewport e não se desloque quando o usuário troca de página.
+- [x] Converter o formulário de Novo registro de despesa em uma lightbox com sobreposição, fechamento por botão, clique fora e tecla Escape.
 
 - [x] Substituído pela arquitetura Firebase: ativar sessão Google e camada Cloud Firestore isolada por usuário, sem criar tabela ou procedimentos tRPC de viagens.
 - [x] Resolver os conflitos da migração sem substituir o login Google/Firebase ou a interface MotoTracker.

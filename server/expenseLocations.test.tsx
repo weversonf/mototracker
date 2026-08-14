@@ -27,6 +27,25 @@ describe("locais de despesas", () => {
 
   afterEach(() => cleanup());
 
+  it("abre o novo registro em lightbox e permite fechar por cancelar, botão e Escape", () => {
+    render(<ExpensesView />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Registrar gasto" }));
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Registrar gasto" })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Registrar gasto" }));
+    fireEvent.click(screen.getByRole("button", { name: "Fechar novo registro" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Registrar gasto" }));
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
   it("salva o local do lançamento e o oferece para seleção no próximo gasto", async () => {
     render(<ExpensesView />);
 
