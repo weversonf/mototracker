@@ -22,6 +22,11 @@ O CSS global foi reduzido para `clamp(31px, 4.2vw, 54px)` e a variante compacta 
 
 ## Auditoria de bugs e melhorias
 
+- [x] Compactar todos os títulos principais em uma linha, com redução responsiva para evitar quebra em telas móveis.
+- [x] Remover cards, listas e métricas fictícias visíveis, substituindo-os por estados iniciais vazios e orientações de primeiro uso.
+- [x] Iniciar Gastos sem lançamentos de exemplo e mostrar o estado vazio até o primeiro registro do usuário.
+- [ ] Excluir somente a viagem técnica `Validação Firebase — Fortaleza` da conta autenticada, sem tocar em viagens futuras do usuário.
+- [x] Validar o estado limpo, os testes e o build antes de sincronizar a versão de primeiro uso.
 - [x] Adicionar em Configurações um cadastro editável de moto com modelo, apelido e final da placa.
 - [x] Registrar consumo médio em km/L e usar esse dado para estimar litros em lançamentos de combustível.
 - [x] Exibir um lembrete informativo de IPVA/licenciamento baseado no final da placa, sem apresentar vencimento oficial ou valor de tributo.
@@ -31,8 +36,9 @@ O CSS global foi reduzido para `clamp(31px, 4.2vw, 54px)` e a variante compacta 
 - [ ] Validar em desktop e mobile autenticados que partida, paradas e destino recebem foco por clique/toque e permitem edição direta após sugestões.
 - [x] Adicionar teste de interface da timeline para foco, digitação manual e edição após selecionar sugestão.
 - [ ] Cobrir os dois fluxos corrigidos com testes de regressão e validação visual responsiva.
-- [ ] Verificar a disponibilidade de `mototracker.vercel.app` e vinculá-lo ao projeto, mantendo o endereço atual como alternativa.
-- [ ] Verificar se `mototrackerbr.vercel.app` está livre como alternativa curta de endereço na Vercel.
+- [x] Confirmar com evidência verificável que `mototracker.vercel.app` já está vinculado a outro projeto.
+- [x] Confirmar com evidência verificável que `mototrackerbr.vercel.app` não possui deployment público configurado.
+- [x] Manter `mototracker-alpha.vercel.app` como domínio do projeto, conforme decisão do proprietário.
 - [x] Executar auditoria de build, tipos, testes, logs e fluxos publicados do MotoTracker.
 - [x] Corrigir a limpeza de coordenadas quando o usuário altera manualmente o local ou endereço de um ponto já selecionado.
 - [x] Adicionar uma ação visível e segura para encerrar a sessão Google/Firebase pelo Perfil.
