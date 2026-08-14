@@ -25,14 +25,15 @@ O CSS global foi reduzido para `clamp(31px, 4.2vw, 54px)` e a variante compacta 
 - [x] Compactar todos os títulos principais em uma linha, com redução responsiva para evitar quebra em telas móveis.
 - [x] Remover cards, listas e métricas fictícias visíveis, substituindo-os por estados iniciais vazios e orientações de primeiro uso.
 - [x] Iniciar Gastos sem lançamentos de exemplo e mostrar o estado vazio até o primeiro registro do usuário.
-- [ ] Excluir somente a viagem técnica `Validação Firebase — Fortaleza` da conta autenticada, sem tocar em viagens futuras do usuário.
+- [x] Preservar a viagem técnica `Validação Firebase — Fortaleza`, conforme decisão do proprietário; nenhuma exclusão foi realizada.
 - [x] Validar o estado limpo, os testes e o build antes de sincronizar a versão de primeiro uso.
 - [x] Adicionar em Configurações um cadastro editável de moto com modelo, apelido e final da placa.
 - [x] Registrar consumo médio em km/L e usar esse dado para estimar litros em lançamentos de combustível.
 - [x] Exibir um lembrete informativo de IPVA/licenciamento baseado no final da placa, sem apresentar vencimento oficial ou valor de tributo.
-- [ ] Validar o cadastro da moto e os cálculos de consumo em testes de regressão e layout responsivo.
+- [x] Validar o cadastro da moto e os cálculos de consumo em testes de regressão locais, incluindo persistência por conta e consumo informado.
+- [ ] Validar em desktop e mobile a tela Configurações com cadastro da moto, final da placa, consumo e card de lembrete, registrando evidência verificável.
 - [x] Corrigir o registro financeiro para coletar categoria, descrição e valor antes do salvamento.
-- [ ] Tornar editáveis por clique ou toque todos os campos de partida, parada e destino em `Nova viagem`.
+- [x] Tornar editáveis por clique ou toque todos os campos de partida, parada e destino em `Nova viagem`.
 - [ ] Validar em desktop e mobile autenticados que partida, paradas e destino recebem foco por clique/toque e permitem edição direta após sugestões.
 - [x] Adicionar teste de interface da timeline para foco, digitação manual e edição após selecionar sugestão.
 - [ ] Cobrir os dois fluxos corrigidos com testes de regressão e validação visual responsiva.
@@ -50,7 +51,7 @@ O CSS global foi reduzido para `clamp(31px, 4.2vw, 54px)` e a variante compacta 
 - [x] Cobrir em teste a presença da ação de logout e a transição prevista após `signOutUser`.
 - [ ] Validar em mobile real e autenticado o Perfil com identidade real, o botão de saída e a edição manual de pontos.
 - [ ] Registrar a evidência da validação mobile publicada antes de encerrar a auditoria.
-- [ ] Documentar melhorias recomendadas com prioridade e impacto esperado.
+- [x] Documentar melhorias recomendadas com prioridade e impacto esperado em `IMPROVEMENTS.md`.
 
 - [x] Substituído pela arquitetura Firebase: ativar sessão Google e camada Cloud Firestore isolada por usuário, sem criar tabela ou procedimentos tRPC de viagens.
 - [x] Resolver os conflitos da migração sem substituir o login Google/Firebase ou a interface MotoTracker.
