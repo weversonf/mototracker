@@ -1,0 +1,29 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isOwner(firebaseUid) {
+      return request.auth != null && request.auth.uid == firebaseUid;
+    }
+
+    function hasValidTripShape() {
+      return request.resource.data.firebaseUid is string
+        && request.resource.data.name is string
+        && request.resource.data.tag is string
+        && request.resource.data.points is list;
+    }
+
+    match /mototrackerUsers/{firebaseUid}/trips/{tripId} {
+      allow read, delete: if isOwner(firebaseUid);
+
+      allow create: if isOwner(firebaseUid)
+        && request.resource.data.firebaseUid == firebaseUid
+        && hasValidTripShape();
+
+      allow update: if isOwner(firebaseUid)
+        && request.resource.data.firebaseUid == resource.data.firebaseUid
+        && request.resource.data.firebaseUid == firebaseUid
+        && hasValidTripShape();
+    }
+  }
+}

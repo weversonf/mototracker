@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { createTrip, updateTrip, watchTrips } from "@/lib/trips";
+import type { RoutePoint, Trip } from "@/types/trips";
 import {
   Activity,
   ArrowUpRight,
@@ -57,8 +59,7 @@ const summaryMetrics = [
   { label: "Distância registrada", value: "128 km", detail: "nesta semana", icon: Activity },
 ];
 
-type RoutePointKind = "start" | "stop" | "finish";
-type RoutePoint = { id: string; kind: RoutePointKind; label: string; address: string };
+type RoutePointKind = RoutePoint["kind"];
 
 const routePointPresets: Record<string, RoutePoint[]> = {
   "Serra do Rastro": [
@@ -165,8 +166,6 @@ async function getPlaceDetails(suggestion: PlaceSuggestion) {
   return suggestion.resolved ?? { name: suggestion.primary || "Lugar selecionado", address: suggestion.description || suggestion.secondary };
 }
 
-type SavedRoute = { name: string; meta: string; tag: string; icon: IconType; points: RoutePoint[] };
-
 function createBlankRoutePoints(): RoutePoint[] {
   return [
     { id: "new-start", kind: "start", label: "", address: "" },
@@ -232,12 +231,13 @@ function PageHeader({ eyebrow, title, description, action, titleClassName = "" }
 }
 
 function RoutesView() {
+  const { user } = useAuth();
   const [filter, setFilter] = useState("Planejadas");
   const [isCreating, setIsCreating] = useState(false);
-  const [editingRouteName, setEditingRouteName] = useState<string | null>(null);
+  const [editingTripId, setEditingTripId] = useState<string | null>(null);
   const [newTripName, setNewTripName] = useState("");
-  const [activeRoute, setActiveRoute] = useState("Serra do Rastro");
-  const [routePoints, setRoutePoints] = useState<RoutePoint[]>(() => cloneRoutePoints("Serra do Rastro"));
+  const [activeRoute, setActiveRoute] = useState("");
+  const [routePoints, setRoutePoints] = useState<RoutePoint[]>(createBlankRoutePoints);
   const [runMenuOpen, setRunMenuOpen] = useState(false);
   const [placeSearchPointId, setPlaceSearchPointId] = useState<string | null>(null);
   const [placeQuery, setPlaceQuery] = useState("");
@@ -246,16 +246,37 @@ function RoutesView() {
   const [placeError, setPlaceError] = useState("");
   const placeRequestRef = useRef(0);
   const placeAbortRef = useRef<AbortController | null>(null);
-  const [savedRoutes, setSavedRoutes] = useState<SavedRoute[]>(() => [
-    { name: "Serra do Rastro", meta: "14,8 km · 04 paradas", tag: "Favorita", icon: Route, points: cloneRoutePoints("Serra do Rastro") },
-    { name: "Costeira Norte", meta: "46,8 km · 06 paradas", tag: "Último rolê", icon: CalendarDays, points: cloneRoutePoints("Costeira Norte") },
-    { name: "Vale dos Ventos", meta: "82,1 km · 08 paradas", tag: "Explorar", icon: ClipboardCheck, points: cloneRoutePoints("Vale dos Ventos") },
-  ]);
+  const [savedTrips, setSavedTrips] = useState<Trip[]>([]);
+  const [tripsError, setTripsError] = useState("");
+  const [tripsLoading, setTripsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const stopCount = routePoints.filter((point) => point.kind === "stop").length;
+
+  useEffect(() => {
+    if (!user?.uid) {
+      setSavedTrips([]);
+      setTripsLoading(false);
+      return;
+    }
+
+    setTripsLoading(true);
+    setTripsError("");
+    return watchTrips(
+      user.uid,
+      (trips) => {
+        setSavedTrips(trips);
+        setTripsLoading(false);
+      },
+      (error) => {
+        setTripsError(error.message || "Não foi possível carregar suas viagens agora.");
+        setTripsLoading(false);
+      },
+    );
+  }, [user?.uid]);
 
   const openNewTrip = () => {
     setIsCreating(true);
-    setEditingRouteName(null);
+    setEditingTripId(null);
     setNewTripName("");
     setActiveRoute("Nova viagem");
     setRoutePoints(createBlankRoutePoints());
@@ -265,12 +286,12 @@ function RoutesView() {
     toast("Novo roteiro", { description: "Defina partida, paradas e destino da viagem." });
   };
 
-  const openSavedRoute = (route: SavedRoute, openRunMenu = false) => {
+  const openSavedRoute = (trip: Trip, openRunMenu = false) => {
     setIsCreating(true);
-    setEditingRouteName(route.name);
-    setNewTripName(route.name);
-    setActiveRoute(route.name);
-    setRoutePoints(route.points.map((point) => ({ ...point })));
+    setEditingTripId(trip.id);
+    setNewTripName(trip.name);
+    setActiveRoute(trip.name);
+    setRoutePoints(trip.points.map((point) => ({ ...point })));
     setRunMenuOpen(openRunMenu);
     setPlaceSearchPointId(null);
     setPlaceSuggestions([]);
@@ -278,7 +299,7 @@ function RoutesView() {
 
   const closeEditor = () => {
     setIsCreating(false);
-    setEditingRouteName(null);
+    setEditingTripId(null);
     setRunMenuOpen(false);
     setPlaceSearchPointId(null);
     setPlaceSuggestions([]);
@@ -321,8 +342,12 @@ function RoutesView() {
     setPlaceError("");
     try {
       const details = await getPlaceDetails(suggestion);
-      updatePoint(pointId, "label", details.name || suggestion.primary);
-      updatePoint(pointId, "address", details.address || suggestion.description);
+      setRoutePoints((current) => current.map((point) => point.id === pointId ? {
+        ...point,
+        label: details.name || suggestion.primary,
+        address: details.address || suggestion.description,
+        ...(suggestion.coordinates ? { coordinates: suggestion.coordinates } : {}),
+      } : point));
       setPlaceSearchPointId(null);
       setPlaceQuery("");
       setPlaceSuggestions([]);
@@ -345,21 +370,38 @@ function RoutesView() {
 
   const removeStop = (id: string) => setRoutePoints((current) => current.filter((point) => point.id !== id));
 
-  const savePlanning = () => {
-    const name = newTripName.trim() || activeRoute.trim() || "Nova viagem";
-    const savedRoute: SavedRoute = { name, meta: `${routePoints.length - 2} ${routePoints.length - 2 === 1 ? "parada" : "paradas"}`, tag: editingRouteName ? "Planejada" : "Nova", icon: Route, points: routePoints.map((point) => ({ ...point })) };
-    setSavedRoutes((current) => editingRouteName ? current.map((route) => route.name === editingRouteName ? savedRoute : route) : [savedRoute, ...current]);
-    setActiveRoute(name);
-    setIsCreating(false);
-    setEditingRouteName(null);
-    setFilter("Planejadas");
-    setRunMenuOpen(false);
-    toast.success("Planejamento salvo", { description: `${name} agora está em Planejadas.` });
+  const savePlanning = async () => {
+    if (!user?.uid) {
+      toast.error("Sessão indisponível", { description: "Entre novamente para salvar suas viagens." });
+      return;
+    }
+
+    const name = newTripName.trim() || activeRoute.trim();
+    setIsSaving(true);
+    try {
+      const payload = { name, tag: "Planejada", points: routePoints };
+      if (editingTripId) {
+        await updateTrip(user.uid, editingTripId, payload);
+      } else {
+        await createTrip(user.uid, payload);
+      }
+      setActiveRoute(name);
+      setIsCreating(false);
+      setEditingTripId(null);
+      setFilter("Planejadas");
+      setRunMenuOpen(false);
+      toast.success("Planejamento salvo", { description: `${name} agora está em Planejadas.` });
+    } catch (error) {
+      const description = error instanceof Error ? error.message : "Não foi possível salvar a viagem agora.";
+      toast.error("Não foi possível salvar", { description });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const routeEditor = <aside className="panel route-summary route-summary--planner route-summary--creating">
     <div className="route-summary__body route-summary__body--planner">
-      <div className="route-summary__planner-head"><div><p className="label-caps">{editingRouteName ? "EDITAR ROTEIRO" : "NOVA VIAGEM"}</p><h2>{newTripName || "Sua nova viagem"}</h2></div><span className="route-summary__count">{stopCount} {stopCount === 1 ? "parada" : "paradas"}</span></div>
+      <div className="route-summary__planner-head"><div><p className="label-caps">{editingTripId ? "EDITAR ROTEIRO" : "NOVA VIAGEM"}</p><h2>{newTripName || "Sua nova viagem"}</h2></div><span className="route-summary__count">{stopCount} {stopCount === 1 ? "parada" : "paradas"}</span></div>
       <div className="route-trip-name"><label className="label-caps" htmlFor="route-name">NOME DA VIAGEM</label><input id="route-name" className="route-point-input" value={newTripName} placeholder="Ex.: Fortaleza de fim de semana" onChange={(event) => setNewTripName(event.target.value)} /></div>
       <div className="route-helper"><MapPin size={15} /><span>Digite um lugar e selecione uma sugestão para preencher o endereço exato.</span></div>
       <div className="route-timeline" aria-label={`Timeline da viagem ${newTripName || "nova viagem"}`}>
@@ -374,14 +416,14 @@ function RoutesView() {
           </div>
         </div>)}
       </div>
-      <div className="route-editor__actions"><button className="secondary-button route-add-stop" onClick={addStop}><Plus size={14} /> Adicionar parada</button><button className="primary-button" onClick={savePlanning}><Check size={14} /> Salvar roteiro</button></div>
+      <div className="route-editor__actions"><button className="secondary-button route-add-stop" onClick={addStop} disabled={isSaving}><Plus size={14} /> Adicionar parada</button><button className="primary-button" onClick={() => void savePlanning()} disabled={isSaving}>{isSaving ? "Salvando..." : <><Check size={14} /> Salvar roteiro</>}</button></div>
       <div className="route-launch"><div><p className="label-caps">IR PARA A ESTRADA</p><span>Abra a viagem com a origem, destino e paradas definidas.</span></div><button className="route-go-button" onClick={() => setRunMenuOpen((current) => !current)}><Navigation size={14} /> Ir <ChevronRight size={13} /></button>{runMenuOpen && <div className="route-launch__menu"><a href={googleMapsRouteUrl(routePoints)} target="_blank" rel="noreferrer"><MapPin size={15} /><span><strong>Google Maps</strong><small>Abre com todas as paradas</small></span><ExternalLink size={13} /></a><a href={wazeRouteUrl(routePoints)} target="_blank" rel="noreferrer"><Navigation size={15} /><span><strong>Waze</strong><small>Abre o destino final; paradas na timeline</small></span><ExternalLink size={13} /></a></div>}</div>
     </div>
   </aside>;
 
   return <>
     <PageHeader eyebrow={isCreating ? "VIAGENS / NOVA VIAGEM" : "VIAGENS / PLANEJADAS"} title={isCreating ? <>Crie a próxima<br /><em>viagem.</em></> : <>Planeje o próximo<br /><em>trecho da estrada.</em></>} description={isCreating ? "Preencha os pontos deste novo roteiro, selecione uma sugestão e confirme o endereço exato." : "Suas viagens salvas ficam aqui. Abra Nova viagem para montar um novo roteiro em timeline."} action={isCreating ? <button className="secondary-button" onClick={closeEditor}>Ver Planejadas <ChevronRight size={14} /></button> : <button className="primary-button" onClick={openNewTrip}><Plus size={15} /> Nova viagem</button>} />
-    {!isCreating && <><div className="section-tabs" role="tablist">{["Planejadas", "Histórico", "Descobrir"].map((item) => <button key={item} role="tab" aria-selected={filter === item} className={filter === item ? "section-tab section-tab--active" : "section-tab"} onClick={() => setFilter(item)}>{item}</button>)}</div><div className="routes-layout routes-layout--planner routes-layout--saved"><div className="route-list">{filter === "Planejadas" && savedRoutes.map((route, index) => { const Icon = route.icon; return <article className="route-list-card panel" key={route.name}><div className="route-list-card__index">0{index + 1}</div><div className="route-list-card__icon"><Icon size={20} /></div><div className="route-list-card__content"><div className="route-list-card__top"><div><p className="label-caps">{route.tag}</p><h2>{route.name}</h2></div><span className="route-list-card__distance">{route.meta}</span></div><div className="route-list-card__line"><span><CircleDot size={12} /> roteiro salvo</span><div className="route-list-card__actions"><button className="text-button" onClick={() => openSavedRoute(route)}>Editar <ChevronRight size={14} /></button><button className="route-go-button route-go-button--small" onClick={() => openSavedRoute(route, true)}><Navigation size={13} /> Ir</button></div></div></div></article>; })}{filter !== "Planejadas" && <article className="panel route-empty-state"><p className="label-caps">{filter === "Histórico" ? "SEM HISTÓRICO AINDA" : "DESCOBRIR"}</p><h2>{filter === "Histórico" ? "Suas viagens concluídas aparecerão aqui." : "Novos roteiros entram nesta área."}</h2><p>{filter === "Histórico" ? "Depois de registrar uma viagem, você encontrará o resumo e os pontos percorridos nesta aba." : "Use Nova viagem para criar um roteiro personalizado com seus próprios lugares."}</p></article>}</div></div></>}
+    {!isCreating && <><div className="section-tabs" role="tablist">{["Planejadas", "Histórico", "Descobrir"].map((item) => <button key={item} role="tab" aria-selected={filter === item} className={filter === item ? "section-tab section-tab--active" : "section-tab"} onClick={() => setFilter(item)}>{item}</button>)}</div><div className="routes-layout routes-layout--planner routes-layout--saved"><div className="route-list">{filter === "Planejadas" && (tripsLoading ? <article className="panel route-empty-state"><p className="label-caps">CARREGANDO PLANEJADAS</p><h2>Buscando seus roteiros.</h2><p>Suas viagens aparecem aqui assim que o Firebase confirma os dados.</p></article> : tripsError ? <article className="panel route-empty-state"><p className="label-caps">NÃO FOI POSSÍVEL CARREGAR</p><h2>Suas viagens continuam protegidas.</h2><p>{tripsError}</p></article> : savedTrips.length === 0 ? <article className="panel route-empty-state"><p className="label-caps">NENHUMA VIAGEM PLANEJADA</p><h2>Seu próximo trecho começa aqui.</h2><p>Crie uma viagem para salvar partida, paradas e destino no seu perfil.</p></article> : savedTrips.map((trip, index) => { const stops = trip.points.filter((point) => point.kind === "stop").length; return <article className="route-list-card panel" key={trip.id}><div className="route-list-card__index">{String(index + 1).padStart(2, "0")}</div><div className="route-list-card__icon"><Route size={20} /></div><div className="route-list-card__content"><div className="route-list-card__top"><div><p className="label-caps">{trip.tag}</p><h2>{trip.name}</h2></div><span className="route-list-card__distance">{stops} {stops === 1 ? "parada" : "paradas"}</span></div><div className="route-list-card__line"><span><CircleDot size={12} /> roteiro salvo</span><div className="route-list-card__actions"><button className="text-button" onClick={() => openSavedRoute(trip)}>Editar <ChevronRight size={14} /></button><button className="route-go-button route-go-button--small" onClick={() => openSavedRoute(trip, true)}><Navigation size={13} /> Ir</button></div></div></div></article>; }))}{filter !== "Planejadas" && <article className="panel route-empty-state"><p className="label-caps">{filter === "Histórico" ? "SEM HISTÓRICO AINDA" : "DESCOBRIR"}</p><h2>{filter === "Histórico" ? "Suas viagens concluídas aparecerão aqui." : "Novos roteiros entram nesta área."}</h2><p>{filter === "Histórico" ? "Depois de registrar uma viagem, você encontrará o resumo e os pontos percorridos nesta aba." : "Use Nova viagem para criar um roteiro personalizado com seus próprios lugares."}</p></article>}</div></div></>}
     {isCreating && <div className="routes-layout routes-layout--planner routes-layout--creating">{routeEditor}</div>}
   </>;
 }

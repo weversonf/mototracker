@@ -234,17 +234,21 @@ h2 { margin: 9px 0 0; color: var(--cream); font: 600 19px/1.05 'Space Grotesk', 
 .route-summary__count { padding: 7px 9px; border: 1px solid rgba(240, 100, 60, .26); border-radius: 3px; color: var(--pulse-orange-soft); font: 600 10px/1 'Space Grotesk', sans-serif; white-space: nowrap; }
 .route-helper { display: flex; align-items: start; gap: 8px; margin: 18px 0 20px; padding: 10px 11px; border-left: 2px solid var(--pulse-orange); background: rgba(240, 100, 60, .06); color: #89968b; font-size: 10px; line-height: 1.45; }
 .route-helper svg { flex: 0 0 auto; color: var(--pulse-orange); }
-.route-timeline { display: grid; gap: 3px; }
-.route-timeline__item { display: grid; grid-template-columns: 31px minmax(0, 1fr); gap: 12px; min-height: 92px; }
+.route-timeline { display: grid; gap: 9px; padding: 2px 0; }
+.route-timeline__item { display: grid; grid-template-columns: 31px minmax(0, 1fr); gap: 12px; min-height: 106px; }
 .route-timeline__rail { position: relative; display: flex; justify-content: center; }
-.route-timeline__rail::after { content: ''; position: absolute; top: 28px; bottom: -3px; width: 1px; background: rgba(235, 238, 220, .15); }
+.route-timeline__rail::after { content: ''; position: absolute; top: 30px; bottom: -12px; width: 2px; background: linear-gradient(180deg, rgba(240, 100, 60, .64), rgba(235, 238, 220, .16) 52%, rgba(178, 198, 126, .58)); }
 .route-timeline__item:last-child .route-timeline__rail::after { display: none; }
-.route-timeline__rail span { position: relative; z-index: 1; display: grid; place-items: center; width: 25px; height: 25px; border: 1px solid #53645a; border-radius: 50%; background: #141d1b; color: #8e9b90; font: 600 10px/1 'Space Grotesk', sans-serif; }
-.route-timeline__item--start .route-timeline__rail span { border-color: var(--pulse-orange); background: rgba(240, 100, 60, .16); color: var(--pulse-orange-soft); }
-.route-timeline__item--finish .route-timeline__rail span { border-color: var(--lime); background: rgba(178, 198, 126, .12); color: var(--lime); }
-.route-timeline__body { min-width: 0; padding: 2px 0 17px; } 
+.route-timeline__rail span { position: relative; z-index: 1; display: grid; place-items: center; width: 27px; height: 27px; border: 1px solid #647369; border-radius: 50%; background: #18211f; box-shadow: 0 0 0 4px #141b1a; color: #a5b2a6; font: 600 10px/1 'Space Grotesk', sans-serif; }
+.route-timeline__item--start .route-timeline__rail span { border-color: var(--pulse-orange); background: rgba(240, 100, 60, .2); box-shadow: 0 0 0 4px #141b1a, 0 0 18px rgba(240, 100, 60, .16); color: var(--pulse-orange-soft); }
+.route-timeline__item--finish .route-timeline__rail span { border-color: var(--lime); background: rgba(178, 198, 126, .17); box-shadow: 0 0 0 4px #141b1a, 0 0 18px rgba(178, 198, 126, .13); color: var(--lime); }
+.route-timeline__body { min-width: 0; padding: 11px 12px 13px; border: 1px solid rgba(235, 238, 220, .09); border-left: 2px solid #617066; border-radius: 5px; background: linear-gradient(100deg, rgba(31, 43, 39, .74), rgba(14, 20, 19, .35)); }
+.route-timeline__item--start .route-timeline__body { border-left-color: var(--pulse-orange); background: linear-gradient(100deg, rgba(240, 100, 60, .10), rgba(14, 20, 19, .38)); }
+.route-timeline__item--finish .route-timeline__body { border-left-color: var(--lime); background: linear-gradient(100deg, rgba(178, 198, 126, .10), rgba(14, 20, 19, .38)); }
 .route-timeline__top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .route-timeline__top .label-caps { color: #76847a; font-size: 9px; }
+.route-timeline__item--start .route-timeline__top .label-caps { color: var(--pulse-orange-soft); }
+.route-timeline__item--finish .route-timeline__top .label-caps { color: var(--lime); }
 .route-point-fields { position: relative; }
 .route-point-input, .route-address-input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; font-family: 'Space Grotesk', sans-serif; }
 .route-point-input { margin-top: 7px; padding: 0; color: var(--cream); font-size: 16px; font-weight: 600; letter-spacing: -.03em; }
