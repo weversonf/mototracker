@@ -42,7 +42,7 @@ A viagem `Validação Firebase — Fortaleza` foi gravada com sucesso pela produ
 
 Após uma recarga completa da página pública de Viagens, o estado transitório **“Carregando planejadas”** foi substituído pela viagem `Validação Firebase — Fortaleza`, com `1 parada` e os botões **Editar** e **Ir**. Isso confirma que a viagem não depende do estado em memória do formulário e é recuperada do Firestore em uma nova abertura da página.
 
-> A viagem de validação é um dado real na conta Firebase atualmente conectada. Ela deve ser removida somente se o proprietário confirmar que não deseja mantê-la.
+> A viagem de validação é um dado real na conta Firebase atualmente conectada. O proprietário confirmou que ela deve permanecer como exemplo de roteiro salvo.
 
 ## Auditoria final de escopo: sem GPS em tempo real
 

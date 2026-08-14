@@ -30,7 +30,7 @@ O CSS global foi reduzido para `clamp(31px, 4.2vw, 54px)` e a variante compacta 
 - [x] Confirmar que uma leitura sem autenticação na coleção de viagens é negada com `PERMISSION_DENIED`.
 - [x] Confirmar que uma tentativa de escrita sem autenticação na coleção de viagens é negada com `PERMISSION_DENIED`.
 - [x] Documentar os resultados finais dos testes negativos de leitura e escrita para comprovar o isolamento por proprietário.
-- [ ] Remover a viagem de validação `Validação Firebase — Fortaleza` caso o proprietário não queira mantê-la como exemplo real.
+- [x] Manter a viagem de validação `Validação Firebase — Fortaleza` como exemplo real, conforme decisão do proprietário.
 - [x] Renomear a exibição do projeto Firebase de `Drivo e Money` para `MotoTracker`, preservando o ID técnico existente.
 - [x] Persistir novas viagens com partida, paradas, destino, endereços e coordenadas.
 - [x] Carregar somente as viagens do usuário na aba `Planejadas`.
