@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { ensureGoogleMapsLoaded } from "@/components/Map";
 import {
   Activity,
   ArrowUpRight,
@@ -104,120 +103,66 @@ function wazeRouteUrl(points: RoutePoint[]) {
 
 const pointLabels: Record<RoutePointKind, string> = { start: "PONTO DE PARTIDA", stop: "PARADA", finish: "DESTINO" };
 
-type PlaceSuggestion = { placeId: string; primary: string; secondary: string; description: string; prediction?: google.maps.places.PlacePrediction; resolved?: { name: string; address: string } };
+type PhotonProperties = {
+  name?: string;
+  street?: string;
+  housenumber?: string;
+  district?: string;
+  city?: string;
+  municipality?: string;
+  county?: string;
+  state?: string;
+  postcode?: string;
+  country?: string;
+};
+type PhotonFeature = { type: "Feature"; geometry?: { coordinates?: [number, number] }; properties?: PhotonProperties & { osm_id?: string | number; osm_type?: string } };
+type PhotonResponse = { features?: PhotonFeature[] };
+type PlaceSuggestion = { placeId: string; primary: string; secondary: string; description: string; resolved?: { name: string; address: string }; coordinates?: { lat: number; lng: number } };
 
-async function searchPlaces(input: string): Promise<PlaceSuggestion[]> {
-  if (input.trim().length < 2) return [];
-  await ensureGoogleMapsLoaded();
-  if (!window.google?.maps?.places) return [];
+function uniqueParts(parts: Array<string | undefined>) {
+  const seen = new Set<string>();
+  return parts.filter((part): part is string => Boolean(part?.trim())).filter((part) => {
+    const key = part.trim().toLocaleLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
 
-  try {
-    const placesLibrary = await window.google.maps.importLibrary("places") as google.maps.PlacesLibrary;
-    const AutocompleteSuggestion = placesLibrary.AutocompleteSuggestion;
-    if (AutocompleteSuggestion?.fetchAutocompleteSuggestions) {
-      const { AutocompleteSessionToken } = placesLibrary;
-      const sessionToken = new AutocompleteSessionToken();
-      const { suggestions } = await AutocompleteSuggestion.fetchAutocompleteSuggestions({
-        input: input.trim(),
-        includedRegionCodes: ["br"],
-        language: "pt-BR",
-        region: "br",
-        sessionToken,
-      });
-      return suggestions.filter((suggestion) => Boolean(suggestion.placePrediction)).slice(0, 5).map((suggestion) => {
-        const prediction = suggestion.placePrediction!;
-        return {
-          placeId: prediction.placeId,
-          primary: prediction.mainText?.toString() || prediction.text.toString(),
-          secondary: prediction.secondaryText?.toString() || "Brasil",
-          description: prediction.text.toString(),
-          prediction,
-        };
-      });
-    }
-  } catch {
-    // Continua para o serviço legado e para o Geocoder, caso Places (New) não esteja habilitado.
-  }
+function photonAddress(properties: PhotonProperties) {
+  const streetLine = [properties.street, properties.housenumber].filter(Boolean).join(", ");
+  return uniqueParts([streetLine, properties.district, properties.city, properties.municipality, properties.county, properties.state, properties.postcode, properties.country]).join(", ");
+}
 
-  try {
-    if (window.google.maps.places.AutocompleteService) {
-      const legacySuggestions = await new Promise<PlaceSuggestion[]>((resolve, reject) => {
-        const service = new window.google.maps.places.AutocompleteService();
-        service.getPlacePredictions({ input, componentRestrictions: { country: "br" } }, (predictions, status) => {
-          if (status === window.google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
-            resolve([]);
-            return;
-          }
-          if (status !== window.google.maps.places.PlacesServiceStatus.OK || !predictions) {
-            reject(new Error("Não foi possível buscar lugares agora."));
-            return;
-          }
-          resolve(predictions.slice(0, 5).map((prediction) => ({
-            placeId: prediction.place_id,
-            primary: prediction.structured_formatting.main_text,
-            secondary: prediction.structured_formatting.secondary_text,
-            description: prediction.description,
-          })));
-        });
-      });
-      if (legacySuggestions.length) return legacySuggestions;
-    }
-  } catch {
-    // Usa o Geocoder como fallback para instalações que não expõem Places Autocomplete.
-  }
-
-  const geocodingLibrary = await window.google.maps.importLibrary("geocoding") as google.maps.GeocodingLibrary;
-  const geocoder = new geocodingLibrary.Geocoder();
-  return new Promise((resolve, reject) => {
-    geocoder.geocode({ address: input.trim(), region: "BR" }, (results, status) => {
-      if (status !== "OK" || !results?.length) {
-        reject(new Error("Não foi possível buscar lugares agora."));
-        return;
-      }
-      resolve(results.slice(0, 5).map((result, index) => {
-        const preferredComponent = result.address_components.find((component) => component.types.some((type) => ["locality", "establishment", "point_of_interest", "route"].includes(type)));
-        const name = preferredComponent?.long_name || result.formatted_address.split(",")[0] || input.trim();
-        return {
-          placeId: result.place_id || `geocode-${index}-${result.formatted_address}`,
-          primary: name,
-          secondary: result.formatted_address,
-          description: result.formatted_address,
-          resolved: { name, address: result.formatted_address },
-        };
-      }));
-    });
+async function searchPlaces(input: string, signal?: AbortSignal): Promise<PlaceSuggestion[]> {
+  const query = input.trim();
+  if (query.length < 2) return [];
+  const url = new URL("https://photon.komoot.io/api/");
+  url.searchParams.set("q", query);
+  url.searchParams.set("limit", "5");
+  const response = await fetch(url, { signal, headers: { Accept: "application/json" } });
+  if (!response.ok) throw new Error("A busca de lugares está indisponível agora.");
+  const payload = await response.json() as PhotonResponse;
+  return (payload.features ?? []).slice(0, 5).map((feature, index) => {
+    const properties = feature.properties ?? {};
+    const streetLine = [properties.street, properties.housenumber].filter(Boolean).join(", ");
+    const primary = properties.name || streetLine || properties.city || properties.municipality || "Lugar encontrado";
+    const address = photonAddress(properties) || primary;
+    const coordinates = feature.geometry?.coordinates;
+    const placeId = `${properties.osm_type ?? "feature"}-${properties.osm_id ?? index}-${coordinates?.join("-") ?? "unknown"}`;
+    return {
+      placeId,
+      primary,
+      secondary: address === primary ? properties.country || "OpenStreetMap" : address,
+      description: address,
+      resolved: { name: primary, address },
+      coordinates: coordinates ? { lng: coordinates[0], lat: coordinates[1] } : undefined,
+    };
   });
 }
 
 async function getPlaceDetails(suggestion: PlaceSuggestion) {
-  await ensureGoogleMapsLoaded();
-  if (!window.google?.maps?.places) throw new Error("Detalhes do lugar indisponíveis.");
-
-  if (suggestion.resolved) return suggestion.resolved;
-
-  if (suggestion.prediction) {
-    try {
-      const place = suggestion.prediction.toPlace();
-      await place.fetchFields({ fields: ["displayName", "formattedAddress"] });
-      return {
-        name: place.displayName || suggestion.primary || "Lugar selecionado",
-        address: place.formattedAddress || suggestion.secondary || "",
-      };
-    } catch {
-      return { name: suggestion.primary || "Lugar selecionado", address: suggestion.description || suggestion.secondary };
-    }
-  }
-
-  return new Promise<{ name: string; address: string }>((resolve, reject) => {
-    const service = new window.google.maps.places.PlacesService(document.createElement("div"));
-    service.getDetails({ placeId: suggestion.placeId, fields: ["name", "formatted_address"] }, (place, status) => {
-      if (status !== window.google.maps.places.PlacesServiceStatus.OK || !place) {
-        reject(new Error("Não foi possível carregar o endereço exato."));
-        return;
-      }
-      resolve({ name: place.name ?? "Lugar selecionado", address: place.formatted_address ?? "" });
-    });
-  });
+  return suggestion.resolved ?? { name: suggestion.primary || "Lugar selecionado", address: suggestion.description || suggestion.secondary };
 }
 
 type SavedRoute = { name: string; meta: string; tag: string; icon: IconType; points: RoutePoint[] };
@@ -300,6 +245,7 @@ function RoutesView() {
   const [placeLoading, setPlaceLoading] = useState(false);
   const [placeError, setPlaceError] = useState("");
   const placeRequestRef = useRef(0);
+  const placeAbortRef = useRef<AbortController | null>(null);
   const [savedRoutes, setSavedRoutes] = useState<SavedRoute[]>(() => [
     { name: "Serra do Rastro", meta: "14,8 km · 04 paradas", tag: "Favorita", icon: Route, points: cloneRoutePoints("Serra do Rastro") },
     { name: "Costeira Norte", meta: "46,8 km · 06 paradas", tag: "Último rolê", icon: CalendarDays, points: cloneRoutePoints("Costeira Norte") },
@@ -349,18 +295,21 @@ function RoutesView() {
     setPlaceQuery(value);
     setPlaceError("");
     const requestId = ++placeRequestRef.current;
+    placeAbortRef.current?.abort();
     if (value.trim().length < 2) {
       setPlaceSuggestions([]);
       setPlaceLoading(false);
       return;
     }
+    const controller = new AbortController();
+    placeAbortRef.current = controller;
     setPlaceLoading(true);
-    void searchPlaces(value).then((suggestions) => {
+    void searchPlaces(value, controller.signal).then((suggestions) => {
       if (requestId === placeRequestRef.current) setPlaceSuggestions(suggestions);
     }).catch(() => {
-      if (requestId === placeRequestRef.current) {
+      if (requestId === placeRequestRef.current && !controller.signal.aborted) {
         setPlaceSuggestions([]);
-        setPlaceError("Busca do Google Maps indisponível agora. Você pode preencher manualmente.");
+        setPlaceError("Busca de lugares indisponível agora. Você pode preencher manualmente.");
       }
     }).finally(() => {
       if (requestId === placeRequestRef.current) setPlaceLoading(false);
@@ -391,7 +340,7 @@ function RoutesView() {
       const nextStop: RoutePoint = { id: `stop-${Date.now()}`, kind: "stop", label: "", address: "" };
       return [...current.slice(0, finishIndex), nextStop, ...current.slice(finishIndex)];
     });
-    toast("Parada adicionada", { description: "Digite o nome do lugar para ver sugestões do Google Maps." });
+    toast("Parada adicionada", { description: "Digite o nome do lugar para ver sugestões de endereço." });
   };
 
   const removeStop = (id: string) => setRoutePoints((current) => current.filter((point) => point.id !== id));
@@ -412,7 +361,7 @@ function RoutesView() {
     <div className="route-summary__body route-summary__body--planner">
       <div className="route-summary__planner-head"><div><p className="label-caps">{editingRouteName ? "EDITAR ROTEIRO" : "NOVA VIAGEM"}</p><h2>{newTripName || "Sua nova viagem"}</h2></div><span className="route-summary__count">{stopCount} {stopCount === 1 ? "parada" : "paradas"}</span></div>
       <div className="route-trip-name"><label className="label-caps" htmlFor="route-name">NOME DA VIAGEM</label><input id="route-name" className="route-point-input" value={newTripName} placeholder="Ex.: Fortaleza de fim de semana" onChange={(event) => setNewTripName(event.target.value)} /></div>
-      <div className="route-helper"><MapPin size={15} /><span>Digite um lugar e selecione uma sugestão do Google Maps para preencher o endereço exato.</span></div>
+      <div className="route-helper"><MapPin size={15} /><span>Digite um lugar e selecione uma sugestão para preencher o endereço exato.</span></div>
       <div className="route-timeline" aria-label={`Timeline da viagem ${newTripName || "nova viagem"}`}>
         {routePoints.map((point, index) => <div className={`route-timeline__item route-timeline__item--${point.kind}`} key={point.id}>
           <div className="route-timeline__rail"><span>{index + 1}</span></div>
@@ -420,7 +369,7 @@ function RoutesView() {
             <div className="route-point-fields">
               <input className="route-point-input" aria-label={`Nome do ponto ${index + 1}`} value={point.label} placeholder={point.kind === "start" ? "Ex.: Fortaleza" : point.kind === "finish" ? "Ex.: Canoa Quebrada" : "Ex.: Praia ou mirante"} onFocus={() => { setPlaceSearchPointId(point.id); setPlaceQuery(point.label); }} onChange={(event) => handlePlaceSearch(point.id, "label", event.target.value)} />
               <div className="route-address-row"><MapPin size={14} /><input className="route-address-input" aria-label={`Endereço de ${point.label || `ponto ${index + 1}`}`} value={point.address} placeholder="Endereço exato" onFocus={() => { setPlaceSearchPointId(point.id); setPlaceQuery(point.address); }} onChange={(event) => handlePlaceSearch(point.id, "address", event.target.value)} /><a className="route-map-link" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pointQuery(point))}`} target="_blank" rel="noreferrer">Maps <ExternalLink size={12} /></a></div>
-              {placeSearchPointId === point.id && (placeLoading || placeError || placeSuggestions.length > 0) && <div className="place-suggestions" role="listbox" aria-label="Sugestões de lugares"><div className="place-suggestions__label">{placeLoading ? "BUSCANDO NO GOOGLE MAPS" : "SUGESTÕES DE LUGAR"}</div>{placeSuggestions.map((suggestion) => <button className="place-suggestion" key={suggestion.placeId} type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => void selectPlaceSuggestion(point.id, suggestion)}><MapPin size={15} /><span><strong>{suggestion.primary}</strong><small>{suggestion.secondary || suggestion.description}</small></span></button>)}{placeError && <p className="place-suggestions__error">{placeError}</p>}{!placeLoading && !placeError && placeSuggestions.length === 0 && placeQuery.trim().length >= 2 && <p className="place-suggestions__empty">Nenhum lugar encontrado. Continue digitando ou preencha manualmente.</p>}</div>}
+              {placeSearchPointId === point.id && (placeLoading || placeError || placeSuggestions.length > 0) && <div className="place-suggestions" role="listbox" aria-label="Sugestões de lugares"><div className="place-suggestions__label">{placeLoading ? "BUSCANDO ENDEREÇOS" : "SUGESTÕES DE LUGAR"}</div>{placeSuggestions.map((suggestion) => <button className="place-suggestion" key={suggestion.placeId} type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => void selectPlaceSuggestion(point.id, suggestion)}><MapPin size={15} /><span><strong>{suggestion.primary}</strong><small>{suggestion.secondary || suggestion.description}</small></span></button>)}{placeError && <p className="place-suggestions__error">{placeError}</p>}{!placeLoading && !placeError && placeSuggestions.length === 0 && placeQuery.trim().length >= 2 && <p className="place-suggestions__empty">Nenhum lugar encontrado. Continue digitando ou preencha manualmente.</p>}</div>}
             </div>
           </div>
         </div>)}
