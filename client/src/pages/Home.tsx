@@ -16,10 +16,13 @@ import {
   ClipboardCheck,
   CircleDollarSign,
   Droplets,
+  ExternalLink,
   Fuel,
   Gauge,
+  MapPin,
   Menu,
   MoreHorizontal,
+  Navigation,
   Play,
   Plus,
   Route,
@@ -27,6 +30,7 @@ import {
   Settings2,
   ShieldCheck,
   SlidersHorizontal,
+  Trash2,
   UserRound,
   WalletCards,
   Wind,
@@ -52,6 +56,52 @@ const summaryMetrics = [
   { label: "Gastos no mês", value: "R$ 486", detail: "3 categorias", icon: CircleDollarSign },
   { label: "Distância registrada", value: "128 km", detail: "nesta semana", icon: Activity },
 ];
+
+type RoutePointKind = "start" | "stop" | "finish";
+type RoutePoint = { id: string; kind: RoutePointKind; label: string; address: string };
+
+const routePointPresets: Record<string, RoutePoint[]> = {
+  "Serra do Rastro": [
+    { id: "serra-start", kind: "start", label: "Florianópolis", address: "Florianópolis, SC" },
+    { id: "serra-stop-1", kind: "stop", label: "Mirante da Serra", address: "Mirante da Serra do Rio do Rastro, Bom Jardim da Serra, SC" },
+    { id: "serra-finish", kind: "finish", label: "Serra do Rastro", address: "Serra do Rio do Rastro, Lauro Müller, SC" },
+  ],
+  "Costeira Norte": [
+    { id: "costeira-start", kind: "start", label: "Florianópolis", address: "Florianópolis, SC" },
+    { id: "costeira-stop-1", kind: "stop", label: "Santo Antônio de Lisboa", address: "Santo Antônio de Lisboa, Florianópolis, SC" },
+    { id: "costeira-stop-2", kind: "stop", label: "Praia da Daniela", address: "Praia da Daniela, Florianópolis, SC" },
+    { id: "costeira-finish", kind: "finish", label: "Costeira Norte", address: "Costeira Norte, Florianópolis, SC" },
+  ],
+  "Vale dos Ventos": [
+    { id: "vale-start", kind: "start", label: "Florianópolis", address: "Florianópolis, SC" },
+    { id: "vale-stop-1", kind: "stop", label: "Rancho Queimado", address: "Rancho Queimado, SC" },
+    { id: "vale-finish", kind: "finish", label: "Vale dos Ventos", address: "Vale dos Ventos, SC" },
+  ],
+};
+
+function cloneRoutePoints(routeName: string) {
+  return (routePointPresets[routeName] ?? routePointPresets["Serra do Rastro"]).map((point) => ({ ...point }));
+}
+
+function pointQuery(point: RoutePoint) {
+  return point.address.trim() || point.label.trim();
+}
+
+function googleMapsRouteUrl(points: RoutePoint[]) {
+  const origin = points[0] ? pointQuery(points[0]) : "";
+  const destination = points[points.length - 1] ? pointQuery(points[points.length - 1]) : "";
+  const waypoints = points.slice(1, -1).map(pointQuery).filter(Boolean).join("|");
+  const params = new URLSearchParams({ api: "1", origin, destination, travelmode: "driving" });
+  if (waypoints) params.set("waypoints", waypoints);
+  return `https://www.google.com/maps/dir/?${params.toString()}`;
+}
+
+function wazeRouteUrl(points: RoutePoint[]) {
+  const destination = points[points.length - 1] ? pointQuery(points[points.length - 1]) : "";
+  return `https://www.waze.com/ul?${new URLSearchParams({ q: destination, navigate: "yes" }).toString()}`;
+}
+
+const pointLabels: Record<RoutePointKind, string> = { start: "PONTO DE PARTIDA", stop: "PARADA", finish: "DESTINO" };
 
 function MotoTrackerMark({ compact = false }: { compact?: boolean }) {
   return (
@@ -110,10 +160,58 @@ function PageHeader({ eyebrow, title, description, action, titleClassName = "" }
 }
 
 function RoutesView() {
-  const [filter, setFilter] = useState("Salvas");
-  const [activeRoute, setActiveRoute] = useState<string | null>(null);
-      const routes = [{ name: "Serra do Rastro", meta: "14,8 km · 04 paradas", tag: "Favorita", icon: Route }, { name: "Costeira Norte", meta: "46,8 km · 06 paradas", tag: "Último rolê", icon: CalendarDays }, { name: "Vale dos Ventos", meta: "82,1 km · 08 paradas", tag: "Explorar", icon: ClipboardCheck }];
-  return <><PageHeader eyebrow="VIAGENS / PLANEJAMENTO" title={<>Planeje o próximo<br /><em>trecho da estrada.</em></>} description="Crie viagens, organize paradas e mantenha um histórico dos caminhos que já percorreu." action={<button className="primary-button" onClick={() => toast("Planejador aberto", { description: "Defina data, destino, paradas e orçamento da viagem." })}><Plus size={15} /> Nova viagem</button>} /><div className="section-tabs" role="tablist">{["Planejadas", "Histórico", "Descobrir"].map((item) => <button key={item} className={filter === item ? "section-tab section-tab--active" : "section-tab"} onClick={() => setFilter(item)}>{item}</button>)}</div><div className="routes-layout"><div className="route-list">{routes.map((route, index) => { const Icon = route.icon; const isActive = activeRoute === route.name; return <article className={`route-list-card panel ${isActive ? "route-list-card--active" : ""}`} key={route.name}><div className="route-list-card__index">0{index + 1}</div><div className="route-list-card__icon"><Icon size={20} /></div><div className="route-list-card__content"><div className="route-list-card__top"><div><p className="label-caps">{route.tag}</p><h2>{route.name}</h2></div><span className="route-list-card__distance">{route.meta}</span></div><div className="route-list-card__line"><span><CircleDot size={12} /> 04 paradas planejadas</span><button className="text-button" onClick={() => { setActiveRoute(route.name); toast.success("Viagem selecionada", { description: `${route.name} está pronta para planejamento.` }); }}>{isActive ? <><Check size={14} /> Selecionada</> : <>Selecionar <ChevronRight size={14} /></>}</button></div></div></article>; })}</div><aside className="panel route-summary"><div className="trip-plan-visual"><div className="trip-plan-visual__head"><span>TRAÇADO SALVO</span><CalendarDays size={17} /></div><div className="trip-plan-visual__line"><svg viewBox="0 0 500 118" preserveAspectRatio="none" aria-hidden="true"><path className="trip-trace-shadow" d="M 18 83 C 101 16, 167 104, 245 55 S 354 18, 482 64" /><path className="trip-trace-line" d="M 18 83 C 101 16, 167 104, 245 55 S 354 18, 482 64" /></svg><span><i />Florianópolis</span><span><i />Mirante da Serra</span><span><i />Serra do Rastro</span></div></div><div className="route-summary__body"><p className="label-caps">RESUMO DA VIAGEM</p><h2>{activeRoute ?? "Serra do Rastro"}</h2><div className="route-summary__stats"><span><strong>04</strong> paradas</span><span><strong>03</strong> trechos</span><span><strong>R$ 280</strong> orçamento</span></div><button className="secondary-button" onClick={() => toast.success("Planejamento salvo", { description: `${activeRoute ?? "Serra do Rastro"} está pronta para receber seus registros.` })}><ClipboardCheck size={15} /> Editar planejamento</button></div></aside></div></>;
+  const [filter, setFilter] = useState("Planejadas");
+  const [activeRoute, setActiveRoute] = useState("Serra do Rastro");
+  const [routePoints, setRoutePoints] = useState<RoutePoint[]>(() => cloneRoutePoints("Serra do Rastro"));
+  const [runMenuOpen, setRunMenuOpen] = useState(false);
+  const routes = [{ name: "Serra do Rastro", meta: "14,8 km · 04 paradas", tag: "Favorita", icon: Route }, { name: "Costeira Norte", meta: "46,8 km · 06 paradas", tag: "Último rolê", icon: CalendarDays }, { name: "Vale dos Ventos", meta: "82,1 km · 08 paradas", tag: "Explorar", icon: ClipboardCheck }];
+  const stopCount = routePoints.filter((point) => point.kind === "stop").length;
+
+  const selectRoute = (routeName: string) => {
+    setActiveRoute(routeName);
+    setRoutePoints(cloneRoutePoints(routeName));
+    setRunMenuOpen(false);
+    toast.success("Viagem selecionada", { description: `${routeName} está pronta para planejamento.` });
+  };
+
+  const updatePoint = (id: string, field: "label" | "address", value: string) => {
+    setRoutePoints((current) => current.map((point) => point.id === id ? { ...point, [field]: value } : point));
+  };
+
+  const addStop = () => {
+    setRoutePoints((current) => {
+      const finishIndex = current.findIndex((point) => point.kind === "finish");
+      const nextStop: RoutePoint = { id: `stop-${Date.now()}`, kind: "stop", label: "Nova parada", address: "" };
+      return [...current.slice(0, finishIndex), nextStop, ...current.slice(finishIndex)];
+    });
+    toast("Parada adicionada", { description: "Preencha o nome e o endereço exato do ponto." });
+  };
+
+  const removeStop = (id: string) => setRoutePoints((current) => current.filter((point) => point.id !== id));
+
+  const savePlanning = () => toast.success("Planejamento salvo", { description: `${activeRoute} agora tem ${stopCount} ${stopCount === 1 ? "parada" : "paradas"} organizadas.` });
+
+  return <>
+    <PageHeader eyebrow="VIAGENS / PLANEJAMENTO" title={<>Planeje o próximo<br /><em>trecho da estrada.</em></>} description="Monte a viagem em uma timeline, confirme cada endereço e escolha onde continuar o trajeto." action={<button className="primary-button" onClick={() => { setActiveRoute("Nova viagem"); setRoutePoints(cloneRoutePoints("Serra do Rastro")); toast("Planejador aberto", { description: "Defina partida, paradas e destino da viagem." }); }}><Plus size={15} /> Nova viagem</button>} />
+    <div className="section-tabs" role="tablist">{["Planejadas", "Histórico", "Descobrir"].map((item) => <button key={item} className={filter === item ? "section-tab section-tab--active" : "section-tab"} onClick={() => setFilter(item)}>{item}</button>)}</div>
+    <div className="routes-layout routes-layout--planner">
+      <div className="route-list">{routes.map((route, index) => { const Icon = route.icon; const isActive = activeRoute === route.name; return <article className={`route-list-card panel ${isActive ? "route-list-card--active" : ""}`} key={route.name}><div className="route-list-card__index">0{index + 1}</div><div className="route-list-card__icon"><Icon size={20} /></div><div className="route-list-card__content"><div className="route-list-card__top"><div><p className="label-caps">{route.tag}</p><h2>{route.name}</h2></div><span className="route-list-card__distance">{route.meta}</span></div><div className="route-list-card__line"><span><CircleDot size={12} /> timeline editável</span><div className="route-list-card__actions"><button className="text-button" onClick={() => selectRoute(route.name)}>{isActive ? <><Check size={14} /> Editando</> : <>Editar <ChevronRight size={14} /></>}</button><button className="route-go-button route-go-button--small" onClick={() => { selectRoute(route.name); setRunMenuOpen(true); }}><Navigation size={13} /> Ir</button></div></div></div></article>; })}</div>
+      <aside className="panel route-summary route-summary--planner">
+        <div className="route-summary__body route-summary__body--planner">
+          <div className="route-summary__planner-head"><div><p className="label-caps">ROTEIRO EDITÁVEL</p><h2>{activeRoute}</h2></div><span className="route-summary__count">{stopCount} {stopCount === 1 ? "parada" : "paradas"}</span></div>
+          <div className="route-helper"><MapPin size={15} /><span>Use os links do Google Maps para conferir o endereço exato de cada ponto.</span></div>
+          <div className="route-timeline" aria-label={`Timeline da viagem ${activeRoute}`}>
+            {routePoints.map((point, index) => <div className={`route-timeline__item route-timeline__item--${point.kind}`} key={point.id}>
+              <div className="route-timeline__rail"><span>{index + 1}</span></div>
+              <div className="route-timeline__body"><div className="route-timeline__top"><p className="label-caps">{pointLabels[point.kind]}</p>{point.kind === "stop" && <button className="route-remove-button" aria-label={`Remover ${point.label}`} onClick={() => removeStop(point.id)}><Trash2 size={14} /></button>}</div><input className="route-point-input" aria-label={`Nome do ponto ${index + 1}`} value={point.label} onChange={(event) => updatePoint(point.id, "label", event.target.value)} /><div className="route-address-row"><MapPin size={14} /><input className="route-address-input" aria-label={`Endereço de ${point.label}`} value={point.address} placeholder="Endereço exato" onChange={(event) => updatePoint(point.id, "address", event.target.value)} /><a className="route-map-link" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pointQuery(point))}`} target="_blank" rel="noreferrer">Maps <ExternalLink size={12} /></a></div></div>
+            </div>)}
+          </div>
+          <div className="route-editor__actions"><button className="secondary-button route-add-stop" onClick={addStop}><Plus size={14} /> Adicionar parada</button><button className="primary-button" onClick={savePlanning}><Check size={14} /> Salvar roteiro</button></div>
+          <div className="route-launch"><div><p className="label-caps">IR PARA A ESTRADA</p><span>Abra a viagem com a origem, destino e paradas definidas.</span></div><button className="route-go-button" onClick={() => setRunMenuOpen((current) => !current)}><Navigation size={14} /> Ir <ChevronRight size={13} /></button>{runMenuOpen && <div className="route-launch__menu"><a href={googleMapsRouteUrl(routePoints)} target="_blank" rel="noreferrer"><MapPin size={15} /><span><strong>Google Maps</strong><small>Abre com todas as paradas</small></span><ExternalLink size={13} /></a><a href={wazeRouteUrl(routePoints)} target="_blank" rel="noreferrer"><Navigation size={15} /><span><strong>Waze</strong><small>Abre o destino final; paradas na timeline</small></span><ExternalLink size={13} /></a></div>}</div>
+        </div>
+      </aside>
+    </div>
+  </>;
 }
 
 function ExpensesView() {
