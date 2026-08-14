@@ -59,3 +59,14 @@ export function getPlateReminder(profile: BikeProfile) {
 export function bikeProfileStorageKey(firebaseUid?: string) {
   return `mototracker:bike-profile:${firebaseUid || "local"}`;
 }
+
+export function getStoredBikeProfile(firebaseUid?: string): BikeProfile {
+  if (typeof window === "undefined") return DEFAULT_BIKE_PROFILE;
+
+  try {
+    const stored = window.localStorage.getItem(bikeProfileStorageKey(firebaseUid));
+    return stored ? normalizeBikeProfile({ ...DEFAULT_BIKE_PROFILE, ...JSON.parse(stored) }) : DEFAULT_BIKE_PROFILE;
+  } catch {
+    return DEFAULT_BIKE_PROFILE;
+  }
+}

@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { editRoutePoint } from "@/lib/tripModel";
 import { getProfileIdentity } from "@/lib/profileIdentity";
 import { createTrip, removeTrip, updateTrip, watchTrips } from "@/lib/trips";
+import { getConsumptionKmPerLiter, getPlateReminder, getStoredBikeProfile, type BikeProfile } from "@/lib/bikeProfile";
 import { ExpensesView } from "@/components/ExpensesView";
 import { SettingsView } from "@/components/SettingsView";
 import type { RoutePoint, Trip } from "@/types/trips";
@@ -472,7 +473,20 @@ function LegacyExpensesView() {
 }
 
 export function GarageView({ onOpenSettings }: { onOpenSettings: () => void }) {
-  return <><PageHeader eyebrow="GARAGEM / MINHA MOTO" title="Sua moto em dia." titleClassName="page-header__title--single" description="Cadastre sua moto para começar a acompanhar dados de consumo, documentação e futuras manutenções." action={<button className="primary-button garage-action" onClick={onOpenSettings}><Plus size={15} /> Cadastrar moto</button>} /><article className="panel first-run-card"><p className="label-caps">SUA GARAGEM COMEÇA AQUI</p><h2>Nenhuma moto cadastrada</h2><p>Informe o modelo, o final da placa e o consumo médio em Configurações. Depois, a Garagem poderá organizar suas informações de uso e manutenção.</p><button className="primary-button" onClick={onOpenSettings}><Bike size={15} /> Abrir configurações</button></article></>;
+  const { user } = useAuth();
+  const [bike, setBike] = useState<BikeProfile>(() => getStoredBikeProfile(user?.uid));
+
+  useEffect(() => {
+    setBike(getStoredBikeProfile(user?.uid));
+  }, [user?.uid]);
+
+  const hasBike = Boolean(bike.model);
+  const consumption = getConsumptionKmPerLiter(bike.consumptionKmPerLiter);
+  const displayName = bike.nickname || bike.model;
+
+  return <><PageHeader eyebrow="GARAGEM / MINHA MOTO" title="Sua moto em dia." titleClassName="page-header__title--single" description={hasBike ? "Os dados cadastrados em Configurações estão reunidos aqui para acompanhar consumo, documentação e futuras manutenções." : "Cadastre sua moto para começar a acompanhar dados de consumo, documentação e futuras manutenções."} action={<button className="primary-button garage-action" onClick={onOpenSettings}>{hasBike ? <><Settings2 size={15} /> Editar moto</> : <><Plus size={15} /> Cadastrar moto</>}</button>} />
+    {hasBike ? <div className="garage-profile-grid"><article className="panel garage-bike-card"><div className="garage-bike-card__heading"><div><p className="label-caps">MOTO CADASTRADA</p><h2>{displayName}</h2>{bike.nickname && <p className="garage-bike-card__model">{bike.model}</p>}</div><span className="garage-bike-card__icon"><Bike size={22} /></span></div><div className="garage-bike-card__stats"><div><span>Consumo médio</span><strong>{consumption === null ? "Não informado" : `${consumption} km/L`}</strong></div><div><span>Placa</span><strong>{bike.plateFinal ? `Final ${bike.plateFinal}` : "Não informado"}</strong></div><div><span>UF</span><strong>{bike.state || "Não informada"}</strong></div></div><button className="secondary-button" onClick={onOpenSettings}><Settings2 size={15} /> Atualizar cadastro</button></article><article className="panel garage-reminder-card"><div className="garage-reminder-card__icon"><CalendarDays size={19} /></div><p className="label-caps">DOCUMENTAÇÃO</p><h2>{bike.plateFinal ? `Placa final ${bike.plateFinal}` : "Complete seu cadastro"}</h2><p>{getPlateReminder(bike)}</p><button className="text-button" onClick={onOpenSettings}>Ver configurações <ChevronRight size={14} /></button></article></div> : <article className="panel first-run-card"><p className="label-caps">SUA GARAGEM COMEÇA AQUI</p><h2>Nenhuma moto cadastrada</h2><p>Informe o modelo, o final da placa e o consumo médio em Configurações. Depois, a Garagem poderá organizar suas informações de uso e manutenção.</p><button className="primary-button" onClick={onOpenSettings}><Bike size={15} /> Abrir configurações</button></article>}
+  </>;
 }
 
 export function ProfileView() {

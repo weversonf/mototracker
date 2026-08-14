@@ -338,6 +338,24 @@ h2 { margin: 9px 0 0; color: var(--cream); font: 600 19px/1.05 'Space Grotesk', 
 .settings-card__notice { margin: 0; color: #738178; font-size: 10px; line-height: 1.55; }
 @media (max-width: 759px) { .expense-form-grid, .bike-settings-form, .fuel-estimate { grid-template-columns: 1fr; }.bike-settings-form__wide { grid-column: auto; }.settings-grid--bike { grid-template-columns: 1fr; }.fuel-estimate__result { min-height: 0; } }
 
+.garage-profile-grid { display: grid; grid-template-columns: minmax(0, 1.18fr) minmax(270px, .82fr); gap: 18px; align-items: stretch; }
+.garage-bike-card, .garage-reminder-card { display: grid; gap: 24px; padding: clamp(24px, 3vw, 30px); }
+.garage-bike-card { min-height: 286px; background: radial-gradient(circle at 84% 18%, rgba(240, 100, 60, .18), transparent 11rem), linear-gradient(140deg, rgba(31, 39, 36, .98), rgba(16, 22, 22, .98)); }
+.garage-bike-card__heading { display: flex; align-items: start; justify-content: space-between; gap: 18px; }
+.garage-bike-card__heading h2 { margin-top: 9px; font-size: clamp(24px, 3vw, 31px); overflow-wrap: anywhere; }
+.garage-bike-card__model { margin: 7px 0 0; color: #849187; font-size: 11px; line-height: 1.45; }
+.garage-bike-card__icon, .garage-reminder-card__icon { width: 42px; height: 42px; display: grid; flex: 0 0 auto; place-items: center; border: 1px solid rgba(240, 100, 60, .25); border-radius: 50%; background: rgba(240, 100, 60, .11); color: var(--pulse-orange); }
+.garage-bike-card__stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 16px 0; border-top: 1px solid rgba(235, 238, 220, .09); border-bottom: 1px solid rgba(235, 238, 220, .09); }
+.garage-bike-card__stats div { display: grid; gap: 7px; min-width: 0; }
+.garage-bike-card__stats span { color: #77847a; font: 600 9px/1 'Space Grotesk', sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+.garage-bike-card__stats strong { color: var(--cream); font: 600 14px/1.25 'Space Grotesk', sans-serif; overflow-wrap: anywhere; }
+.garage-bike-card .secondary-button { width: fit-content; }
+.garage-reminder-card { align-content: start; min-height: 286px; background: radial-gradient(circle at 88% 18%, rgba(240, 100, 60, .15), transparent 10rem), #1b2925; }
+.garage-reminder-card__icon { margin-bottom: 14px; }
+.garage-reminder-card h2 { margin-top: 2px; font-size: 24px; }
+.garage-reminder-card > p:not(.label-caps) { margin: -12px 0 0; color: #8d998f; font-size: 12px; line-height: 1.65; }
+.garage-reminder-card .text-button { justify-self: start; margin-top: 2px; }
+
 /* Breathing room pass: shared panel rhythm, with extra protection against crowded mobile cards. */
 .dashboard-layout, .routes-layout, .garage-grid, .profile-layout, .settings-grid, .expenses-layout, .finance-overview-grid { gap: 18px; }
 .dashboard-main, .dashboard-side, .garage-stack, .expense-side { gap: 18px; }
@@ -351,4 +369,15 @@ h2 { margin: 9px 0 0; color: var(--cream); font: 600 19px/1.05 'Space Grotesk', 
   .first-run-card .primary-button { width: 100%; }
   .route-empty-state { min-height: 236px; padding: 30px 24px; }
   .next-trip-card, .maintenance-card, .expense-preview-card, .expenses-list-card, .quick-expense-card, .expense-breakdown-card, .finance-total-card, .finance-distribution-card, .trip-cost-card, .garage-stat-card, .ride-mode-card, .settings-card { padding: 24px 20px; }
+  .garage-profile-grid { grid-template-columns: 1fr; gap: 16px; }
+  .garage-bike-card, .garage-reminder-card { min-height: 0; padding: 25px 22px; }
+  .garage-bike-card__stats { gap: 12px; }
+  .garage-bike-card .secondary-button { width: 100%; }
+}
+
+@media (max-width: 420px) {
+  .garage-bike-card__heading { gap: 12px; }
+  .garage-bike-card__stats { grid-template-columns: 1fr; gap: 13px; }
+  .garage-bike-card__stats div { grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 12px; }
+  .garage-bike-card__stats strong { text-align: right; }
 }

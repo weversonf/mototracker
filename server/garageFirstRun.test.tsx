@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 
-import { fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({
@@ -20,6 +20,12 @@ vi.mock("sonner", () => ({
 }));
 
 import { GarageView } from "@/pages/Home";
+import { bikeProfileStorageKey } from "@/lib/bikeProfile";
+
+afterEach(() => {
+  cleanup();
+  window.localStorage.clear();
+});
 
 describe("estado inicial da Garagem", () => {
   it("não mostra moto, revisão ou serviços fictícios e encaminha ao cadastro", () => {
@@ -33,5 +39,23 @@ describe("estado inicial da Garagem", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Abrir configurações" }));
     expect(onOpenSettings).toHaveBeenCalledOnce();
+  });
+
+  it("mostra o cadastro salvo em Configurações no lugar do estado vazio", () => {
+    window.localStorage.setItem(bikeProfileStorageKey(), JSON.stringify({
+      model: "Honda CB 500X",
+      nickname: "Companheira",
+      plateFinal: "7",
+      state: "CE",
+      consumptionKmPerLiter: "35",
+    }));
+
+    render(<GarageView onOpenSettings={vi.fn()} />);
+
+    expect(screen.getByText("Companheira")).toBeTruthy();
+    expect(screen.getByText("Honda CB 500X")).toBeTruthy();
+    expect(screen.getByText("35 km/L")).toBeTruthy();
+    expect(screen.getByText("Final 7")).toBeTruthy();
+    expect(screen.queryByText("Nenhuma moto cadastrada")).toBeNull();
   });
 });

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Bell, Bike, CalendarDays, Check, Fuel, SlidersHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { bikeProfileStorageKey, DEFAULT_BIKE_PROFILE, getConsumptionKmPerLiter, getPlateReminder, normalizeBikeProfile, type BikeProfile } from "@/lib/bikeProfile";
+import { bikeProfileStorageKey, DEFAULT_BIKE_PROFILE, getConsumptionKmPerLiter, getPlateReminder, getStoredBikeProfile, normalizeBikeProfile, type BikeProfile } from "@/lib/bikeProfile";
 
 const BRAZILIAN_STATES = ["", "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"];
 
@@ -11,13 +11,7 @@ export function SettingsView() {
   const [bike, setBike] = useState<BikeProfile>(DEFAULT_BIKE_PROFILE);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const stored = window.localStorage.getItem(bikeProfileStorageKey(user?.uid));
-      setBike(stored ? normalizeBikeProfile({ ...DEFAULT_BIKE_PROFILE, ...JSON.parse(stored) }) : DEFAULT_BIKE_PROFILE);
-    } catch {
-      setBike(DEFAULT_BIKE_PROFILE);
-    }
+    setBike(getStoredBikeProfile(user?.uid));
   }, [user?.uid]);
 
   const updateBike = (field: keyof BikeProfile, value: string) => setBike((current) => ({ ...current, [field]: value }));
