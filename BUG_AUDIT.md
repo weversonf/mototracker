@@ -43,3 +43,15 @@ A configuração Vitest foi ampliada para executar testes TSX com o plugin React
 O domínio `mototracker.vercel.app` já resolve para um projeto externo, portanto não pode ser usado pelo MotoTracker. A consulta pública a `mototrackerbr.vercel.app` devolveu `404 DEPLOYMENT_NOT_FOUND`, sem conteúdo de outro projeto; isso indica que ele não está publicamente vinculado a uma implantação. O vínculo definitivo ainda precisa ser confirmado nas configurações do projeto Vercel antes de alterar a rota de produção.
 
 O projeto correto foi localizado no escopo **Weverson Feitosa's projects** da Vercel, em `https://vercel.com/weverson-feitosas-projects/mototracker/settings/domains`. A página confirma `mototracker-alpha.vercel.app` como domínio de produção atual e oferece a ação **Add Existing**, necessária para registrar um segundo endereço sem remover o atual.
+
+## Correções adicionais de formulários
+
+O formulário de **Gastos** agora exige três dados antes de incluir um lançamento no histórico local: categoria, descrição do que foi pago e valor. Para combustível, ele mostra uma estimativa de litros quando o consumo médio e uma distância opcional forem informados.
+
+Em **Nova viagem**, os campos de partida, parada e destino continuam diretamente editáveis por clique ou toque. Ao digitar manualmente depois de escolher uma sugestão, as coordenadas antigas são removidas para que o endereço visível e os links externos não divirjam.
+
+Em **Configurações**, foi incluído o cadastro local da moto — modelo, apelido, final da placa, UF e consumo em km/L. O lembrete de documentação não tenta prever vencimentos ou valores: ele orienta a consulta do calendário oficial de IPVA/licenciamento do estado correspondente.
+
+## Regressão da timeline
+
+O teste de interface `routesEditor.test.tsx` cobre a timeline em viewport de 375 px: a partida recebe foco direto, uma sugestão Photon é selecionada e, em seguida, o nome e o endereço são editados manualmente. Antes de salvar, o teste confirma que as coordenadas antigas não estão presentes no payload. A suíte passou com **16 testes** em **7 arquivos**, junto de TypeScript e build estático aprovados.

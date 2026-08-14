@@ -235,7 +235,7 @@ function PageHeader({ eyebrow, title, description, action, titleClassName = "" }
   return <section className="page-header"><div><p className="eyebrow">{eyebrow}</p><h1 className={titleClassName}>{title}</h1><p className="page-header__description">{description}</p></div>{action}</section>;
 }
 
-function RoutesView() {
+export function RoutesView() {
   const { user } = useAuth();
   const [filter, setFilter] = useState("Planejadas");
   const [isCreating, setIsCreating] = useState(false);

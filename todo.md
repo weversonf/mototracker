@@ -22,12 +22,14 @@ O CSS global foi reduzido para `clamp(31px, 4.2vw, 54px)` e a variante compacta 
 
 ## Auditoria de bugs e melhorias
 
-- [ ] Adicionar em Configurações um cadastro editável de moto com modelo, apelido e final da placa.
-- [ ] Registrar consumo médio em km/L e usar esse dado para estimar litros e custo em lançamentos de combustível.
-- [ ] Exibir um lembrete informativo de IPVA/licenciamento baseado no final da placa, sem apresentar vencimento oficial ou valor de tributo.
+- [x] Adicionar em Configurações um cadastro editável de moto com modelo, apelido e final da placa.
+- [x] Registrar consumo médio em km/L e usar esse dado para estimar litros em lançamentos de combustível.
+- [x] Exibir um lembrete informativo de IPVA/licenciamento baseado no final da placa, sem apresentar vencimento oficial ou valor de tributo.
 - [ ] Validar o cadastro da moto e os cálculos de consumo em testes de regressão e layout responsivo.
-- [ ] Corrigir o registro financeiro para coletar categoria, descrição e valor antes do salvamento.
+- [x] Corrigir o registro financeiro para coletar categoria, descrição e valor antes do salvamento.
 - [ ] Tornar editáveis por clique ou toque todos os campos de partida, parada e destino em `Nova viagem`.
+- [ ] Validar em desktop e mobile autenticados que partida, paradas e destino recebem foco por clique/toque e permitem edição direta após sugestões.
+- [x] Adicionar teste de interface da timeline para foco, digitação manual e edição após selecionar sugestão.
 - [ ] Cobrir os dois fluxos corrigidos com testes de regressão e validação visual responsiva.
 - [ ] Verificar a disponibilidade de `mototracker.vercel.app` e vinculá-lo ao projeto, mantendo o endereço atual como alternativa.
 - [ ] Verificar se `mototrackerbr.vercel.app` está livre como alternativa curta de endereço na Vercel.
