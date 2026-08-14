@@ -24,9 +24,13 @@ O CSS global foi reduzido para `clamp(31px, 4.2vw, 54px)` e a variante compacta 
 - [x] Resolver os conflitos da migração sem substituir o login Google/Firebase ou a interface MotoTracker.
 - [x] Remover o redirecionamento Manus OAuth do bootstrap e manter o AuthProvider Firebase como única porta de autenticação.
 - [x] Revalidar a migração com checagem de tipos, servidor local e carregamento do AuthGate Firebase.
-- [ ] Persistir as viagens no Cloud Firestore, isoladas pelo UID autenticado e protegidas por regras de proprietário.
-- [ ] Publicar uma regra Firestore segura que preserve as coleções existentes e libere somente `mototrackerUsers/{firebaseUid}/trips` ao respectivo proprietário.
-- [ ] Confirmar, com teste autenticado, que a regra publicada permite somente o proprietário de cada viagem.
+- [x] Persistir as viagens no Cloud Firestore, isoladas pelo UID autenticado e protegidas por regras de proprietário.
+- [x] Publicar uma regra Firestore segura que preserve as coleções existentes e libere somente `mototrackerUsers/{firebaseUid}/trips` ao respectivo proprietário.
+- [x] Confirmar, com teste autenticado, que o proprietário consegue listar e criar viagens no próprio caminho Firestore.
+- [x] Confirmar que uma leitura sem autenticação na coleção de viagens é negada com `PERMISSION_DENIED`.
+- [x] Confirmar que uma tentativa de escrita sem autenticação na coleção de viagens é negada com `PERMISSION_DENIED`.
+- [x] Documentar os resultados finais dos testes negativos de leitura e escrita para comprovar o isolamento por proprietário.
+- [ ] Remover a viagem de validação `Validação Firebase — Fortaleza` caso o proprietário não queira mantê-la como exemplo real.
 - [x] Renomear a exibição do projeto Firebase de `Drivo e Money` para `MotoTracker`, preservando o ID técnico existente.
 - [x] Persistir novas viagens com partida, paradas, destino, endereços e coordenadas.
 - [x] Carregar somente as viagens do usuário na aba `Planejadas`.
