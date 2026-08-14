@@ -166,7 +166,8 @@ async function searchPlaces(input: string): Promise<PlaceSuggestion[]> {
     // Usa o Geocoder como fallback para instalações que não expõem Places Autocomplete.
   }
 
-  const geocoder = new window.google.maps.Geocoder();
+  const geocodingLibrary = await window.google.maps.importLibrary("geocoding") as google.maps.GeocodingLibrary;
+  const geocoder = new geocodingLibrary.Geocoder();
   return new Promise((resolve, reject) => {
     geocoder.geocode({ address: input.trim(), region: "BR" }, (results, status) => {
       if (status !== "OK" || !results?.length) {
