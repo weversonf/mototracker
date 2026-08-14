@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title>MotoTracker</title>
+  <rect width="512" height="512" rx="120" fill="#0c1111"/>
+  <rect x="74" y="74" width="364" height="364" rx="82" fill="#172120" stroke="#dfe6d9" stroke-opacity=".7" stroke-width="12" transform="rotate(45 256 256)"/>
+  <path d="M145 222h140l-56 56h-84z" fill="#f0643c"/>
+  <path d="M227 234h140l-56 56h-84z" fill="#f0643c" opacity=".48"/>
+  <circle cx="256" cy="256" r="28" fill="#f2f0dc"/>
+</svg>

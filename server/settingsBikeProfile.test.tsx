@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   user: { uid: "piloto-001" },
@@ -25,6 +25,8 @@ describe("cadastro da moto em Configurações", () => {
     mocks.toast.error.mockClear();
   });
 
+  afterEach(() => cleanup());
+
   it("salva o modelo, a placa final e o consumo no perfil da conta conectada", () => {
     render(<SettingsView />);
 
@@ -39,5 +41,27 @@ describe("cadastro da moto em Configurações", () => {
       consumptionKmPerLiter: "35",
     });
     expect(mocks.toast.success).toHaveBeenCalledOnce();
+  });
+
+  it("abre a solicitação nativa ao escolher instalar o aplicativo", async () => {
+    render(<SettingsView />);
+
+    const prompt = vi.fn().mockResolvedValue(undefined);
+    const installEvent = new Event("beforeinstallprompt", { cancelable: true }) as Event & {
+      prompt: typeof prompt;
+      userChoice: Promise<{ outcome: "accepted"; platform: string }>;
+    };
+    Object.defineProperties(installEvent, {
+      prompt: { value: prompt },
+      userChoice: { value: Promise.resolve({ outcome: "accepted", platform: "web" }) },
+    });
+    await act(async () => {
+      window.dispatchEvent(installEvent);
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Instalar aplicativo" }));
+
+    await waitFor(() => expect(prompt).toHaveBeenCalledOnce());
+    await waitFor(() => expect(mocks.toast.success).toHaveBeenCalledWith("MotoTracker instalado", expect.any(Object)));
   });
 });

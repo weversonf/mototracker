@@ -105,10 +105,10 @@ button:focus-visible { outline: 2px solid var(--pulse-orange); outline-offset: 3
 @media (max-width: 520px) { .auth-screen { align-items: end; padding: 14px; }.auth-card { padding: 23px; }.auth-card__brand { margin-top: 34px; }.auth-card__copy { margin-top: 45px; }.auth-card__copy h1 { font-size: 48px; }.auth-card__foot { flex-direction: column; gap: 8px; } }
 
 .app-shell { min-height: 100vh; display: flex; background: radial-gradient(circle at 82% 0%, rgba(55, 81, 72, .18), transparent 29rem), var(--ink); }
-.side-rail { width: 74px; border-right: 1px solid var(--line); display: none; flex: 0 0 auto; flex-direction: column; align-items: center; padding: 25px 12px 22px; background: rgba(10, 14, 14, .66); }
-.side-rail__bottom { margin-top: auto; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+.side-rail { position: relative; width: 74px; border-right: 1px solid var(--line); display: none; flex: 0 0 auto; flex-direction: column; align-items: center; justify-content: center; padding: 25px 12px 22px; background: rgba(10, 14, 14, .66); }
+.side-rail__bottom { position: absolute; bottom: 22px; display: flex; flex-direction: column; align-items: center; }
 .side-rail__version { writing-mode: vertical-rl; transform: rotate(180deg); color: rgba(240, 240, 220, .25); font: 500 8px/1 'Space Grotesk', sans-serif; letter-spacing: .13em; }
-.side-nav { display: flex; flex-direction: column; gap: 17px; margin-top: 90px; }
+.side-nav { display: flex; flex-direction: column; gap: 17px; margin: 0; }
 .main-content { min-width: 0; flex: 1; }
 .topbar { min-height: 74px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid var(--line); }
 .topbar__left, .topbar__actions { display: flex; align-items: center; gap: 15px; }

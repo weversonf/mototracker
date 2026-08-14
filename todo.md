@@ -58,6 +58,9 @@ O CSS global foi reduzido para `clamp(31px, 4.2vw, 54px)` e a variante compacta 
 - [ ] Confirmar no MotoTracker publicado e autenticado que a Garagem e os demais estados vazios mantêm o novo espaçamento em celular real.
 - [x] Corrigir a Garagem para carregar o perfil de moto salvo em Configurações para o mesmo UID, mostrando os dados reais em vez do estado vazio.
 - [x] Auditar as jornadas de Dashboard, Viagens, Gastos, Garagem, Perfil e Configurações, registrando melhorias priorizadas de produto, dados e interface em `SITE_AUDIT.md`.
+- [x] Remover a marca duplicada da barra lateral e alinhar verticalmente ao centro os itens de navegação no desktop.
+- [x] Configurar o MotoTracker como PWA instalável com manifesto, service worker, ícones e metadados de aplicativo.
+- [x] Adicionar em Configurações um botão de instalação que use o evento nativo do navegador e explique quando a instalação não estiver disponível.
 
 - [x] Substituído pela arquitetura Firebase: ativar sessão Google e camada Cloud Firestore isolada por usuário, sem criar tabela ou procedimentos tRPC de viagens.
 - [x] Resolver os conflitos da migração sem substituir o login Google/Firebase ou a interface MotoTracker.

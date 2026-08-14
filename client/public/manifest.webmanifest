@@ -1,0 +1,20 @@
+{
+  "name": "MotoTracker — Diário para motociclistas",
+  "short_name": "MotoTracker",
+  "description": "Planeje viagens, acompanhe gastos e organize sua moto.",
+  "lang": "pt-BR",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0c1111",
+  "theme_color": "#0c1111",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/pwa-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
