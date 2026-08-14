@@ -104,54 +104,86 @@ function wazeRouteUrl(points: RoutePoint[]) {
 
 const pointLabels: Record<RoutePointKind, string> = { start: "PONTO DE PARTIDA", stop: "PARADA", finish: "DESTINO" };
 
-type PlaceSuggestion = { placeId: string; primary: string; secondary: string; description: string; prediction?: google.maps.places.PlacePrediction };
+type PlaceSuggestion = { placeId: string; primary: string; secondary: string; description: string; prediction?: google.maps.places.PlacePrediction; resolved?: { name: string; address: string } };
 
 async function searchPlaces(input: string): Promise<PlaceSuggestion[]> {
   if (input.trim().length < 2) return [];
   await ensureGoogleMapsLoaded();
   if (!window.google?.maps?.places) return [];
 
-  const placesLibrary = await window.google.maps.importLibrary("places") as google.maps.PlacesLibrary;
-  const AutocompleteSuggestion = placesLibrary.AutocompleteSuggestion;
-  if (AutocompleteSuggestion?.fetchAutocompleteSuggestions) {
-    const { AutocompleteSessionToken } = placesLibrary;
-    const sessionToken = new AutocompleteSessionToken();
-    const { suggestions } = await AutocompleteSuggestion.fetchAutocompleteSuggestions({
-      input: input.trim(),
-      includedRegionCodes: ["br"],
-      language: "pt-BR",
-      region: "br",
-      sessionToken,
-    });
-    return suggestions.filter((suggestion) => Boolean(suggestion.placePrediction)).slice(0, 5).map((suggestion) => {
-      const prediction = suggestion.placePrediction!;
-      return {
-        placeId: prediction.placeId,
-        primary: prediction.mainText?.toString() || prediction.text.toString(),
-        secondary: prediction.secondaryText?.toString() || "Brasil",
-        description: prediction.text.toString(),
-        prediction,
-      };
-    });
+  try {
+    const placesLibrary = await window.google.maps.importLibrary("places") as google.maps.PlacesLibrary;
+    const AutocompleteSuggestion = placesLibrary.AutocompleteSuggestion;
+    if (AutocompleteSuggestion?.fetchAutocompleteSuggestions) {
+      const { AutocompleteSessionToken } = placesLibrary;
+      const sessionToken = new AutocompleteSessionToken();
+      const { suggestions } = await AutocompleteSuggestion.fetchAutocompleteSuggestions({
+        input: input.trim(),
+        includedRegionCodes: ["br"],
+        language: "pt-BR",
+        region: "br",
+        sessionToken,
+      });
+      return suggestions.filter((suggestion) => Boolean(suggestion.placePrediction)).slice(0, 5).map((suggestion) => {
+        const prediction = suggestion.placePrediction!;
+        return {
+          placeId: prediction.placeId,
+          primary: prediction.mainText?.toString() || prediction.text.toString(),
+          secondary: prediction.secondaryText?.toString() || "Brasil",
+          description: prediction.text.toString(),
+          prediction,
+        };
+      });
+    }
+  } catch {
+    // Continua para o serviço legado e para o Geocoder, caso Places (New) não esteja habilitado.
   }
 
+  try {
+    if (window.google.maps.places.AutocompleteService) {
+      const legacySuggestions = await new Promise<PlaceSuggestion[]>((resolve, reject) => {
+        const service = new window.google.maps.places.AutocompleteService();
+        service.getPlacePredictions({ input, componentRestrictions: { country: "br" } }, (predictions, status) => {
+          if (status === window.google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
+            resolve([]);
+            return;
+          }
+          if (status !== window.google.maps.places.PlacesServiceStatus.OK || !predictions) {
+            reject(new Error("Não foi possível buscar lugares agora."));
+            return;
+          }
+          resolve(predictions.slice(0, 5).map((prediction) => ({
+            placeId: prediction.place_id,
+            primary: prediction.structured_formatting.main_text,
+            secondary: prediction.structured_formatting.secondary_text,
+            description: prediction.description,
+          })));
+        });
+      });
+      if (legacySuggestions.length) return legacySuggestions;
+    }
+  } catch {
+    // Usa o Geocoder como fallback para instalações que não expõem Places Autocomplete.
+  }
+
+  const geocoder = new window.google.maps.Geocoder();
   return new Promise((resolve, reject) => {
-    const service = new window.google.maps.places.AutocompleteService();
-    service.getPlacePredictions({ input, componentRestrictions: { country: "br" } }, (predictions, status) => {
-      if (status === window.google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
-        resolve([]);
-        return;
-      }
-      if (status !== window.google.maps.places.PlacesServiceStatus.OK || !predictions) {
+    geocoder.geocode({ address: input.trim(), region: "BR" }, (results, status) => {
+      if (status !== "OK" || !results?.length) {
         reject(new Error("Não foi possível buscar lugares agora."));
         return;
       }
-      resolve(predictions.slice(0, 5).map((prediction) => ({
-        placeId: prediction.place_id,
-        primary: prediction.structured_formatting.main_text,
-        secondary: prediction.structured_formatting.secondary_text,
-        description: prediction.description,
-      })));
+      resolve(results.slice(0, 5).map((result, index) => {
+        const preferredComponent = result.address_components.find((component) => component.types.some((type) => ["locality", "establishment", "point_of_interest", "route"].includes(type)));
+        const name = preferredComponent?.long_name || result.formatted_address.split(",")[0] || input.trim();
+        return {
+          placeId: result.place_id || `geocode-${index}-${result.formatted_address}`,
+          primary: name,
+          secondary: result.formatted_address,
+          description: result.formatted_address,
+          resolved: { name, address: result.formatted_address },
+        };
+      }));
     });
   });
 }
@@ -160,13 +192,19 @@ async function getPlaceDetails(suggestion: PlaceSuggestion) {
   await ensureGoogleMapsLoaded();
   if (!window.google?.maps?.places) throw new Error("Detalhes do lugar indisponíveis.");
 
+  if (suggestion.resolved) return suggestion.resolved;
+
   if (suggestion.prediction) {
-    const place = suggestion.prediction.toPlace();
-    await place.fetchFields({ fields: ["displayName", "formattedAddress"] });
-    return {
-      name: place.displayName || suggestion.primary || "Lugar selecionado",
-      address: place.formattedAddress || suggestion.secondary || "",
-    };
+    try {
+      const place = suggestion.prediction.toPlace();
+      await place.fetchFields({ fields: ["displayName", "formattedAddress"] });
+      return {
+        name: place.displayName || suggestion.primary || "Lugar selecionado",
+        address: place.formattedAddress || suggestion.secondary || "",
+      };
+    } catch {
+      return { name: suggestion.primary || "Lugar selecionado", address: suggestion.description || suggestion.secondary };
+    }
   }
 
   return new Promise<{ name: string; address: string }>((resolve, reject) => {
