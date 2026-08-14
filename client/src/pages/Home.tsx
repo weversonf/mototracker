@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { editRoutePoint } from "@/lib/tripModel";
 import { getProfileIdentity } from "@/lib/profileIdentity";
-import { createTrip, updateTrip, watchTrips } from "@/lib/trips";
+import { createTrip, removeTrip, updateTrip, watchTrips } from "@/lib/trips";
 import { ExpensesView } from "@/components/ExpensesView";
 import { SettingsView } from "@/components/SettingsView";
 import type { RoutePoint, Trip } from "@/types/trips";
@@ -255,6 +255,7 @@ export function RoutesView() {
   const [tripsError, setTripsError] = useState("");
   const [tripsLoading, setTripsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const stopCount = routePoints.filter((point) => point.kind === "stop").length;
 
   useEffect(() => {
@@ -309,6 +310,26 @@ export function RoutesView() {
     setPlaceSearchPointId(null);
     setPlaceSuggestions([]);
     setFilter("Planejadas");
+  };
+
+  const deletePlanning = async () => {
+    if (!user?.uid || !editingTripId) return;
+
+    const tripName = newTripName.trim() || activeRoute || "esta viagem";
+    const confirmed = window.confirm(`Excluir “${tripName}”? Esta ação não pode ser desfeita.`);
+    if (!confirmed) return;
+
+    setIsDeleting(true);
+    try {
+      await removeTrip(user.uid, editingTripId);
+      closeEditor();
+      toast.success("Viagem excluída", { description: `“${tripName}” foi removida de Planejadas.` });
+    } catch (error) {
+      const description = error instanceof Error ? error.message : "Não foi possível excluir a viagem agora.";
+      toast.error("Não foi possível excluir", { description });
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const updatePoint = (id: string, field: "label" | "address", value: string) => {
@@ -421,7 +442,8 @@ export function RoutesView() {
           </div>
         </div>)}
       </div>
-      <div className="route-editor__actions"><button className="secondary-button route-add-stop" onClick={addStop} disabled={isSaving}><Plus size={14} /> Adicionar parada</button><button className="primary-button" onClick={() => void savePlanning()} disabled={isSaving}>{isSaving ? "Salvando..." : <><Check size={14} /> Salvar roteiro</>}</button></div>
+      <div className="route-editor__actions"><button className="secondary-button route-add-stop" onClick={addStop} disabled={isSaving || isDeleting}><Plus size={14} /> Adicionar parada</button><button className="primary-button" onClick={() => void savePlanning()} disabled={isSaving || isDeleting}>{isSaving ? "Salvando..." : <><Check size={14} /> Salvar roteiro</>}</button></div>
+      {editingTripId && <button className="route-delete-trip" type="button" onClick={() => void deletePlanning()} disabled={isSaving || isDeleting}><Trash2 size={14} /> {isDeleting ? "Excluindo viagem..." : "Excluir viagem"}</button>}
       <div className="route-launch"><div><p className="label-caps">IR PARA A ESTRADA</p><span>Abra a viagem com a origem, destino e paradas definidas.</span></div><button className="route-go-button" onClick={() => setRunMenuOpen((current) => !current)}><Navigation size={14} /> Ir <ChevronRight size={13} /></button>{runMenuOpen && <div className="route-launch__menu"><a href={googleMapsRouteUrl(routePoints)} target="_blank" rel="noreferrer"><MapPin size={15} /><span><strong>Google Maps</strong><small>Abre com todas as paradas</small></span><ExternalLink size={13} /></a><a href={wazeRouteUrl(routePoints)} target="_blank" rel="noreferrer"><Navigation size={15} /><span><strong>Waze</strong><small>Abre o destino final; paradas na timeline</small></span><ExternalLink size={13} /></a></div>}</div>
     </div>
   </aside>;

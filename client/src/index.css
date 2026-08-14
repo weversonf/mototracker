@@ -279,6 +279,9 @@ h2 { margin: 9px 0 0; color: var(--cream); font: 600 19px/1.05 'Space Grotesk', 
 .route-remove-button:hover { color: #d8846c; }
 .route-editor__actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; padding-top: 16px; border-top: 1px solid var(--line); }
 .route-add-stop { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.route-delete-trip { display: inline-flex; align-items: center; justify-content: center; gap: 7px; width: 100%; min-height: 42px; margin-top: 12px; border: 1px solid rgba(218, 110, 85, .38); border-radius: 4px; background: rgba(164, 63, 42, .1); color: #e69b88; font: 600 10px/1 'Space Grotesk', sans-serif; transition: background .18s ease, border-color .18s ease, color .18s ease, transform .16s ease; }
+.route-delete-trip:hover:not(:disabled) { border-color: rgba(232, 125, 98, .72); background: rgba(175, 65, 42, .2); color: #ffd0c4; transform: translateY(-1px); }
+.route-delete-trip:disabled { cursor: not-allowed; opacity: .6; }
 .route-summary__body--planner > .route-launch { margin-top: 17px; }
 .route-launch { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 0 0; border-top: 1px solid var(--line); }
 .route-launch > div:first-child { display: flex; flex-direction: column; gap: 5px; min-width: 0; }

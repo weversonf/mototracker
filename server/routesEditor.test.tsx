@@ -3,10 +3,12 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { Trip } from "@/types/trips";
 
-const { createTrip, watchTrips } = vi.hoisted(() => ({
+const { createTrip, removeTrip, watchTrips } = vi.hoisted(() => ({
   createTrip: vi.fn(async () => ({ id: "trip-test" })),
-  watchTrips: vi.fn(() => () => undefined),
+  removeTrip: vi.fn(async () => undefined),
+  watchTrips: vi.fn<(firebaseUid: string, onChange: (trips: Trip[]) => void, onError: (error: Error) => void) => () => void>(() => () => undefined),
 }));
 
 vi.mock("@/contexts/AuthContext", () => ({
@@ -15,6 +17,7 @@ vi.mock("@/contexts/AuthContext", () => ({
 
 vi.mock("@/lib/trips", () => ({
   createTrip,
+  removeTrip,
   updateTrip: vi.fn(),
   watchTrips,
 }));
@@ -28,6 +31,7 @@ import { RoutesView } from "@/pages/Home";
 describe("timeline de nova viagem", () => {
   beforeEach(() => {
     createTrip.mockClear();
+    removeTrip.mockClear();
     watchTrips.mockClear();
     Object.defineProperty(window, "innerWidth", { configurable: true, value: 375 });
     vi.stubGlobal("fetch", vi.fn(async () => ({
@@ -72,5 +76,35 @@ describe("timeline de nova viagem", () => {
     const payload = (createTrip.mock.calls[0] as unknown as [string, { points: Array<{ label: string; address: string; coordinates?: unknown }> }])[1];
     expect(payload.points[0]).toMatchObject({ label: "Saída manual", address: "Rua do Piloto, Fortaleza, CE" });
     expect(payload.points[0].coordinates).toBeUndefined();
+  });
+
+  it("pede confirmação antes de excluir uma viagem salva e remove somente após confirmar", async () => {
+    watchTrips.mockImplementation((_uid, onChange) => {
+      onChange([{
+        id: "trip-salva",
+        firebaseUid: "uid-teste",
+        name: "Fortaleza ao litoral",
+        tag: "Planejada",
+        points: [
+          { id: "start", kind: "start", label: "Fortaleza", address: "Fortaleza, CE" },
+          { id: "finish", kind: "finish", label: "Canoa Quebrada", address: "Canoa Quebrada, CE" },
+        ],
+        createdAt: null,
+        updatedAt: null,
+      }]);
+      return () => undefined;
+    });
+    const confirm = vi.spyOn(window, "confirm").mockReturnValueOnce(false).mockReturnValueOnce(true);
+
+    render(<RoutesView />);
+    fireEvent.click(await screen.findByRole("button", { name: "Editar" }));
+    const deleteButton = screen.getByRole("button", { name: "Excluir viagem" });
+
+    fireEvent.click(deleteButton);
+    expect(confirm).toHaveBeenCalledWith("Excluir “Fortaleza ao litoral”? Esta ação não pode ser desfeita.");
+    expect(removeTrip).not.toHaveBeenCalled();
+
+    fireEvent.click(deleteButton);
+    await waitFor(() => expect(removeTrip).toHaveBeenCalledWith("uid-teste", "trip-salva"));
   });
 });
