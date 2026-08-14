@@ -104,12 +104,36 @@ function wazeRouteUrl(points: RoutePoint[]) {
 
 const pointLabels: Record<RoutePointKind, string> = { start: "PONTO DE PARTIDA", stop: "PARADA", finish: "DESTINO" };
 
-type PlaceSuggestion = { placeId: string; primary: string; secondary: string; description: string };
+type PlaceSuggestion = { placeId: string; primary: string; secondary: string; description: string; prediction?: google.maps.places.PlacePrediction };
 
 async function searchPlaces(input: string): Promise<PlaceSuggestion[]> {
   if (input.trim().length < 2) return [];
   await ensureGoogleMapsLoaded();
   if (!window.google?.maps?.places) return [];
+
+  const placesLibrary = await window.google.maps.importLibrary("places") as google.maps.PlacesLibrary;
+  const AutocompleteSuggestion = placesLibrary.AutocompleteSuggestion;
+  if (AutocompleteSuggestion?.fetchAutocompleteSuggestions) {
+    const { AutocompleteSessionToken } = placesLibrary;
+    const sessionToken = new AutocompleteSessionToken();
+    const { suggestions } = await AutocompleteSuggestion.fetchAutocompleteSuggestions({
+      input: input.trim(),
+      includedRegionCodes: ["br"],
+      language: "pt-BR",
+      region: "br",
+      sessionToken,
+    });
+    return suggestions.filter((suggestion) => Boolean(suggestion.placePrediction)).slice(0, 5).map((suggestion) => {
+      const prediction = suggestion.placePrediction!;
+      return {
+        placeId: prediction.placeId,
+        primary: prediction.mainText?.toString() || prediction.text.toString(),
+        secondary: prediction.secondaryText?.toString() || "Brasil",
+        description: prediction.text.toString(),
+        prediction,
+      };
+    });
+  }
 
   return new Promise((resolve, reject) => {
     const service = new window.google.maps.places.AutocompleteService();
@@ -132,13 +156,22 @@ async function searchPlaces(input: string): Promise<PlaceSuggestion[]> {
   });
 }
 
-async function getPlaceDetails(placeId: string) {
+async function getPlaceDetails(suggestion: PlaceSuggestion) {
   await ensureGoogleMapsLoaded();
   if (!window.google?.maps?.places) throw new Error("Detalhes do lugar indisponíveis.");
 
+  if (suggestion.prediction) {
+    const place = suggestion.prediction.toPlace();
+    await place.fetchFields({ fields: ["displayName", "formattedAddress"] });
+    return {
+      name: place.displayName || suggestion.primary || "Lugar selecionado",
+      address: place.formattedAddress || suggestion.secondary || "",
+    };
+  }
+
   return new Promise<{ name: string; address: string }>((resolve, reject) => {
     const service = new window.google.maps.places.PlacesService(document.createElement("div"));
-    service.getDetails({ placeId, fields: ["name", "formatted_address"] }, (place, status) => {
+    service.getDetails({ placeId: suggestion.placeId, fields: ["name", "formatted_address"] }, (place, status) => {
       if (status !== window.google.maps.places.PlacesServiceStatus.OK || !place) {
         reject(new Error("Não foi possível carregar o endereço exato."));
         return;
@@ -299,7 +332,7 @@ function RoutesView() {
     setPlaceLoading(true);
     setPlaceError("");
     try {
-      const details = await getPlaceDetails(suggestion.placeId);
+      const details = await getPlaceDetails(suggestion);
       updatePoint(pointId, "label", details.name || suggestion.primary);
       updatePoint(pointId, "address", details.address || suggestion.description);
       setPlaceSearchPointId(null);
