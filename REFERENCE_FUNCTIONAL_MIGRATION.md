@@ -31,6 +31,10 @@ O visual de referência permanece como a única superfície permanente. Para dis
 
 Os testes diretos em `server/referenceHomeIntegration.test.tsx` cobrem os acessos preservados para roteiros, gastos, garagem, perfil e configurações.
 
+## Verificação pública pré-autenticação
+
+Em 19 de agosto de 2026, a página publicada em `https://mototracker-alpha.vercel.app/` foi verificada antes do login. Ela apresentou a identidade MotoTracker, o botão **Entrar com Google** e a tela de acesso sem o aviso de configuração Firebase ausente. A revisão das abas autenticadas permanece anotada no checklist para execução posterior, conforme orientação do proprietário.
+
 ## Funcionalidades obrigatórias a preservar
 
 - Login Google e isolamento de viagens por UID no Cloud Firestore.
