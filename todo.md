@@ -70,7 +70,8 @@ O CSS global foi reduzido para `clamp(31px, 4.2vw, 54px)` e a variante compacta 
 - [x] Decidir e registrar a lightbox operacional como exceção aprovada pelo proprietário em 19 de agosto de 2026.
 - [x] Validar de forma integrada os fluxos reais de roteiros, gastos com local, perfil/logout, configurações/PWA e Mapa com pontos salvos, sem substituir esses componentes por mocks; o mapa não coleta GPS.
 - [ ] Registrar evidência visual autenticada da revisão final em desktop e mobile; a tela de login foi verificada nos dois viewports, mas o ambiente local está sem `VITE_FIREBASE_*` para abrir uma sessão Google real.
-- [ ] Sincronizar a versão migrada e registrar evidência verificável de build, testes e revisão visual final em desktop e mobile.
+- [ ] Retomar, quando solicitado pelo proprietário, a validação visual autenticada no ambiente publicado após login Google, cobrindo Missão, Mapa, Equipe, Kit e os fluxos em lightbox.
+- [x] Sincronizar a versão migrada ao GitHub no commit `017d98a`, com testes, TypeScript e build verificados no clone de publicação; a evidência visual autenticada permanece pendente no item anterior.
 
 - [x] Substituído pela arquitetura Firebase: ativar sessão Google e camada Cloud Firestore isolada por usuário, sem criar tabela ou procedimentos tRPC de viagens.
 - [x] Resolver os conflitos da migração sem substituir o login Google/Firebase ou a interface MotoTracker.
