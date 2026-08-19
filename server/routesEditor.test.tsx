@@ -26,7 +26,7 @@ vi.mock("sonner", () => ({
   toast: Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn() }),
 }));
 
-import { RoutesView } from "@/pages/Home";
+import { RoutesView } from "@/pages/LegacyFunctionalViews";
 
 describe("timeline de nova viagem", () => {
   beforeEach(() => {

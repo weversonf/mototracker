@@ -1,533 +1,638 @@
-/* MotoTracker — Industrial Editorial Control Center: graphite cockpit surfaces, asymmetric rhythm, Pulse Orange #F0643C, Space Grotesk + DM Sans. */
-
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { toast } from "sonner";
-import { useAuth } from "@/contexts/AuthContext";
-import { editRoutePoint } from "@/lib/tripModel";
-import { getProfileIdentity } from "@/lib/profileIdentity";
-import { createTrip, removeTrip, updateTrip, watchTrips } from "@/lib/trips";
-import { getConsumptionKmPerLiter, getPlateReminder, getStoredBikeProfile, type BikeProfile } from "@/lib/bikeProfile";
+/*
+ * DESIGN (v2): "Missão Aratuba" — Military Dark, mobile-first (coluna ≤480px).
+ * Preto-oliva + verde-fósforo tático + âmbar de alerta.
+ * Rajdhani display, Barlow corpo, Share Tech Mono coords/horas.
+ * Botões "IR" ≥52px sempre ao pé de cada waypoint; barra de status fixa inferior.
+ */
+import { useEffect, useState } from "react";
+import {
+  Coffee,
+  Mountain,
+  Droplets,
+  Church,
+  Camera,
+  Sun,
+  MapPin,
+  Navigation,
+  Thermometer,
+  Wallet,
+  Car,
+  Flag,
+  Check,
+  Circle,
+  Moon,
+  Users,
+  ShieldCheck,
+  Map as MapIcon,
+  Send,
+  Backpack,
+  ClipboardList,
+} from "lucide-react";
+import WaypointMap from "@/components/WaypointMap";
+import Equipe from "@/components/Equipe";
+import Kit from "@/components/Kit";
 import { ExpensesView } from "@/components/ExpensesView";
 import { SettingsView } from "@/components/SettingsView";
-import type { RoutePoint, Trip } from "@/types/trips";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { GarageView, ProfileView, RoutesView } from "@/pages/LegacyFunctionalViews";
+import { CONVITE_WHATSAPP } from "@/lib/rota";
 import {
-  Activity,
-  ArrowUpRight,
-  Bell,
-  Bike,
-  CalendarDays,
-  Check,
-  ChevronRight,
-  CircleDot,
-  CloudSun,
-  ClipboardCheck,
-  CircleDollarSign,
-  Droplets,
-  ExternalLink,
-  Fuel,
-  Gauge,
-  LogOut,
-  MapPin,
-  Menu,
-  MoreHorizontal,
-  Navigation,
-  Play,
-  Plus,
-  Route,
-  Receipt,
-  Settings2,
-  ShieldCheck,
-  SlidersHorizontal,
-  Trash2,
-  UserRound,
-  WalletCards,
-  Wind,
-  Wrench,
-  X,
-} from "lucide-react";
+  PONTO_ENCONTRO,
+  PARADAS,
+  CHEGADA,
+  abrirRota,
+  type Parada,
+} from "@/lib/rota";
+import { useInView } from "@/hooks/useInView";
+import { useAuth } from "@/contexts/AuthContext";
+import { watchTrips } from "@/lib/trips";
+import { getStoredBikeProfile, bikeProfileStorageKey, type BikeProfile } from "@/lib/bikeProfile";
+import type { RoutePoint, Trip } from "@/types/trips";
 
-const HERO_IMAGE = "/manus-storage/motopulse-hero_3ceafd21.jpg";
-const ROAD_IMAGE = "/manus-storage/motopulse-road_f259f809.jpg";
+type Aba = "missao" | "mapa" | "equipe" | "kit";
+type OperationalPanel = "routes" | "expenses" | "garage" | "profile" | "settings" | null;
 
-type IconType = typeof Gauge;
-type Section = "Dashboard" | "Viagens" | "Gastos" | "Garagem" | "Perfil" | "Configurações";
-
-const navItems: { label: "Dashboard" | "Viagens" | "Gastos" | "Garagem"; icon: IconType }[] = [
-  { label: "Dashboard", icon: Gauge },
-  { label: "Viagens", icon: Route },
-  { label: "Gastos", icon: Receipt },
-  { label: "Garagem", icon: Wrench },
-];
-
-const summaryMetrics = [
-  { label: "Próxima viagem", value: "04", detail: "paradas planejadas", icon: CalendarDays },
-  { label: "Gastos no mês", value: "R$ 486", detail: "3 categorias", icon: CircleDollarSign },
-  { label: "Distância registrada", value: "128 km", detail: "nesta semana", icon: Activity },
-];
-
-type RoutePointKind = RoutePoint["kind"];
-
-const routePointPresets: Record<string, RoutePoint[]> = {
-  "Serra do Rastro": [
-    { id: "serra-start", kind: "start", label: "Florianópolis", address: "Florianópolis, SC" },
-    { id: "serra-stop-1", kind: "stop", label: "Mirante da Serra", address: "Mirante da Serra do Rio do Rastro, Bom Jardim da Serra, SC" },
-    { id: "serra-finish", kind: "finish", label: "Serra do Rastro", address: "Serra do Rio do Rastro, Lauro Müller, SC" },
-  ],
-  "Costeira Norte": [
-    { id: "costeira-start", kind: "start", label: "Florianópolis", address: "Florianópolis, SC" },
-    { id: "costeira-stop-1", kind: "stop", label: "Santo Antônio de Lisboa", address: "Santo Antônio de Lisboa, Florianópolis, SC" },
-    { id: "costeira-stop-2", kind: "stop", label: "Praia da Daniela", address: "Praia da Daniela, Florianópolis, SC" },
-    { id: "costeira-finish", kind: "finish", label: "Costeira Norte", address: "Costeira Norte, Florianópolis, SC" },
-  ],
-  "Vale dos Ventos": [
-    { id: "vale-start", kind: "start", label: "Florianópolis", address: "Florianópolis, SC" },
-    { id: "vale-stop-1", kind: "stop", label: "Rancho Queimado", address: "Rancho Queimado, SC" },
-    { id: "vale-finish", kind: "finish", label: "Vale dos Ventos", address: "Vale dos Ventos, SC" },
-  ],
+const ICONS: Record<Parada["tipo"], React.ReactNode> = {
+  encontro: <Flag className="h-4 w-4" />,
+  cafe: <Coffee className="h-4 w-4" />,
+  turismo: <Church className="h-4 w-4" />,
+  almoco: <Mountain className="h-4 w-4" />,
+  natureza: <Droplets className="h-4 w-4" />,
+  mirante: <Camera className="h-4 w-4" />,
 };
 
-function cloneRoutePoints(routeName: string) {
-  return (routePointPresets[routeName] ?? routePointPresets["Serra do Rastro"]).map((point) => ({ ...point }));
-}
-
-function pointQuery(point: RoutePoint) {
-  return point.address.trim() || point.label.trim();
-}
-
-function googleMapsRouteUrl(points: RoutePoint[]) {
-  const origin = points[0] ? pointQuery(points[0]) : "";
-  const destination = points[points.length - 1] ? pointQuery(points[points.length - 1]) : "";
-  const waypoints = points.slice(1, -1).map(pointQuery).filter(Boolean).join("|");
-  const params = new URLSearchParams({ api: "1", origin, destination, travelmode: "driving" });
-  if (waypoints) params.set("waypoints", waypoints);
-  return `https://www.google.com/maps/dir/?${params.toString()}`;
-}
-
-function wazeRouteUrl(points: RoutePoint[]) {
-  const destination = points[points.length - 1] ? pointQuery(points[points.length - 1]) : "";
-  return `https://www.waze.com/ul?${new URLSearchParams({ q: destination, navigate: "yes" }).toString()}`;
-}
-
-const pointLabels: Record<RoutePointKind, string> = { start: "PONTO DE PARTIDA", stop: "PARADA", finish: "DESTINO" };
-
-type PhotonProperties = {
-  name?: string;
-  street?: string;
-  housenumber?: string;
-  district?: string;
-  city?: string;
-  municipality?: string;
-  county?: string;
-  state?: string;
-  postcode?: string;
-  country?: string;
+const WP_LABEL: Record<Parada["tipo"], string> = {
+  encontro: "WP-00 · ENCONTRO",
+  cafe: "WP · CAFÉ",
+  turismo: "WP · CULTURA",
+  almoco: "WP · RANCHO",
+  natureza: "WP · ÁGUA",
+  mirante: "WP · VISTA",
 };
-type PhotonFeature = { type: "Feature"; geometry?: { coordinates?: [number, number] }; properties?: PhotonProperties & { osm_id?: string | number; osm_type?: string } };
-type PhotonResponse = { features?: PhotonFeature[] };
-type PlaceSuggestion = { placeId: string; primary: string; secondary: string; description: string; resolved?: { name: string; address: string }; coordinates?: { lat: number; lng: number } };
 
-function uniqueParts(parts: Array<string | undefined>) {
-  const seen = new Set<string>();
-  return parts.filter((part): part is string => Boolean(part?.trim())).filter((part) => {
-    const key = part.trim().toLocaleLowerCase();
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-}
+const WP_NUM: Record<string, string> = {
+  encontro: "00",
+  cafe: "01",
+  centro: "02",
+  mirantes: "03",
+  almoco: "04",
+  cachoeira: "05",
+  tardinha: "06",
+  putdosol: "07",
+};
 
-function photonAddress(properties: PhotonProperties) {
-  const streetLine = [properties.street, properties.housenumber].filter(Boolean).join(", ");
-  return uniqueParts([streetLine, properties.district, properties.city, properties.municipality, properties.county, properties.state, properties.postcode, properties.country]).join(", ");
-}
-
-async function searchPlaces(input: string, signal?: AbortSignal): Promise<PlaceSuggestion[]> {
-  const query = input.trim();
-  if (query.length < 2) return [];
-  const url = new URL("https://photon.komoot.io/api/");
-  url.searchParams.set("q", query);
-  url.searchParams.set("limit", "5");
-  const response = await fetch(url, { signal, headers: { Accept: "application/json" } });
-  if (!response.ok) throw new Error("A busca de lugares está indisponível agora.");
-  const payload = await response.json() as PhotonResponse;
-  return (payload.features ?? []).slice(0, 5).map((feature, index) => {
-    const properties = feature.properties ?? {};
-    const streetLine = [properties.street, properties.housenumber].filter(Boolean).join(", ");
-    const primary = properties.name || streetLine || properties.city || properties.municipality || "Lugar encontrado";
-    const address = photonAddress(properties) || primary;
-    const coordinates = feature.geometry?.coordinates;
-    const placeId = `${properties.osm_type ?? "feature"}-${properties.osm_id ?? index}-${coordinates?.join("-") ?? "unknown"}`;
-    return {
-      placeId,
-      primary,
-      secondary: address === primary ? properties.country || "OpenStreetMap" : address,
-      description: address,
-      resolved: { name: primary, address },
-      coordinates: coordinates ? { lng: coordinates[0], lat: coordinates[1] } : undefined,
-    };
-  });
-}
-
-async function getPlaceDetails(suggestion: PlaceSuggestion) {
-  return suggestion.resolved ?? { name: suggestion.primary || "Lugar selecionado", address: suggestion.description || suggestion.secondary };
-}
-
-function createBlankRoutePoints(): RoutePoint[] {
-  return [
-    { id: "new-start", kind: "start", label: "", address: "" },
-    { id: "new-stop", kind: "stop", label: "", address: "" },
-    { id: "new-finish", kind: "finish", label: "", address: "" },
-  ];
-}
-
-function MotoTrackerMark({ compact = false }: { compact?: boolean }) {
-  return (
-    <div className={`brand-lockup ${compact ? "brand-lockup--compact" : ""}`}>
-      <span className="brand-mark" aria-hidden="true"><span className="brand-mark__inner" /></span>
-      {!compact && <span className="brand-name">Moto<span>Tracker</span></span>}
-    </div>
-  );
-}
-
-function MetricCard({ label, value, detail, icon: Icon }: (typeof summaryMetrics)[number]) {
-  return <div className="metric-card"><div className="metric-card__topline"><span>{label}</span><Icon size={15} strokeWidth={1.8} /></div><strong>{value}</strong><small>{detail}</small></div>;
-}
-
-function SummaryHero({ onOpenRoutes, onOpenGarage }: { onOpenRoutes: () => void; onOpenGarage: () => void }) {
-  return (
-    <article className="summary-hero panel" style={{ backgroundImage: `linear-gradient(90deg, rgba(18, 24, 24, .99) 0%, rgba(18, 24, 24, .92) 48%, rgba(18, 24, 24, .38) 100%), url(${HERO_IMAGE})` }}>
-      <div className="summary-hero__content">
-        <div className="summary-hero__top"><div className="panel-kicker"><span className="status-dot status-dot--live" />Tudo pronto para planejar</div><span className="summary-hero__date">ATUALIZADO · 08:42</span></div>
-        <p className="label-caps">PRÓXIMA AÇÃO</p>
-        <h2>Serra do Rastro<br /><em>domingo, 18 ago.</em></h2>
-        <p className="summary-hero__copy">Seu roteiro favorito reúne 4 paradas, uma lista de pontos de interesse e um orçamento para a viagem.</p>
-        <div className="summary-hero__actions"><button className="primary-button" onClick={onOpenRoutes}><CalendarDays size={15} /> Abrir planejamento</button><button className="summary-link" onClick={onOpenGarage}>Ver status da moto <ChevronRight size={14} /></button></div>
-        <div className="summary-hero__facts"><span><CircleDot size={14} /> 04 paradas</span><span><ShieldCheck size={14} /> moto 98%</span><span><WalletCards size={14} /> orçamento R$ 280</span></div>
-      </div>
-    </article>
-  );
-}
-
-function RouteCard({ onOpenRoutes }: { onOpenRoutes: () => void }) {
-  return (
-    <article className="panel route-card">
-      <div className="panel-heading"><div><p className="label-caps">PRÓXIMO PLANEJAMENTO</p><h2>Serra do Rastro</h2></div><span className="route-badge"><CalendarDays size={13} /> 18 ago.</span></div>
-      <div className="trip-plan-list" aria-label="Traçado salvo e paradas planejadas da viagem Serra do Rastro"><svg className="trip-plan-list__trace" viewBox="0 0 500 110" preserveAspectRatio="none" aria-hidden="true"><path className="trip-trace-shadow" d="M 16 75 C 115 20, 156 96, 246 47 S 350 16, 484 58" /><path className="trip-trace-line" d="M 16 75 C 115 20, 156 96, 246 47 S 350 16, 484 58" /></svg><span><i className="trip-plan-list__dot trip-plan-list__dot--start" /><strong>Florianópolis</strong><small>saída</small></span><span><i className="trip-plan-list__dot" /><strong>Mirante da Serra</strong><small>parada 01</small></span><span><i className="trip-plan-list__dot trip-plan-list__dot--finish" /><strong>Serra do Rastro</strong><small>destino</small></span></div>
-      <div className="route-card__footer"><div><span className="route-card__distance">04 paradas</span><span>roteiro salvo para a viagem</span></div><button className="text-button" onClick={onOpenRoutes}>Ver planejamento <ChevronRight size={15} /></button></div>
-    </article>
-  );
-}
-
-function NavItem({ item, active, onSelect }: { item: (typeof navItems)[number]; active: boolean; onSelect: () => void }) {
-  const Icon = item.icon;
-  return <button className={`nav-item ${active ? "nav-item--active" : ""}`} onClick={onSelect} aria-current={active ? "page" : undefined}><Icon size={19} strokeWidth={active ? 2.4 : 1.8} /><span>{item.label}</span></button>;
-}
-
-function DashboardView({ onOpenRoutes, onOpenGarage, onOpenExpenses }: { onOpenRoutes: () => void; onOpenGarage: () => void; onOpenExpenses: () => void }) {
-  return (
-    <>
-      <section className="intro-row"><div><p className="eyebrow">COMECE POR AQUI</p><h1 className="page-title--single">Seu ritmo na estrada.</h1></div><button className="primary-button" onClick={onOpenRoutes}><Play size={15} fill="currentColor" /> Planejar viagem</button></section>
-      <div className="dashboard-layout"><div className="dashboard-main"><article className="panel first-run-card"><p className="label-caps">SEU MOTOTRACKER ESTÁ PRONTO</p><h2>Planeje a primeira viagem</h2><p>Adicione partida, paradas e destino para começar a organizar seus roteiros.</p><button className="primary-button" onClick={onOpenRoutes}><CalendarDays size={15} /> Criar viagem</button></article><div className="metrics-grid"><MetricCard label="Viagens planejadas" value="0" detail="nenhum roteiro salvo" icon={CalendarDays} /><MetricCard label="Gastos no mês" value="R$ 0" detail="nenhum lançamento" icon={CircleDollarSign} /><MetricCard label="Distância registrada" value="—" detail="comece sua primeira viagem" icon={Activity} /></div><article className="panel route-card"><div className="panel-heading"><div><p className="label-caps">SEUS ROTEIROS</p><h2>Nenhuma viagem planejada</h2></div><MapPin size={20} /></div><div className="empty-state"><MapPin size={22} /><strong>Seu próximo destino começa aqui</strong><span>Crie uma viagem para montar o trajeto com partida, paradas e destino.</span></div><div className="route-card__footer"><div><span className="route-card__distance">0 viagens</span><span>aguardando seu primeiro roteiro</span></div><button className="text-button" onClick={onOpenRoutes}>Criar viagem <ChevronRight size={15} /></button></div></article></div><aside className="dashboard-side"><article className="panel next-trip-card"><div className="panel-heading"><div><p className="label-caps">PRÓXIMA VIAGEM</p><h2>Sem viagem planejada</h2></div><CalendarDays size={21} /></div><p className="panel-empty-copy">Quando você criar um roteiro, seus pontos e paradas aparecerão aqui.</p><button className="secondary-button" onClick={onOpenRoutes}>Planejar agora <ChevronRight size={15} /></button></article><article className="panel maintenance-card"><div className="panel-heading"><div><p className="label-caps">MANUTENÇÃO</p><h2>Cadastre sua moto</h2></div><ClipboardCheck size={22} /></div><div className="maintenance-card__reading"><span>Informe os dados da moto em Configurações para organizar sua rotina.</span></div><button className="secondary-button" onClick={onOpenGarage}>Abrir garagem <ChevronRight size={15} /></button></article><article className="panel expense-preview-card"><div className="panel-heading"><div><p className="label-caps">GASTOS NO MÊS</p><h2>R$ 0,00</h2></div><CircleDollarSign size={22} /></div><p className="panel-empty-copy">Registre combustível, manutenção ou lavagem para acompanhar seus custos.</p><button className="text-button" onClick={onOpenExpenses}>Registrar gasto <ChevronRight size={14} /></button></article></aside></div>
-    </>
-  );
-}
-
-function PageHeader({ eyebrow, title, description, action, titleClassName = "" }: { eyebrow: string; title: ReactNode; description: string; action?: ReactNode; titleClassName?: string }) {
-  return <section className="page-header"><div><p className="eyebrow">{eyebrow}</p><h1 className={titleClassName}>{title}</h1><p className="page-header__description">{description}</p></div>{action}</section>;
-}
-
-export function RoutesView() {
-  const { user } = useAuth();
-  const [filter, setFilter] = useState("Planejadas");
-  const [isCreating, setIsCreating] = useState(false);
-  const [editingTripId, setEditingTripId] = useState<string | null>(null);
-  const [newTripName, setNewTripName] = useState("");
-  const [activeRoute, setActiveRoute] = useState("");
-  const [routePoints, setRoutePoints] = useState<RoutePoint[]>(createBlankRoutePoints);
-  const [runMenuOpen, setRunMenuOpen] = useState(false);
-  const [placeSearchPointId, setPlaceSearchPointId] = useState<string | null>(null);
-  const [placeQuery, setPlaceQuery] = useState("");
-  const [placeSuggestions, setPlaceSuggestions] = useState<PlaceSuggestion[]>([]);
-  const [placeLoading, setPlaceLoading] = useState(false);
-  const [placeError, setPlaceError] = useState("");
-  const placeRequestRef = useRef(0);
-  const placeAbortRef = useRef<AbortController | null>(null);
-  const [savedTrips, setSavedTrips] = useState<Trip[]>([]);
-  const [tripsError, setTripsError] = useState("");
-  const [tripsLoading, setTripsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const stopCount = routePoints.filter((point) => point.kind === "stop").length;
-
-  useEffect(() => {
-    if (!user?.uid) {
-      setSavedTrips([]);
-      setTripsLoading(false);
-      return;
-    }
-
-    setTripsLoading(true);
-    setTripsError("");
-    return watchTrips(
-      user.uid,
-      (trips) => {
-        setSavedTrips(trips);
-        setTripsLoading(false);
-      },
-      (error) => {
-        setTripsError(error.message || "Não foi possível carregar suas viagens agora.");
-        setTripsLoading(false);
-      },
-    );
-  }, [user?.uid]);
-
-  const openNewTrip = () => {
-    setIsCreating(true);
-    setEditingTripId(null);
-    setNewTripName("");
-    setActiveRoute("Nova viagem");
-    setRoutePoints(createBlankRoutePoints());
-    setRunMenuOpen(false);
-    setPlaceSearchPointId(null);
-    setPlaceSuggestions([]);
-    toast("Novo roteiro", { description: "Defina partida, paradas e destino da viagem." });
-  };
-
-  const openSavedRoute = (trip: Trip, openRunMenu = false) => {
-    setIsCreating(true);
-    setEditingTripId(trip.id);
-    setNewTripName(trip.name);
-    setActiveRoute(trip.name);
-    setRoutePoints(trip.points.map((point) => ({ ...point })));
-    setRunMenuOpen(openRunMenu);
-    setPlaceSearchPointId(null);
-    setPlaceSuggestions([]);
-  };
-
-  const closeEditor = () => {
-    setIsCreating(false);
-    setEditingTripId(null);
-    setRunMenuOpen(false);
-    setPlaceSearchPointId(null);
-    setPlaceSuggestions([]);
-    setFilter("Planejadas");
-  };
-
-  const deletePlanning = async () => {
-    if (!user?.uid || !editingTripId) return;
-
-    const tripName = newTripName.trim() || activeRoute || "esta viagem";
-    const confirmed = window.confirm(`Excluir “${tripName}”? Esta ação não pode ser desfeita.`);
-    if (!confirmed) return;
-
-    setIsDeleting(true);
-    try {
-      await removeTrip(user.uid, editingTripId);
-      closeEditor();
-      toast.success("Viagem excluída", { description: `“${tripName}” foi removida de Planejadas.` });
-    } catch (error) {
-      const description = error instanceof Error ? error.message : "Não foi possível excluir a viagem agora.";
-      toast.error("Não foi possível excluir", { description });
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  const updatePoint = (id: string, field: "label" | "address", value: string) => {
-    setRoutePoints((current) => current.map((point) => point.id === id ? editRoutePoint(point, field, value) : point));
-  };
-
-  const handlePlaceSearch = (pointId: string, field: "label" | "address", value: string) => {
-    updatePoint(pointId, field, value);
-    setPlaceSearchPointId(pointId);
-    setPlaceQuery(value);
-    setPlaceError("");
-    const requestId = ++placeRequestRef.current;
-    placeAbortRef.current?.abort();
-    if (value.trim().length < 2) {
-      setPlaceSuggestions([]);
-      setPlaceLoading(false);
-      return;
-    }
-    const controller = new AbortController();
-    placeAbortRef.current = controller;
-    setPlaceLoading(true);
-    void searchPlaces(value, controller.signal).then((suggestions) => {
-      if (requestId === placeRequestRef.current) setPlaceSuggestions(suggestions);
-    }).catch(() => {
-      if (requestId === placeRequestRef.current && !controller.signal.aborted) {
-        setPlaceSuggestions([]);
-        setPlaceError("Busca de lugares indisponível agora. Você pode preencher manualmente.");
-      }
-    }).finally(() => {
-      if (requestId === placeRequestRef.current) setPlaceLoading(false);
-    });
-  };
-
-  const selectPlaceSuggestion = async (pointId: string, suggestion: PlaceSuggestion) => {
-    setPlaceLoading(true);
-    setPlaceError("");
-    try {
-      const details = await getPlaceDetails(suggestion);
-      setRoutePoints((current) => current.map((point) => point.id === pointId ? {
-        ...point,
-        label: details.name || suggestion.primary,
-        address: details.address || suggestion.description,
-        ...(suggestion.coordinates ? { coordinates: suggestion.coordinates } : {}),
-      } : point));
-      setPlaceSearchPointId(null);
-      setPlaceQuery("");
-      setPlaceSuggestions([]);
-      toast.success("Lugar selecionado", { description: details.address || suggestion.description });
-    } catch {
-      setPlaceError("Não foi possível carregar o endereço exato. Tente novamente ou continue manualmente.");
-    } finally {
-      setPlaceLoading(false);
-    }
-  };
-
-  const addStop = () => {
-    setRoutePoints((current) => {
-      const finishIndex = current.findIndex((point) => point.kind === "finish");
-      const nextStop: RoutePoint = { id: `stop-${Date.now()}`, kind: "stop", label: "", address: "" };
-      return [...current.slice(0, finishIndex), nextStop, ...current.slice(finishIndex)];
-    });
-    toast("Parada adicionada", { description: "Digite o nome do lugar para ver sugestões de endereço." });
-  };
-
-  const removeStop = (id: string) => setRoutePoints((current) => current.filter((point) => point.id !== id));
-
-  const savePlanning = async () => {
-    if (!user?.uid) {
-      toast.error("Sessão indisponível", { description: "Entre novamente para salvar suas viagens." });
-      return;
-    }
-
-    const name = newTripName.trim() || activeRoute.trim();
-    setIsSaving(true);
-    try {
-      const payload = { name, tag: "Planejada", points: routePoints };
-      if (editingTripId) {
-        await updateTrip(user.uid, editingTripId, payload);
-      } else {
-        await createTrip(user.uid, payload);
-      }
-      setActiveRoute(name);
-      setIsCreating(false);
-      setEditingTripId(null);
-      setFilter("Planejadas");
-      setRunMenuOpen(false);
-      toast.success("Planejamento salvo", { description: `${name} agora está em Planejadas.` });
-    } catch (error) {
-      const description = error instanceof Error ? error.message : "Não foi possível salvar a viagem agora.";
-      toast.error("Não foi possível salvar", { description });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const routeEditor = <aside className="panel route-summary route-summary--planner route-summary--creating">
-    <div className="route-summary__body route-summary__body--planner">
-      <div className="route-summary__planner-head"><div><p className="label-caps">{editingTripId ? "EDITAR ROTEIRO" : "NOVA VIAGEM"}</p><h2>{newTripName || "Sua nova viagem"}</h2></div><span className="route-summary__count">{stopCount} {stopCount === 1 ? "parada" : "paradas"}</span></div>
-      <div className="route-trip-name"><label className="label-caps" htmlFor="route-name">NOME DA VIAGEM</label><input id="route-name" className="route-point-input" value={newTripName} placeholder="Ex.: Fortaleza de fim de semana" onChange={(event) => setNewTripName(event.target.value)} /></div>
-      <div className="route-helper"><MapPin size={15} /><span>Digite um lugar e selecione uma sugestão para preencher o endereço exato.</span></div>
-      <div className="route-timeline" aria-label={`Timeline da viagem ${newTripName || "nova viagem"}`}>
-        {routePoints.map((point, index) => <div className={`route-timeline__item route-timeline__item--${point.kind}`} key={point.id}>
-          <div className="route-timeline__rail"><span>{index + 1}</span></div>
-          <div className="route-timeline__body"><div className="route-timeline__top"><p className="label-caps">{pointLabels[point.kind]}</p>{point.kind === "stop" && <button className="route-remove-button" aria-label={`Remover ${point.label || "parada"}`} onClick={() => removeStop(point.id)}><Trash2 size={14} /></button>}</div>
-            <div className="route-point-fields">
-              <input className="route-point-input" aria-label={`Nome do ponto ${index + 1}`} value={point.label} placeholder={point.kind === "start" ? "Ex.: Fortaleza" : point.kind === "finish" ? "Ex.: Canoa Quebrada" : "Ex.: Praia ou mirante"} onFocus={() => { setPlaceSearchPointId(point.id); setPlaceQuery(point.label); }} onChange={(event) => handlePlaceSearch(point.id, "label", event.target.value)} />
-              <div className="route-address-row"><MapPin size={14} /><input className="route-address-input" aria-label={`Endereço de ${point.label || `ponto ${index + 1}`}`} value={point.address} placeholder="Endereço exato" onFocus={() => { setPlaceSearchPointId(point.id); setPlaceQuery(point.address); }} onChange={(event) => handlePlaceSearch(point.id, "address", event.target.value)} /><a className="route-map-link" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pointQuery(point))}`} target="_blank" rel="noreferrer">Maps <ExternalLink size={12} /></a></div>
-              {placeSearchPointId === point.id && (placeLoading || placeError || placeSuggestions.length > 0) && <div className="place-suggestions" role="listbox" aria-label="Sugestões de lugares"><div className="place-suggestions__label">{placeLoading ? "BUSCANDO ENDEREÇOS" : "SUGESTÕES DE LUGAR"}</div>{placeSuggestions.map((suggestion) => <button className="place-suggestion" key={suggestion.placeId} type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => void selectPlaceSuggestion(point.id, suggestion)}><MapPin size={15} /><span><strong>{suggestion.primary}</strong><small>{suggestion.secondary || suggestion.description}</small></span></button>)}{placeError && <p className="place-suggestions__error">{placeError}</p>}{!placeLoading && !placeError && placeSuggestions.length === 0 && placeQuery.trim().length >= 2 && <p className="place-suggestions__empty">Nenhum lugar encontrado. Continue digitando ou preencha manualmente.</p>}</div>}
-            </div>
-          </div>
-        </div>)}
-      </div>
-      <div className="route-editor__actions"><button className="secondary-button route-add-stop" onClick={addStop} disabled={isSaving || isDeleting}><Plus size={14} /> Adicionar parada</button><button className="primary-button" onClick={() => void savePlanning()} disabled={isSaving || isDeleting}>{isSaving ? "Salvando..." : <><Check size={14} /> Salvar roteiro</>}</button></div>
-      {editingTripId && <button className="route-delete-trip" type="button" onClick={() => void deletePlanning()} disabled={isSaving || isDeleting}><Trash2 size={14} /> {isDeleting ? "Excluindo viagem..." : "Excluir viagem"}</button>}
-      <div className="route-launch"><div><p className="label-caps">IR PARA A ESTRADA</p><span>Abra a viagem com a origem, destino e paradas definidas.</span></div><button className="route-go-button" onClick={() => setRunMenuOpen((current) => !current)}><Navigation size={14} /> Ir <ChevronRight size={13} /></button>{runMenuOpen && <div className="route-launch__menu"><a href={googleMapsRouteUrl(routePoints)} target="_blank" rel="noreferrer"><MapPin size={15} /><span><strong>Google Maps</strong><small>Abre com todas as paradas</small></span><ExternalLink size={13} /></a><a href={wazeRouteUrl(routePoints)} target="_blank" rel="noreferrer"><Navigation size={15} /><span><strong>Waze</strong><small>Abre o destino final; paradas na timeline</small></span><ExternalLink size={13} /></a></div>}</div>
-    </div>
-  </aside>;
-
-  return <>
-    <PageHeader eyebrow={isCreating ? "VIAGENS / NOVA VIAGEM" : "VIAGENS / PLANEJADAS"} title={isCreating ? "Crie sua próxima viagem." : "Planeje o próximo trecho."} titleClassName="page-header__title--single" description={isCreating ? "Preencha os pontos deste novo roteiro, selecione uma sugestão e confirme o endereço exato." : "Suas viagens salvas ficam aqui. Abra Nova viagem para montar um novo roteiro em timeline."} action={isCreating ? <button className="secondary-button" onClick={closeEditor}>Ver Planejadas <ChevronRight size={14} /></button> : <button className="primary-button" onClick={openNewTrip}><Plus size={15} /> Nova viagem</button>} />
-    {!isCreating && <><div className="section-tabs" role="tablist">{["Planejadas", "Histórico", "Descobrir"].map((item) => <button key={item} role="tab" aria-selected={filter === item} className={filter === item ? "section-tab section-tab--active" : "section-tab"} onClick={() => setFilter(item)}>{item}</button>)}</div><div className="routes-layout routes-layout--planner routes-layout--saved"><div className="route-list">{filter === "Planejadas" && (tripsLoading ? <article className="panel route-empty-state"><p className="label-caps">CARREGANDO PLANEJADAS</p><h2>Buscando seus roteiros.</h2><p>Suas viagens aparecem aqui assim que o Firebase confirma os dados.</p></article> : tripsError ? <article className="panel route-empty-state"><p className="label-caps">NÃO FOI POSSÍVEL CARREGAR</p><h2>Suas viagens continuam protegidas.</h2><p>{tripsError}</p></article> : savedTrips.length === 0 ? <article className="panel route-empty-state"><p className="label-caps">NENHUMA VIAGEM PLANEJADA</p><h2>Seu próximo trecho começa aqui.</h2><p>Crie uma viagem para salvar partida, paradas e destino no seu perfil.</p></article> : savedTrips.map((trip, index) => { const stops = trip.points.filter((point) => point.kind === "stop").length; return <article className="route-list-card panel" key={trip.id}><div className="route-list-card__index">{String(index + 1).padStart(2, "0")}</div><div className="route-list-card__icon"><Route size={20} /></div><div className="route-list-card__content"><div className="route-list-card__top"><div><p className="label-caps">{trip.tag}</p><h2>{trip.name}</h2></div><span className="route-list-card__distance">{stops} {stops === 1 ? "parada" : "paradas"}</span></div><div className="route-list-card__line"><span><CircleDot size={12} /> roteiro salvo</span><div className="route-list-card__actions"><button className="text-button" onClick={() => openSavedRoute(trip)}>Editar <ChevronRight size={14} /></button><button className="route-go-button route-go-button--small" onClick={() => openSavedRoute(trip, true)}><Navigation size={13} /> Ir</button></div></div></div></article>; }))}{filter !== "Planejadas" && <article className="panel route-empty-state"><p className="label-caps">{filter === "Histórico" ? "SEM HISTÓRICO AINDA" : "DESCOBRIR"}</p><h2>{filter === "Histórico" ? "Suas viagens concluídas aparecerão aqui." : "Novos roteiros entram nesta área."}</h2><p>{filter === "Histórico" ? "Depois de registrar uma viagem, você encontrará o resumo e os pontos percorridos nesta aba." : "Use Nova viagem para criar um roteiro personalizado com seus próprios lugares."}</p></article>}</div></div></>}
-    {isCreating && <div className="routes-layout routes-layout--planner routes-layout--creating">{routeEditor}</div>}
-  </>;
-}
-
-function LegacyExpensesView() {
-  const [filter, setFilter] = useState("Todos");
-  const [period, setPeriod] = useState("Este mês");
-  const [entryType, setEntryType] = useState("Combustível");
-  const [showRegister, setShowRegister] = useState(false);
-  const expenses = [
-    { category: "Combustível", label: "Posto Graal", meta: "Hoje · 32,4 L", value: "R$ 214,60", icon: Fuel, tone: "fuel" },
-    { category: "Manutenção", label: "Troca de óleo", meta: "12 jun · 8.000 km", value: "R$ 140,00", icon: Wrench, tone: "service" },
-    { category: "Lavagem", label: "Lavagem completa", meta: "08 jun · Capricho Moto", value: "R$ 56,00", icon: Droplets, tone: "wash" },
-    { category: "Combustível", label: "Shell Avenida", meta: "04 jun · 21,7 L", value: "R$ 75,40", icon: Fuel, tone: "fuel" },
-  ];
-  const visibleExpenses = filter === "Todos" ? expenses : expenses.filter((expense) => expense.category === filter);
-  const quickActions = [{ label: "Combustível", icon: Fuel, tone: "fuel" }, { label: "Manutenção", icon: Wrench, tone: "service" }, { label: "Lavagem", icon: Droplets, tone: "wash" }];
-  return <><PageHeader eyebrow="GASTOS / MINHA MOTO" title={<>Saiba quanto custa<br /><em>manter a estrada.</em></>} description="Uma leitura simples do que sua moto consumiu no mês, por categoria e por viagem." action={<button className="primary-button" onClick={() => setShowRegister(true)}><Plus size={15} /> Registrar gasto</button>} /><section className="finance-toolbar"><div><p className="label-caps">PERÍODO DE ANÁLISE</p><div className="period-switch">{["Este mês", "Últimos 3 meses"].map((item) => <button key={item} className={period === item ? "period-switch__item period-switch__item--active" : "period-switch__item"} onClick={() => setPeriod(item)}>{item}</button>)}</div></div><button className="finance-link" onClick={() => toast("Resumo exportado", { description: `Período selecionado: ${period}.` })}>Exportar resumo <ArrowUpRight size={14} /></button></section>{showRegister && <article className="panel expense-entry-panel"><div><p className="label-caps">NOVO LANÇAMENTO</p><h2>Registrar gasto</h2><p>Escolha a categoria e continue o registro da sua moto.</p></div><div className="entry-type-grid">{quickActions.map((action) => { const Icon = action.icon; return <button key={action.label} className={entryType === action.label ? "entry-type entry-type--active" : "entry-type"} onClick={() => setEntryType(action.label)}><span className={`expense-row__icon expense-row__icon--${action.tone}`}><Icon size={16} /></span>{action.label}</button>; })}</div><div className="entry-actions"><button className="secondary-button" onClick={() => setShowRegister(false)}>Cancelar</button><button className="primary-button" onClick={() => { setShowRegister(false); toast.success("Gasto registrado", { description: `${entryType} adicionado ao mês atual.` }); }}>Continuar <ChevronRight size={14} /></button></div></article>}<div className="finance-overview-grid"><article className="panel finance-total-card"><div className="finance-total-card__top"><div><p className="label-caps">TOTAL NO MÊS</p><strong>R$ 486,00</strong><span><ArrowUpRight size={13} /> R$ 52 acima do mês passado</span></div><div className="finance-total-card__period"><CalendarDays size={15} /> AGO 2026</div></div><div className="finance-total-card__footer"><span><strong>04</strong> lançamentos</span><span><strong>128</strong> km rodados</span><span><strong>R$ 3,80</strong> por km</span></div></article><article className="panel finance-distribution-card"><div className="finance-distribution-card__head"><div><p className="label-caps">DISTRIBUIÇÃO</p><h2>Para onde foi o dinheiro</h2></div><CircleDollarSign size={21} /></div><div className="finance-distribution"><div className="finance-donut" aria-label="Distribuição dos gastos: combustível 60%, manutenção 29%, lavagem 11%" /><div className="finance-legend"><span><i className="expense-dot expense-dot--fuel" /><b>Combustível</b><strong>R$ 290 · 60%</strong></span><span><i className="expense-dot expense-dot--service" /><b>Manutenção</b><strong>R$ 140 · 29%</strong></span><span><i className="expense-dot expense-dot--wash" /><b>Lavagem</b><strong>R$ 56 · 11%</strong></span></div></div></article></div><div className="expenses-layout"><article className="panel expenses-list-card"><div className="expenses-list-card__head"><div><p className="label-caps">HISTÓRICO FINANCEIRO</p><h2>Últimos lançamentos</h2></div><WalletCards size={22} /></div><div className="expense-filters">{["Todos", "Combustível", "Manutenção", "Lavagem"].map((item) => <button key={item} className={filter === item ? "expense-filter expense-filter--active" : "expense-filter"} onClick={() => setFilter(item)}>{item}</button>)}</div><div className="expense-list">{visibleExpenses.map((expense) => { const Icon = expense.icon; return <button className="expense-row" key={`${expense.label}-${expense.meta}`} onClick={() => toast("Registro selecionado", { description: `${expense.label} · ${expense.value}` })}><span className={`expense-row__icon expense-row__icon--${expense.tone}`}><Icon size={17} /></span><span className="expense-row__content"><strong>{expense.label}</strong><small>{expense.category} · {expense.meta}</small></span><strong className="expense-row__value">{expense.value}</strong><ChevronRight size={15} /></button>; })}</div></article><aside className="expense-side"><article className="panel quick-expense-card"><div className="panel-heading"><div><p className="label-caps">REGISTRAR AGORA</p><h2>O que aconteceu?</h2></div><Plus size={21} /></div><div className="quick-expense-actions">{quickActions.map((action) => { const Icon = action.icon; return <button key={action.label} className="quick-expense-action" onClick={() => { setEntryType(action.label); setShowRegister(true); }}><span className={`expense-row__icon expense-row__icon--${action.tone}`}><Icon size={17} /></span><span>{action.label}</span><ChevronRight size={14} /></button>; })}</div></article><article className="panel trip-cost-card"><div className="panel-heading"><div><p className="label-caps">CUSTO DA ÚLTIMA VIAGEM</p><h2>Costeira Norte</h2></div><Route size={21} /></div><div className="trip-cost-card__total"><strong>R$ 178,40</strong><span>46,8 km · R$ 3,81/km</span></div><button className="text-button" onClick={() => toast("Detalhes da viagem", { description: "Veja abastecimentos e serviços associados ao rolê." })}>Ver detalhes <ChevronRight size={14} /></button></article></aside></div></>;
-}
-
-export function GarageView({ onOpenSettings }: { onOpenSettings: () => void }) {
-  const { user } = useAuth();
-  const [bike, setBike] = useState<BikeProfile>(() => getStoredBikeProfile(user?.uid));
-
-  useEffect(() => {
-    setBike(getStoredBikeProfile(user?.uid));
-  }, [user?.uid]);
-
-  const hasBike = Boolean(bike.model);
-  const consumption = getConsumptionKmPerLiter(bike.consumptionKmPerLiter);
-  const displayName = bike.nickname || bike.model;
-
-  return <><PageHeader eyebrow="GARAGEM / MINHA MOTO" title="Sua moto em dia." titleClassName="page-header__title--single" description={hasBike ? "Os dados cadastrados em Configurações estão reunidos aqui para acompanhar consumo, documentação e futuras manutenções." : "Cadastre sua moto para começar a acompanhar dados de consumo, documentação e futuras manutenções."} action={<button className="primary-button garage-action" onClick={onOpenSettings}>{hasBike ? <><Settings2 size={15} /> Editar moto</> : <><Plus size={15} /> Cadastrar moto</>}</button>} />
-    {hasBike ? <div className="garage-profile-grid"><article className="panel garage-bike-card"><div className="garage-bike-card__heading"><div><p className="label-caps">MOTO CADASTRADA</p><h2>{displayName}</h2>{bike.nickname && <p className="garage-bike-card__model">{bike.model}</p>}</div><span className="garage-bike-card__icon"><Bike size={22} /></span></div><div className="garage-bike-card__stats"><div><span>Consumo médio</span><strong>{consumption === null ? "Não informado" : `${consumption} km/L`}</strong></div><div><span>Placa</span><strong>{bike.plateFinal ? `Final ${bike.plateFinal}` : "Não informado"}</strong></div><div><span>UF</span><strong>{bike.state || "Não informada"}</strong></div></div><button className="secondary-button" onClick={onOpenSettings}><Settings2 size={15} /> Atualizar cadastro</button></article><article className="panel garage-reminder-card"><div className="garage-reminder-card__icon"><CalendarDays size={19} /></div><p className="label-caps">DOCUMENTAÇÃO</p><h2>{bike.plateFinal ? `Placa final ${bike.plateFinal}` : "Complete seu cadastro"}</h2><p>{getPlateReminder(bike)}</p><button className="text-button" onClick={onOpenSettings}>Ver configurações <ChevronRight size={14} /></button></article></div> : <article className="panel first-run-card"><p className="label-caps">SUA GARAGEM COMEÇA AQUI</p><h2>Nenhuma moto cadastrada</h2><p>Informe o modelo, o final da placa e o consumo médio em Configurações. Depois, a Garagem poderá organizar suas informações de uso e manutenção.</p><button className="primary-button" onClick={onOpenSettings}><Bike size={15} /> Abrir configurações</button></article>}
-  </>;
-}
-
-export function ProfileView() {
-  const { user, signOutUser } = useAuth();
-  const [notifications, setNotifications] = useState(true);
-  const [shareRides, setShareRides] = useState(false);
-  const [isSigningOut, setIsSigningOut] = useState(false);
-  const { displayName, email, initials } = getProfileIdentity(user);
-  const preferences = [{ label: "Alertas de manutenção", description: "Receber lembretes sobre a saúde da moto", value: notifications, setValue: setNotifications }, { label: "Compartilhar rolês", description: "Permitir que amigos acompanhem suas rotas", value: shareRides, setValue: setShareRides }];
-  const handleSignOut = async () => {
-    setIsSigningOut(true);
-    try {
-      await signOutUser();
-      toast.success("Sessão encerrada", { description: "Você saiu do MotoTracker com segurança." });
-    } catch {
-      toast.error("Não foi possível sair", { description: "Tente novamente em alguns instantes." });
-      setIsSigningOut(false);
-    }
-  };
-  return <><PageHeader eyebrow="PERFIL / PILOTO" title="Seu perfil." titleClassName="page-header__title--single" description="Gerencie suas preferências, privacidade e a forma como o MotoTracker acompanha suas viagens." action={<button className="profile-edit-button" onClick={() => toast("Perfil em modo de edição")}>Editar perfil <ArrowUpRight size={15} /></button>} /><div className="profile-layout"><article className="panel rider-card"><div className="rider-card__avatar">{initials}</div><p className="label-caps">CONTA GOOGLE</p><h2>{displayName}</h2><span>{email}</span><div className="rider-card__stats"><div><strong>Google</strong><span>autenticação</span></div><div><strong>Privado</strong><span>seu diário</span></div><div><strong>Ativo</strong><span>acesso</span></div></div><button className="secondary-button" onClick={() => void handleSignOut()} disabled={isSigningOut}>{isSigningOut ? "Encerrando..." : <><LogOut size={15} /> Sair da conta</>}</button></article><article className="panel settings-card"><div className="panel-heading"><div><p className="label-caps">PREFERÊNCIAS</p><h2>Como você pilota</h2></div><Settings2 size={21} /></div><div className="settings-list">{preferences.map((preference) => <button className="setting-row" key={preference.label} onClick={() => preference.setValue(!preference.value)}><span><strong>{preference.label}</strong><small>{preference.description}</small></span><span className={`toggle ${preference.value ? "toggle--on" : ""}`}><span /></span></button>)}</div><button className="secondary-button" onClick={() => toast("Preferências salvas", { description: "Suas escolhas foram atualizadas." })}>Salvar preferências <Check size={15} /></button></article></div></>;
-}
-
-function LegacySettingsView() {
-  return <><PageHeader eyebrow="SISTEMA / CONTROLE" title={<>Ajuste o painel<br /><em>ao seu jeito.</em></>} description="Controle aparência, notificações e a forma como você organiza seu diário de moto." /><div className="settings-grid"><article className="panel settings-card"><div className="panel-heading"><div><p className="label-caps">APARÊNCIA</p><h2>Interface</h2></div><SlidersHorizontal size={21} /></div>{["Modo noturno automático", "Mostrar custo por quilômetro", "Compactar cartões"].map((label, index) => <div className="setting-row setting-row--static" key={label}><span><strong>{label}</strong><small>{index === 0 ? "Ativo entre 18h e 06h" : "Ativo no dashboard principal"}</small></span><span className={`toggle ${index < 2 ? "toggle--on" : ""}`}><span /></span></div>)}</article><article className="panel settings-card settings-card--accent"><div className="settings-card__icon"><Bell size={18} /></div><p className="label-caps">CENTRAL DE ALERTAS</p><h2>Você está em dia.</h2><p className="settings-card__copy">Nenhuma notificação crítica pendente para a sua moto ou para as viagens salvas.</p><button className="secondary-button" onClick={() => toast("Tudo em dia", { description: "Nenhum alerta novo encontrado." })}>Verificar novamente <ArrowUpRight size={15} /></button></article></div></>;
+function horaFmt(hora: string) {
+  return hora.replace("h", "") + "H";
 }
 
 export default function Home() {
+  const [aba, setAba] = useState<Aba>("missao");
+  const [operationalPanel, setOperationalPanel] = useState<OperationalPanel>(null);
+  const [checklist, setChecklist] = useState<Record<string, boolean>>({});
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<Section>(() => {
-    if (typeof window === "undefined") return "Dashboard";
-    const requested = new URLSearchParams(window.location.search).get("screen");
-    return ["Dashboard", "Viagens", "Gastos", "Garagem", "Perfil", "Configurações"].includes(requested ?? "") ? requested as Section : "Dashboard";
-  });
-  const [menuOpen, setMenuOpen] = useState(false);
-  const { initials, displayName } = getProfileIdentity(user);
-  useEffect(() => { const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape") setMenuOpen(false); }; window.addEventListener("keydown", onKeyDown); return () => window.removeEventListener("keydown", onKeyDown); }, []);
-  const handleNavigation = (section: Section) => { setActiveTab(section); setMenuOpen(false); window.history.replaceState(null, "", section === "Dashboard" ? "/" : `/?screen=${encodeURIComponent(section)}`); };
-  const pageTitle = activeTab === "Dashboard" ? "Resumo" : activeTab;
-  return <div className="app-shell">
-    <aside className="side-rail"><nav className="side-nav" aria-label="Navegação principal">{navItems.map((item) => <NavItem key={item.label} item={item} active={activeTab === item.label} onSelect={() => handleNavigation(item.label)} />)}<button className={`nav-item ${activeTab === "Configurações" ? "nav-item--active" : ""}`} onClick={() => handleNavigation("Configurações")}><Settings2 size={19} /><span>Configurações</span></button></nav><div className="side-rail__bottom"><div className="side-rail__version">v1.0.4 / BUILD 0826</div></div></aside>
-    {menuOpen && <><button className="drawer-scrim" aria-label="Fechar menu" onClick={() => setMenuOpen(false)} /><aside className="mobile-drawer" aria-label="Menu lateral"><div className="mobile-drawer__head"><MotoTrackerMark /><button className="icon-button" aria-label="Fechar menu" onClick={() => setMenuOpen(false)}><X size={18} /></button></div><div className="mobile-drawer__profile"><span>{initials}</span><div><strong>{displayName}</strong><small>Diário ativo</small></div></div><nav className="mobile-drawer__nav">{navItems.map((item) => <NavItem key={item.label} item={item} active={activeTab === item.label} onSelect={() => handleNavigation(item.label)} />)}<button className={`nav-item ${activeTab === "Configurações" ? "nav-item--active" : ""}`} onClick={() => handleNavigation("Configurações")}><Settings2 size={19} /><span>Configurações</span></button></nav><div className="mobile-drawer__footer">MOTOTRACKER / 2026<br /><span>Seu ritmo. A estrada à frente.</span></div></aside></>}
-    <main className="main-content"><header className="topbar"><div className="topbar__left"><button className="mobile-menu icon-button" aria-label="Abrir menu" onClick={() => setMenuOpen(true)}><Menu size={20} /></button><MotoTrackerMark /><div className="topbar__divider" /><div className="context-label"><span className="status-dot status-dot--live" /><span>{pageTitle}</span></div></div><div className="topbar__actions"><button className="icon-button" aria-label="Notificações" onClick={() => handleNavigation("Configurações")}><Bell size={18} /></button><button className="profile-chip" onClick={() => handleNavigation("Perfil")}><span>{initials}</span><ChevronRight size={14} /></button></div></header><div className="content-wrap">{activeTab === "Dashboard" && <DashboardView onOpenRoutes={() => handleNavigation("Viagens")} onOpenGarage={() => handleNavigation("Garagem")} onOpenExpenses={() => handleNavigation("Gastos")} />}{activeTab === "Viagens" && <RoutesView />}{activeTab === "Gastos" && <ExpensesView />}{activeTab === "Garagem" && <GarageView onOpenSettings={() => handleNavigation("Configurações")} />}{activeTab === "Perfil" && <ProfileView />}{activeTab === "Configurações" && <SettingsView />}</div><footer className="bottom-nav" aria-label="Navegação mobile">{navItems.map((item) => <NavItem key={item.label} item={item} active={activeTab === item.label} onSelect={() => handleNavigation(item.label)} />)}</footer></main>
-  </div>;
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [bikeProfile, setBikeProfile] = useState<BikeProfile>(() => getStoredBikeProfile(user?.uid));
+  const doneCount = Object.values(checklist).filter(Boolean).length;
+  const total = PARADAS.length;
+  const activeTrip = trips[0] ?? null;
+  const tripStart = activeTrip?.points.find((point) => point.kind === "start") ?? null;
+  const tripStops = activeTrip?.points.filter((point) => point.kind === "stop") ?? [];
+  const tripDestination = activeTrip?.points.find((point) => point.kind === "finish") ?? null;
+  const displayedBike = bikeProfile.nickname || bikeProfile.model || "Moto não cadastrada";
+  const missionWaypoints = activeTrip
+    ? activeTrip.points.map((point, index) => ({
+        id: point.id,
+        typeLabel: point.kind === "start" ? "WP-00 · Partida" : point.kind === "finish" ? "Destino" : "Parada programada",
+        schedule: "ROTEIRO SALVO",
+        number: String(index).padStart(2, "0"),
+        title: point.label || "Ponto sem nome",
+        local: point.label || "Local pendente",
+        address: point.address || "Endereço pendente",
+        description: "Ponto registrado no seu roteiro planejado.",
+        image: undefined,
+        point,
+        coords: point.coordinates ? [point.coordinates.lat, point.coordinates.lng] as [number, number] : null,
+      }))
+    : PARADAS.map((point) => ({
+        id: point.id,
+        typeLabel: WP_LABEL[point.tipo],
+        schedule: horaFmt(point.hora),
+        number: WP_NUM[point.id] ?? "—",
+        title: point.titulo,
+        local: point.local,
+        address: point.endereco,
+        description: point.descricao,
+        image: point.imagem,
+        point: null,
+        coords: point.coords,
+      }));
+
+  useEffect(() => {
+    const refreshBikeProfile = () => setBikeProfile(getStoredBikeProfile(user?.uid));
+    refreshBikeProfile();
+    window.addEventListener("storage", refreshBikeProfile);
+    return () => window.removeEventListener("storage", refreshBikeProfile);
+  }, [user?.uid]);
+
+  useEffect(() => {
+    if (!user?.uid) {
+      setTrips([]);
+      return;
+    }
+
+    return watchTrips(
+      user.uid,
+      setTrips,
+      () => setTrips([]),
+    );
+  }, [user?.uid]);
+
+  const openSavedPoint = (point: RoutePoint | null) => {
+    if (!point) {
+      abrirRota(PONTO_ENCONTRO.id, PONTO_ENCONTRO.coords, PONTO_ENCONTRO.local);
+      return;
+    }
+
+    const destination = point.coordinates
+      ? `${point.coordinates.lat},${point.coordinates.lng}`
+      : point.address || point.label;
+    window.open(
+      `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`,
+      "_blank",
+      "noopener",
+    );
+  };
+
+  const compartilhar = () => {
+    const url = `https://wa.me/?text=${encodeURIComponent(CONVITE_WHATSAPP())}`;
+    window.open(url, "_blank", "noopener");
+  };
+
+  const panelTitle: Record<Exclude<OperationalPanel, null>, string> = {
+    routes: "Gerenciar roteiros",
+    expenses: "Registrar gasto",
+    garage: "Garagem",
+    profile: "Perfil",
+    settings: "Configurações",
+  };
+
+  const panelContent = operationalPanel === "routes" ? <RoutesView />
+    : operationalPanel === "expenses" ? <ExpensesView />
+    : operationalPanel === "garage" ? <GarageView onOpenSettings={() => setOperationalPanel("settings")} />
+    : operationalPanel === "profile" ? <ProfileView />
+    : operationalPanel === "settings" ? <SettingsView />
+    : null;
+
+  const toggle = (id: string) =>
+    setChecklist((c) => ({ ...c, [id]: !c[id] }));
+
+  const heroRef = useInView<HTMLDivElement>();
+
+  return (
+    <div className="min-h-screen topo-grid pb-20">
+      {/* ===== CONTEÚDO DA ABA MISSÃO ===== */}
+      {aba === "missao" && (
+      <>
+      {/* ===== HERO-MISSÃO ===== */}
+      <header className="relative overflow-hidden">
+        <img
+          src="/manus-storage/aratuba_hero_85c63f2d.png"
+          alt="Serras do Maciço de Baturité"
+          className="absolute inset-0 h-full w-full object-cover opacity-70"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/60 to-background" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent" />
+
+        <div className="container relative z-10 flex min-h-[72vh] flex-col justify-end pb-10 pt-16">
+          <div
+            ref={heroRef}
+            className="fade-up"
+          >
+            <div
+              className="mb-4 flex items-center gap-3"
+              role="button"
+              tabIndex={0}
+              aria-label="Gerenciar roteiros da missão"
+              onClick={() => setOperationalPanel("routes")}
+              onKeyDown={(event) => event.key === "Enter" && setOperationalPanel("routes")}
+            >
+              <img
+                src="/manus-storage/aratuba_logo_63f7d2ab.png"
+                alt="Missão Aratuba"
+                className="h-14 w-14 rounded-full border-2 border-phosphor bg-background p-0.5"
+              />
+              <div>
+                <h1 className="font-display text-3xl font-bold uppercase leading-none tracking-[0.12em] text-foreground">
+                  Missão <span className="text-phosphor">{activeTrip?.name || "Aratuba"}</span>
+                </h1>
+                <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+                  {activeTrip?.tag || "Operação · 1 dia · 248 km · sem pedágio"}
+                </p>
+              </div>
+            </div>
+
+            <p className="max-w-sm text-sm leading-relaxed text-foreground/85">
+              {activeTrip
+                ? <>Roteiro salvo com <strong className="text-phosphor">{activeTrip.points.length} pontos</strong>. Partida, paradas e destino ficam organizados nesta missão.</>
+                : <>Briefing da missão: saída de Fortaleza às <strong className="text-phosphor">0800H</strong>. Alvo: a serra mais alta do Ceará, a 960 m. Café na subida, água fria da Surubaca e pôr do sol dourando a caatinga.</>}
+            </p>
+
+            <div className="mt-6 grid grid-cols-4 gap-2 border border-border bg-background/70 p-3 backdrop-blur-sm">
+              {[
+                { k: "Saída", v: activeTrip ? (tripStart?.label || "Pendente") : "0800H" },
+                { k: "Paradas", v: activeTrip ? String(tripStops.length) : "124 km" },
+                { k: activeTrip ? "Destino" : "Temp.", v: activeTrip ? (tripDestination?.label || "Pendente") : "-8 °C" },
+                { k: activeTrip ? "Moto" : "Custo", v: activeTrip ? displayedBike : "R$ 100+" },
+              ].map((it) => (
+                <button
+                  key={it.k}
+                  type="button"
+                  className="text-center"
+                  aria-label={it.k === "Moto" ? "Abrir configurações da moto" : undefined}
+                  onClick={() => it.k === "Moto" && setOperationalPanel("settings")}
+                >
+                  <div className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
+                    {it.k}
+                  </div>
+                  <div className="font-display text-base font-bold text-phosphor">
+                    {it.v}
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={() => openSavedPoint(tripStart)}
+              className="tac-btn mt-6 w-full bg-phosphor text-primary-foreground"
+            >
+              <Navigation className="h-5 w-5" />
+              Ir ao ponto de encontro
+            </button>
+            <p className="mt-2 font-mono text-[10px] uppercase tracking-wider text-muted-foreground text-center">
+              {activeTrip ? `ROTEIRO SALVO · ${activeTrip.tag || "PLANEJADA"}` : "WP-00 · Mix Mateus · Maranguape · 0745H"}
+            </p>
+          </div>
+        </div>
+      </header>
+
+      {/* ===== PONTO DE ENCONTRO ===== */}
+      <section className="container pb-8 pt-6">
+          <div
+            ref={heroRef}
+            className="fade-up brief-panel"
+          >
+            <div className="panel-header">
+              <span>WP-00 · Embarque</span>
+            <span>{activeTrip ? "ROTEIRO SALVO" : horaFmt(PONTO_ENCONTRO.hora)}</span>
+            </div>
+          <div className="relative p-5">
+            <span className="wp-number absolute -top-1 right-2">00</span>
+            <div className="mb-2 flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-phosphor" />
+              <h2 className="font-display text-xl font-bold uppercase tracking-wide">
+                {tripStart?.label || PONTO_ENCONTRO.titulo}
+              </h2>
+            </div>
+            <p className="font-mono text-xs text-muted-foreground">
+              {(tripStart?.coordinates?.lat ?? PONTO_ENCONTRO.coords[0]).toFixed(4)} N ·{" "}
+              {Math.abs(tripStart?.coordinates?.lng ?? PONTO_ENCONTRO.coords[1]).toFixed(4)} E
+            </p>
+            <p className="font-mono text-xs text-muted-foreground">
+              {tripStart?.address || PONTO_ENCONTRO.endereco}
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-foreground/85">
+              {activeTrip ? "Partida registrada no roteiro salvo desta missão." : PONTO_ENCONTRO.descricao}
+            </p>
+            <button
+              onClick={() => openSavedPoint(tripStart)}
+              className="tac-btn mt-4 w-full bg-phosphor text-primary-foreground"
+            >
+              <Navigation className="h-5 w-5" />
+              IR
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== WAYPOINTS ===== */}
+      <section className="container pb-8">
+        <div className="mb-6 flex items-center justify-between border-b border-border pb-3">
+          <h2 className="font-display text-2xl font-bold uppercase tracking-[0.1em]">
+            Waypoints
+          </h2>
+          <span className="font-mono text-xs text-muted-foreground">
+            {doneCount}/{activeTrip ? missionWaypoints.length : total} confirmados
+          </span>
+        </div>
+
+        <div className="space-y-6">
+          {missionWaypoints.map((p, i) => {
+            const done = !!checklist[p.id];
+            return (
+              <article
+                key={p.id}
+                className="fade-up brief-panel"
+                data-stagger={i}
+              >
+                <div className="panel-header">
+                  <span>{p.typeLabel}</span>
+                  <span className="text-amber-alert">{p.schedule}</span>
+                </div>
+                <div className="relative p-4">
+                  <span className="wp-number absolute -top-2 right-2">
+                    {p.number}
+                  </span>
+
+                  {p.image && (
+                    <div className="relative mb-3 overflow-hidden border border-border">
+                      <img
+                        src={p.image}
+                        alt={p.title}
+                        className="h-36 w-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent" />
+                    </div>
+                  )}
+
+                  <h3 className="font-display text-lg font-bold uppercase tracking-wide leading-tight">
+                    {p.title}
+                  </h3>
+                  <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">
+                    {p.local} · {p.address}
+                  </p>
+                  <p className="mt-2 text-sm leading-relaxed text-foreground/85">
+                    {p.description}
+                  </p>
+
+                  <div className="mt-4 flex items-center gap-2">
+                    <button
+                      onClick={() => p.point ? openSavedPoint(p.point) : abrirRota(p.id, p.coords ?? PONTO_ENCONTRO.coords, p.local)}
+                      className="tac-btn flex-1 bg-phosphor text-primary-foreground"
+                    >
+                      <Navigation className="h-4 w-4" />
+                      Ir
+                    </button>
+                    <button
+                      onClick={() => toggle(p.id)}
+                      aria-pressed={done}
+                      className={`tac-btn w-[96px] border ${
+                        done
+                          ? "border-phosphor bg-phosphor/15 text-phosphor"
+                          : "border-border bg-secondary/40 text-muted-foreground"
+                      }`}
+                    >
+                      {done ? (
+                        <Check className="h-4 w-4" />
+                      ) : (
+                        <Circle className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                  {done && (
+                    <p className="mt-2 font-mono text-[10px] uppercase tracking-wider text-phosphor">
+                      WP-{p.number} confirmado · carimbo registrado
+                    </p>
+                  )}
+                </div>
+              </article>
+            );
+          })}
+
+          {/* Volta */}
+          <div className="fade-up brief-panel amber">
+            <div className="panel-header">
+              <span className="text-amber-alert">Exfil · Extração</span>
+              <span>{CHEGADA.hora}</span>
+            </div>
+            <div className="p-4">
+              <div className="mb-2 flex items-center gap-2">
+                <Moon className="h-4 w-4 text-amber-alert" />
+                <h3 className="font-display text-lg font-bold uppercase tracking-wide">
+                  {CHEGADA.titulo}
+                </h3>
+              </div>
+              <p className="text-sm leading-relaxed text-foreground/85">
+                {CHEGADA.descricao}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== LOGÍSTICA + KIT ===== */}
+      <section className="container space-y-6 pb-8">
+        <div className="border-t border-border pt-8">
+          <h2 className="font-display text-2xl font-bold uppercase tracking-[0.1em]">
+            Logística &amp; kit
+          </h2>
+        </div>
+
+        {/* Custos */}
+        <div
+          className="brief-panel"
+          role="button"
+          tabIndex={0}
+          aria-label="Abrir registros de gastos"
+          onClick={() => setOperationalPanel("expenses")}
+          onKeyDown={(event) => event.key === "Enter" && setOperationalPanel("expenses")}
+        >
+          <div className="panel-header">
+            <span>Suprimentos · custo por efetivo</span>
+            <Wallet className="h-3.5 w-3.5" />
+          </div>
+          <div className="p-4">
+            <table className="w-full text-sm">
+              <tbody className="divide-y divide-border/60">
+                {[
+                  ["Combustível (ida/volta, div.)", "R$ 30–60"],
+                  ["Café de subida", "R$ 15–25"],
+                  ["Rancho (almoço regional)", "R$ 40–70"],
+                  ["Café da tarde", "R$ 15–25"],
+                  ["Cachoeira (entrada)", "R$ 0–10"],
+                ].map(([k, v]) => (
+                  <tr key={k}>
+                    <td className="py-2 text-foreground/85">{k}</td>
+                    <td className="py-2 text-right font-mono font-semibold text-phosphor">
+                      {v}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="mt-2 border-t border-phosphor/40 pt-2 flex items-center justify-between">
+              <span className="font-display font-bold uppercase tracking-wide">
+                Total / efetivo
+              </span>
+              <span className="font-display text-xl font-bold text-amber-alert">
+                R$ 100–190
+              </span>
+            </div>
+            <p className="mt-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+              Base: viatura compartilhada 2–4 efetivos
+            </p>
+          </div>
+        </div>
+
+        {/* Kit */}
+        <div
+          className="brief-panel amber"
+          role="button"
+          tabIndex={0}
+          aria-label="Abrir garagem da moto"
+          onClick={() => setOperationalPanel("garage")}
+          onKeyDown={(event) => event.key === "Enter" && setOperationalPanel("garage")}
+        >
+          <div className="panel-header">
+            <span className="text-amber-alert">Kit de sobrevivência</span>
+            <ShieldCheck className="h-3.5 w-3.5" />
+          </div>
+          <div className="p-4 space-y-3 text-sm text-foreground/85">
+            <p>
+              <strong className="text-amber-alert">Temperatura:</strong> a
+              serra opera 5–8 °C abaixo de Fortaleza — corta-vento ou casaco
+              leve é obrigatório no kit.
+            </p>
+            <p>
+              <strong className="text-amber-alert">Água (WP-05):</strong>
+              roupa de banho por baixo, toalha, troca seca e tênis de trilha.
+              Chinelo é proibido em operação.
+            </p>
+            <p>
+              <strong className="text-amber-alert">Clima:</strong> em chuva
+              forte, suspender a travessia da cachoeira — pedra escorrega.
+            </p>
+            <p>
+              <strong className="text-amber-alert">Reservas:</strong> Sabor do
+              Sítio opera só sáb/dom, reserva via WhatsApp.
+            </p>
+            <p>
+              <strong className="text-amber-alert">Exfil:</strong> faróis
+              ligados na descida da CE-356. Chegada em base ~2000H.
+            </p>
+          </div>
+        </div>
+
+        <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground text-center">
+          Condições mudam com o clima · confirmar via{" "}
+          <a
+            href="https://www.instagram.com/aratuba.ce/"
+            target="_blank"
+            rel="noreferrer"
+            className="text-phosphor underline"
+          >
+            @aratuba.ce
+          </a>
+        </p>
+      </section>
+      </>
+      )}
+
+      {/* ===== BOTTOM NAV ===== */}
+      <nav className="status-bar">
+        <div className="container grid grid-cols-4">
+          {([
+            { id: "missao", label: "Missão", icon: <ClipboardList className="h-4 w-4" /> },
+            { id: "mapa", label: "Mapa", icon: <MapIcon className="h-4 w-4" /> },
+            { id: "equipe", label: "Equipe", icon: <Users className="h-4 w-4" /> },
+            { id: "kit", label: "Kit", icon: <Backpack className="h-4 w-4" /> },
+          ] as { id: Aba; label: string; icon: React.ReactNode }[]).map((t) => (
+            <button
+              key={t.id}
+              onClick={() => {
+                console.log("[aba] ->", t.id);
+                setAba(t.id);
+              }}
+              className={`flex flex-col items-center gap-0.5 py-2.5 font-mono text-[9px] uppercase tracking-wider transition-colors ${
+                aba === t.id
+                  ? "text-phosphor"
+                  : "text-muted-foreground"
+              }`}
+              aria-current={aba === t.id ? "page" : undefined}
+            >
+              {t.icon}
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </nav>
+
+      {/* ===== TELAS ===== */}
+      {aba === "mapa" && (
+        <div className="container pb-24 pt-4">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h2 className="font-display text-2xl font-bold uppercase tracking-[0.1em]">
+              Cartografia
+            </h2>
+            <button
+              onClick={compartilhar}
+              className="tac-btn h-10 gap-2 bg-secondary text-secondary-foreground border border-border"
+            >
+              <Send className="h-3.5 w-3.5" />
+              Convite
+            </button>
+          </div>
+          <WaypointMap tripPoints={activeTrip?.points} />
+        </div>
+      )}
+      {aba === "equipe" && (
+        <div className="container pb-24 pt-4">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => setOperationalPanel("profile")}
+              aria-label="Abrir perfil da conta"
+              className="font-display text-2xl font-bold uppercase tracking-[0.1em] text-left"
+            >
+              Equipe
+            </button>
+            <button
+              onClick={compartilhar}
+              className="tac-btn h-10 gap-2 bg-secondary text-secondary-foreground border border-border"
+            >
+              <Send className="h-3.5 w-3.5" />
+              Convite
+            </button>
+          </div>
+          <Equipe />
+        </div>
+      )}
+      {aba === "kit" && (
+        <div className="container pb-24 pt-4">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => setOperationalPanel("settings")}
+              aria-label="Abrir configurações da moto"
+              className="font-display text-2xl font-bold uppercase tracking-[0.1em] text-left"
+            >
+              Kit de missão
+            </button>
+            <button
+              onClick={compartilhar}
+              className="tac-btn h-10 gap-2 bg-secondary text-secondary-foreground border border-border"
+            >
+              <Send className="h-3.5 w-3.5" />
+              Convite
+            </button>
+          </div>
+          <Kit />
+        </div>
+      )}
+
+      <Dialog
+        open={operationalPanel !== null}
+        onOpenChange={(open) => !open && setOperationalPanel(null)}
+      >
+        <DialogContent className="max-h-[92dvh] w-[calc(100%-1.5rem)] max-w-4xl overflow-y-auto border-border bg-background p-0 text-foreground">
+          <DialogTitle className="sr-only">
+            {operationalPanel ? panelTitle[operationalPanel] : "Painel operacional"}
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            Fluxo operacional do MotoTracker aberto sem alterar a composição da missão.
+          </DialogDescription>
+          {panelContent}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
 }

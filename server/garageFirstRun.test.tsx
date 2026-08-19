@@ -19,7 +19,7 @@ vi.mock("sonner", () => ({
   toast: Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn() }),
 }));
 
-import { GarageView } from "@/pages/Home";
+import { GarageView } from "@/pages/LegacyFunctionalViews";
 import { bikeProfileStorageKey } from "@/lib/bikeProfile";
 
 afterEach(() => {
